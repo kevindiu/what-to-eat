@@ -1,78 +1,158 @@
-const restaurantTypes = [
-    { id: 'chinese', label: '中餐' },
-    { id: 'japanese', label: '日本菜' },
-    { id: 'korean', label: '韓國菜' },
-    { id: 'western', label: '西餐' },
-    { id: 'thai', label: '泰國菜' },
-    { id: 'cafe', label: 'Cafe' },
-    { id: 'fast_food', label: '快餐' },
-    { id: 'dessert', label: '甜品' },
-    { id: 'bbq', label: '燒肉' }
-];
+const translations = {
+    zh: {
+        title: "食乜好？",
+        subtitle: "唔知食咩？我幫你揀！",
+        filterTitle: "今日唔想食咩類型？",
+        findBtn: "幫我揀間餐廳！",
+        openMaps: "喺 Google Maps 打開",
+        retry: "再揀過",
+        loading: "搜尋緊附近好嘢食...",
+        noResults: "附近搵唔到開門嘅餐廳，試下行遠啲？",
+        geoError: "拎唔到你個位，請檢查下權限。",
+        noGeo: "你個瀏覽器唔支援取用地理位置。",
+        categories: {
+            chinese: '🍚 中餐',
+            japanese: '🍣 日本菜',
+            korean: '🇰🇷 韓國菜',
+            western: '🍕 西餐',
+            thai: '🇹🇭 泰國菜',
+            cafe: '☕ Cafe',
+            fast_food: '🍔 快餐',
+            dessert: '🍰 甜品',
+            bbq: '🔥 燒肉'
+        }
+    },
+    en: {
+        title: "What to Eat?",
+        subtitle: "Don't know? Let me pick!",
+        filterTitle: "What do you NOT want to eat?",
+        findBtn: "Pick for me! ✨",
+        openMaps: "Open in Google Maps 🗺️",
+        retry: "Try Again 🔄",
+        loading: "Searching for delicious food... 🔍",
+        noResults: "No open restaurants found nearby. Try moving a bit?",
+        geoError: "Unable to find location. Check permissions.",
+        noGeo: "Geolocation not supported by this browser.",
+        categories: {
+            chinese: '🍚 Chinese',
+            japanese: '🍣 Japanese',
+            korean: '🇰🇷 Korean',
+            western: '🍕 Western',
+            thai: '🇹🇭 Thai',
+            cafe: '☕ Cafe',
+            fast_food: '🍔 Fast Food',
+            dessert: '🍰 Dessert',
+            bbq: '🔥 BBQ'
+        }
+    },
+    ja: {
+        title: "何食べる？",
+        subtitle: "迷ったら、私に選ばせて！",
+        filterTitle: "今は食べたくないものは？",
+        findBtn: "選んで！ ✨",
+        openMaps: "Googleマップで開く 🗺️",
+        retry: "もう一度 🔄",
+        loading: "近くの美味しい店を探しています... 🔍",
+        noResults: "近くに営業中の店が見つかりません。",
+        geoError: "位置情報を取得できません。設定を確認してください。",
+        noGeo: "お使いのブラウザは位置情報をサポートしていません。",
+        categories: {
+            chinese: '🍚 中華料理',
+            japanese: '🍣 日本料理',
+            korean: '🇰🇷 韓国料理',
+            western: '🍕 洋食',
+            thai: '🇹🇭 タイ料理',
+            cafe: '☕ カフェ',
+            fast_food: '🍔 ファストフード',
+            dessert: '🍰 デザート',
+            bbq: '🔥 焼肉'
+        }
+    }
 
-let excludedTypes = new Set();
-let map, service;
+};
 
-// DOM Elements
-const welcomeScreen = document.getElementById('welcome-screen');
-const resultScreen = document.getElementById('result-screen');
-const loadingScreen = document.getElementById('loading-screen');
-const filterOverlay = document.getElementById('filter-overlay');
-const filterList = document.getElementById('filter-list');
+let currentLang = 'zh';
+const excludedTypes = new Set();
+let service;
 
-// Init Filters
+// Initial setup functions
+
+
+// Make setLanguage global
+window.setLanguage = function (lang) {
+    currentLang = lang;
+    updateUIStrings();
+    initFilters();
+};
+
+
+function updateUIStrings() {
+    const t = translations[currentLang];
+    document.getElementById('app-title').textContent = t.title;
+    document.getElementById('app-subtitle').textContent = t.subtitle;
+    document.getElementById('filter-title').textContent = t.filterTitle;
+    document.getElementById('find-btn').textContent = t.findBtn;
+    document.getElementById('retry-btn').textContent = t.retry;
+    document.getElementById('loading-text').textContent = t.loading;
+    if (document.getElementById('open-maps-btn')) {
+        document.getElementById('open-maps-btn').textContent = t.openMaps;
+    }
+}
+
 function initFilters() {
-    restaurantTypes.forEach(type => {
+    const list = getEl('filter-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const cats = translations[currentLang].categories;
+    Object.keys(cats).forEach(id => {
+        const label = cats[id];
         const div = document.createElement('div');
-        div.className = 'filter-item';
-        div.textContent = type.label;
+        div.className = 'filter-item' + (excludedTypes.has(id) ? ' active' : '');
+        div.textContent = label;
         div.onclick = () => {
             div.classList.toggle('active');
-            if (excludedTypes.has(type.label)) {
-                excludedTypes.delete(type.label);
+            if (excludedTypes.has(id)) {
+                excludedTypes.delete(id);
             } else {
-                excludedTypes.add(type.label);
+                excludedTypes.add(id);
             }
         };
-        filterList.appendChild(div);
+        list.appendChild(div);
     });
 }
 
-// Show/Hide screens
+
+const getEl = id => document.getElementById(id);
+
 function showScreen(screenId) {
-    [welcomeScreen, resultScreen, loadingScreen].forEach(s => s.classList.add('hidden'));
-    document.getElementById(screenId).classList.remove('hidden');
+    ['main-flow', 'result-screen', 'loading-screen'].forEach(id => {
+        const el = getEl(id);
+        if (el) el.classList.add('hidden');
+    });
+    const target = getEl(screenId);
+    if (target) target.classList.remove('hidden');
 }
 
-// Logic to find restaurant
+
 async function findRestaurant() {
     showScreen('loading-screen');
-
-    // MOCK DATA for Demo Mode if Google is not available
-    if (typeof google === 'undefined') {
-        setTimeout(() => {
-            const mockPlace = {
-                name: "誠實豆沙包 (Demo)",
-                rating: 4.5,
-                vicinity: "香港中環某條街 (Demo Mode)",
-                place_id: "demo_id"
-            };
-            displayResult(mockPlace);
-        }, 1500);
-        return;
-    }
+    const t = translations[currentLang];
 
     if (!navigator.geolocation) {
-
-        alert("你個瀏覽器唔支援取用地理位置呀。");
-        showScreen('welcome-screen');
+        alert(t.noGeo);
+        showScreen('main-flow');
         return;
     }
 
     navigator.geolocation.getCurrentPosition((position) => {
+        if (!window.google || !window.google.maps) {
+            alert("Google Maps API failed to load. Please check your API key and connection.");
+            showScreen('main-flow');
+            return;
+        }
         const userLoc = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
 
-        // Setup hidden map for Places Service
+
         if (!service) {
             const mapContainer = document.createElement('div');
             service = new google.maps.places.PlacesService(mapContainer);
@@ -80,76 +160,79 @@ async function findRestaurant() {
 
         const request = {
             location: userLoc,
-            radius: '1000', // 1km
-            type: ['restaurant']
+            radius: '1000',
+            type: ['restaurant'],
+            openNow: true // KEY REQUIREMENT
         };
 
         service.nearbySearch(request, (results, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
-                // Filter results by excluded types
                 let filtered = results;
                 if (excludedTypes.size > 0) {
                     filtered = results.filter(place => {
-                        // Map our friendly labels back to keywords or check types
-                        // Since Google types are generic, we check if ANY matching keyword exists
                         const placeTypes = place.types || [];
-                        const isExcluded = Array.from(excludedTypes).some(label => {
-                            const typeObj = restaurantTypes.find(t => t.label === label);
-                            // Mapping logical types to Google Places types or keywords
+                        const name = place.name.toLowerCase();
+
+                        return !Array.from(excludedTypes).some(id => {
+                            // Keyword mapping for filtering
                             const mapping = {
-                                '中餐': ['chinese_restaurant', 'chinese'],
-                                '日本菜': ['japanese_restaurant', 'sushi', 'japanese'],
-                                '韓國菜': ['korean_restaurant', 'korean'],
-                                '西餐': ['western_restaurant', 'steakhouse', 'italian_restaurant', 'french_restaurant'],
-                                '泰國菜': ['thai_restaurant', 'thai'],
-                                'Cafe': ['cafe', 'coffee_shop'],
-                                '快餐': ['fast_food', 'hamburger'],
-                                '甜品': ['dessert', 'bakery', 'cake_shop'],
-                                '燒肉': ['bbq', 'barbecue_restaurant']
+                                chinese: ['chinese', 'dim sum', 'cantonese'],
+                                japanese: ['japanese', 'sushi', 'ramen'],
+                                korean: ['korean'],
+                                western: ['steak', 'italian', 'french', 'burger', 'pasta', 'western'],
+                                thai: ['thai'],
+                                cafe: ['cafe', 'coffee'],
+                                fast_food: ['fast food', 'mcdonald', 'kfc'],
+                                dessert: ['dessert', 'cake', 'bakery'],
+                                bbq: ['bbq', 'barbecue', 'yakiniku']
                             };
-                            const keywords = mapping[label] || [];
-                            return keywords.some(kw => placeTypes.includes(kw) || place.name.toLowerCase().includes(kw));
+                            const keywords = mapping[id] || [];
+                            return keywords.some(kw => placeTypes.includes(kw.replace(' ', '_')) || name.includes(kw));
                         });
-                        return !isExcluded;
                     });
                 }
 
                 if (filtered.length === 0) {
-                    alert("衰咗！過濾完之後附近無晒餐廳。試下揀少啲「唔想食」嘅野？");
-                    showScreen('welcome-screen');
+                    alert(t.noResults);
+                    showScreen('main-flow');
                     return;
                 }
 
                 const randomPlace = filtered[Math.floor(Math.random() * filtered.length)];
                 displayResult(randomPlace);
             } else {
-                alert("附近搵唔到餐廳，試下行遠啲？");
-                showScreen('welcome-screen');
+                alert(t.noResults);
+                showScreen('main-flow');
             }
         });
-
     }, (error) => {
-        alert("拎唔到你個位，請檢查下權限。");
-        showScreen('welcome-screen');
+        alert(t.geoError);
+        showScreen('main-flow');
     });
 }
 
 function displayResult(place) {
     document.getElementById('res-name').textContent = place.name;
-    document.getElementById('res-rating').textContent = `⭐ ${place.rating || 'N/A'}`;
+    document.getElementById('res-rating').textContent = place.rating ? `⭐ ${place.rating}` : "⭐ New!";
     document.getElementById('res-address').textContent = place.vicinity;
 
     const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
-    document.getElementById('res-link').href = mapLink;
+    const btn = document.getElementById('open-maps-btn');
+    btn.href = mapLink;
+    btn.textContent = translations[currentLang].openMaps;
 
     showScreen('result-screen');
 }
 
-// Event Listeners
-document.getElementById('find-btn').onclick = findRestaurant;
-document.getElementById('retry-btn').onclick = findRestaurant;
-document.getElementById('filter-toggle').onclick = () => filterOverlay.classList.remove('hidden');
-document.getElementById('close-filter').onclick = () => filterOverlay.classList.add('hidden');
+// Event Listeners & Initialization
+document.addEventListener('DOMContentLoaded', () => {
+    const findBtn = getEl('find-btn');
+    const retryBtn = getEl('retry-btn');
 
-// Start
-initFilters();
+    if (findBtn) findBtn.onclick = findRestaurant;
+    if (retryBtn) retryBtn.onclick = () => showScreen('main-flow');
+
+    updateUIStrings();
+    initFilters();
+});
+

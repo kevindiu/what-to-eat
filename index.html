@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>食乜好 - 隨機餐廳建議</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>食乜好？</h1>
+            <p>唔知食咩？我幫你揀！</p>
+        </header>
+
+        <main>
+            <div id="welcome-screen" class="screen">
+                <button id="find-btn" class="primary-btn">幫我揀間餐廳！</button>
+                <button id="filter-toggle" class="secondary-btn">今日唔想食咩？</button>
+            </div>
+
+            <div id="result-screen" class="screen hidden">
+                <div class="restaurant-card">
+                    <h2 id="res-name">餐廳名稱</h2>
+                    <div id="res-rating" class="rating"></div>
+                    <p id="res-address"></p>
+                    <a id="res-link" href="#" target="_blank" class="primary-btn">喺 Google Maps 打開</a>
+                    <button id="retry-btn" class="secondary-btn">再揀過</button>
+                </div>
+            </div>
+
+            <div id="loading-screen" class="screen hidden">
+                <div class="loader"></div>
+                <p>搜尋緊附近好嘢食...</p>
+            </div>
+        </main>
+
+        <div id="filter-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <h3>唔想食咩類型？</h3>
+                <div id="filter-list" class="filter-grid">
+                    <!-- Filters will be generated here -->
+                </div>
+                <button id="close-filter" class="primary-btn">搞掂</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+</body>
+</html>

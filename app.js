@@ -138,20 +138,20 @@ async function findRestaurant() {
     showScreen('loading-screen');
     const t = translations[currentLang];
 
-    if (!navigator.geolocation) {
-        alert(t.noGeo);
-        showScreen('main-flow');
-        return;
-    }
+    const geoOptions = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+    };
 
-    navigator.geolocation.getCurrentPosition((position) => {
-        if (!window.google || !window.google.maps) {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        const userLoc = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+
+        if (!window.google || !window.google.maps || !window.google.maps.places) {
             alert("Google Maps API failed to load. Please check your API key and connection.");
             showScreen('main-flow');
             return;
         }
-        const userLoc = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-
 
         if (!service) {
             const mapContainer = document.createElement('div');
@@ -162,7 +162,7 @@ async function findRestaurant() {
             location: userLoc,
             radius: '1000',
             type: ['restaurant'],
-            openNow: true // KEY REQUIREMENT
+            openNow: true
         };
 
         service.nearbySearch(request, (results, status) => {
@@ -171,20 +171,19 @@ async function findRestaurant() {
                 if (excludedTypes.size > 0) {
                     filtered = results.filter(place => {
                         const placeTypes = place.types || [];
-                        const name = place.name.toLowerCase();
+                        const name = (place.name || "").toLowerCase();
 
                         return !Array.from(excludedTypes).some(id => {
-                            // Keyword mapping for filtering
                             const mapping = {
-                                chinese: ['chinese', 'dim sum', 'cantonese'],
-                                japanese: ['japanese', 'sushi', 'ramen'],
-                                korean: ['korean'],
-                                western: ['steak', 'italian', 'french', 'burger', 'pasta', 'western'],
-                                thai: ['thai'],
-                                cafe: ['cafe', 'coffee'],
-                                fast_food: ['fast food', 'mcdonald', 'kfc'],
-                                dessert: ['dessert', 'cake', 'bakery'],
-                                bbq: ['bbq', 'barbecue', 'yakiniku']
+                                chinese: ['chinese', 'dim sum', 'cantonese', '中', '粵', '點心'],
+                                japanese: ['japanese', 'sushi', 'ramen', '日本', '壽司', '拉麵'],
+                                korean: ['korean', '韓國'],
+                                western: ['steak', 'italian', 'french', 'burger', 'pasta', 'western', '西', '意', '法', '漢堡'],
+                                thai: ['thai', '泰'],
+                                cafe: ['cafe', 'coffee', '咖啡'],
+                                fast_food: ['fast food', 'mcdonald', 'kfc', '快餐'],
+                                dessert: ['dessert', 'cake', 'bakery', '甜', '甜品', '蛋糕'],
+                                bbq: ['bbq', 'barbecue', 'yakiniku', '燒', '燒肉']
                             };
                             const keywords = mapping[id] || [];
                             return keywords.some(kw => placeTypes.includes(kw.replace(' ', '_')) || name.includes(kw));
@@ -201,15 +200,18 @@ async function findRestaurant() {
                 const randomPlace = filtered[Math.floor(Math.random() * filtered.length)];
                 displayResult(randomPlace);
             } else {
+                console.error("Places API Status:", status);
                 alert(t.noResults);
                 showScreen('main-flow');
             }
         });
     }, (error) => {
+        console.error("Geo Error:", error);
         alert(t.geoError);
         showScreen('main-flow');
-    });
+    }, geoOptions);
 }
+
 
 function displayResult(place) {
     document.getElementById('res-name').textContent = place.name;
@@ -223,6 +225,7 @@ function displayResult(place) {
 
     showScreen('result-screen');
 }
+
 
 // Event Listeners & Initialization
 document.addEventListener('DOMContentLoaded', () => {

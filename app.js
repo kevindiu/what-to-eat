@@ -1,4 +1,4 @@
-console.log("食乜好 App v2.2 - Dynamic Maps Enabled");
+console.log("食乜好 App v2.4 - Persistent Language & Enhanced Maps");
 const translations = {
     zh: {
         title: "食乜好？",
@@ -85,6 +85,7 @@ const excludedTypes = new Set();
 let currentRadius = 400; // Default 5 mins (80m/min)
 let lastFilteredResults = [];
 const selectedPrices = new Set(['1', '2', '3', '4']); // Default all selected
+let currentUserPos = null;
 
 // Helper to get elements
 const getEl = id => document.getElementById(id);
@@ -125,9 +126,9 @@ function updateUIStrings() {
         getEl('open-maps-btn').textContent = t.openMaps;
     }
 
-    // Update active state in selector
+    // Update active state in selector using data-lang
     document.querySelectorAll('.lang-selector span').forEach(span => {
-        const spanLang = span.onclick.toString().match(/'(\w+)'/)[1];
+        const spanLang = span.dataset.lang;
         span.classList.toggle('active', spanLang === currentLang);
     });
 }
@@ -193,7 +194,8 @@ async function findRestaurant() {
 
     navigator.geolocation.getCurrentPosition(async (position) => {
         const { latitude, longitude } = position.coords;
-        const userLoc = { lat: latitude, lng: longitude };
+        currentUserPos = { lat: latitude, lng: longitude };
+        const userLoc = currentUserPos;
 
         try {
             /** 
@@ -267,7 +269,14 @@ async function findRestaurant() {
 
                 console.log("Filtered results (Strictly Open):", results.map(r => r.name));
 
-                const filtered = results.filter(place => {
+                // Fallback for late night testing: If NO open restaurants found, show all operational ones
+                let finalCandidates = results;
+                if (finalCandidates.length === 0) {
+                    console.log("No open restaurants found. Falling back to all operational shops for testing purposes.");
+                    finalCandidates = resultsWithStatus.filter(p => p.businessStatus === 'OPERATIONAL' || p.businessStatus === undefined);
+                }
+
+                const filtered = finalCandidates.filter(place => {
                     const placeTypes = place.types || [];
                     const name = (place.name || "").toLowerCase();
 
@@ -405,23 +414,55 @@ async function displayResult(place) {
 
     if (loc) {
         try {
-            const { Map } = await google.maps.importLibrary("maps");
+            console.log("Initializing v2.3 Interactive Map for:", place.name);
+            const [{ Map }, { Marker }] = await Promise.all([
+                google.maps.importLibrary("maps"),
+                google.maps.importLibrary("marker")
+            ]);
+
             const map = new Map(mapDiv, {
                 center: loc,
                 zoom: 16,
-                disableDefaultUI: true,
-                gestureHandling: 'none'
+                disableDefaultUI: false, // Enable UI for better "moveable" feel
+                mapTypeControl: false,
+                streetViewControl: false,
+                gestureHandling: 'greedy' // Fully unlocked
             });
 
-            new google.maps.Marker({
+            // Restaurant Marker (Red)
+            new Marker({
                 position: loc,
                 map: map,
+                title: place.name,
                 animation: google.maps.Animation.DROP
             });
 
+            // User Location Marker (Blue Dot)
+            if (currentUserPos) {
+                new Marker({
+                    position: currentUserPos,
+                    map: map,
+                    title: "Your Location",
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: "#4285F4",
+                        fillOpacity: 1,
+                        strokeWeight: 2,
+                        strokeColor: "white",
+                    }
+                });
+
+                // Force bounds to show both
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(loc);
+                bounds.extend(currentUserPos);
+                map.fitBounds(bounds, 50); // Add 50px padding
+            }
+
             mapDiv.style.display = 'block';
         } catch (e) {
-            console.error("Dynamic Map Error:", e);
+            console.error("Map Enhancement Error (v2.3):", e);
             mapDiv.style.display = 'none';
         }
     } else {

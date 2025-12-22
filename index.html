@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食乜好 - What to Eat</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.4">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fff5f5">
     <meta name="mobile-web-app-capable" content="yes">
@@ -20,9 +20,9 @@
     <div id="app">
         <header>
             <div class="lang-selector">
-                <span onclick="setLanguage('zh')">繁</span> |
-                <span onclick="setLanguage('en')">EN</span> |
-                <span onclick="setLanguage('ja')">日</span>
+                <span onclick="setLanguage('zh')" data-lang="zh">繁</span> |
+                <span onclick="setLanguage('en')" data-lang="en">EN</span> |
+                <span onclick="setLanguage('ja')" data-lang="ja">日</span>
             </div>
             <h1 id="app-title">食乜好？</h1>
             <p id="app-subtitle">唔知食咩？等我幫你揀！</p>
@@ -97,7 +97,7 @@
             loading: "async"
         });
     </script>
-    <script src="app.js"></script>
+    <script src="app.js?v=2.4"></script>
 </body>
 
 </html>

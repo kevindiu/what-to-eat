@@ -124,6 +124,41 @@ header p {
     transform: scale(0.92);
 }
 
+/* Slider Styles */
+.distance-slider-container {
+    padding: 10px 0;
+    width: 100%;
+}
+
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 12px;
+    border-radius: 10px;
+    background: #f1f2f6;
+    outline: none;
+    border: 2px solid white;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(255, 107, 129, 0.3);
+    border: 3px solid white;
+    transition: transform 0.2s;
+}
+
+.slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
 .primary-btn {
     background: var(--primary-color);
     color: white;
@@ -167,6 +202,31 @@ header p {
 .secondary-btn:hover {
     background: #fdfdfd;
     border-color: #dfe6e9;
+}
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.text-btn {
+    background: none;
+    border: none;
+    color: #636e72;
+    text-decoration: underline;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 10px;
+    transition: color 0.2s;
+}
+
+.text-btn:hover {
+    color: var(--primary-color);
 }
 
 .screen {
@@ -220,15 +280,41 @@ header p {
     }
 }
 
-.rating {
+.res-meta {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 0.5rem;
+}
+
+.rating,
+.price-pill {
     background: #fff9db;
     color: #f0932b;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    padding: 8px 20px;
+    padding: 8px 18px;
     border-radius: 50px;
     display: inline-block;
-    margin: 0 auto;
+}
+
+.price-pill {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.phone-link {
+    color: #0984e3;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    text-decoration: underline;
+    display: block;
+    cursor: pointer;
+}
+
+.phone-link:hover {
+    color: var(--primary-color);
 }
 
 .loader {

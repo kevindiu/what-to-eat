@@ -1,14 +1,16 @@
 const translations = {
     zh: {
         title: "食乜好？",
-        subtitle: "唔知食咩？我幫你揀！",
-        filterTitle: "今日唔想食咩類型？",
-        findBtn: "幫我揀間餐廳！",
-        openMaps: "喺 Google Maps 打開",
-        retry: "再揀過",
-        loading: "搜尋緊附近好嘢食...",
-        noResults: "附近搵唔到開門嘅餐廳，試下行遠啲？",
-        geoError: "拎唔到你個位，請檢查下權限。",
+        subtitle: "唔知食咩？等我幫你揀！",
+        distanceTitle: "想搵徒步幾耐？",
+        filterTitle: "今日唔想食咩？",
+        findBtn: "幫我揀！✨",
+        openMaps: "喺 Google Maps 打開 🗺️",
+        retry: "唔多中意？抽過間！",
+        backBtn: "返去主頁",
+        loading: "搜尋緊附近好嘢食... 🔍",
+        noResults: "附近搵唔到開門嘅餐廳，試下搵遠啲？",
+        geoError: "拎唔到你個位置，請檢查下權限。📍",
         noGeo: "你個瀏覽器唔支援取用地理位置。",
         categories: {
             chinese: '🍚 中餐',
@@ -25,10 +27,12 @@ const translations = {
     en: {
         title: "What to Eat?",
         subtitle: "Don't know? Let me pick!",
+        distanceTitle: "Walking Distance",
         filterTitle: "What do you NOT want to eat?",
         findBtn: "Pick for me! ✨",
         openMaps: "Open in Google Maps 🗺️",
-        retry: "Try Again 🔄",
+        retry: "Not this one? Re-roll!",
+        backBtn: "Back to Home",
         loading: "Searching for delicious food... 🔍",
         noResults: "No open restaurants found nearby. Try moving a bit?",
         geoError: "Unable to find location. Check permissions.",
@@ -48,10 +52,12 @@ const translations = {
     ja: {
         title: "何食べる？",
         subtitle: "迷ったら、私に選ばせて！",
+        distanceTitle: "徒歩何分？",
         filterTitle: "今は食べたくないものは？",
         findBtn: "選んで！ ✨",
         openMaps: "Googleマップで開く 🗺️",
-        retry: "もう一度 🔄",
+        retry: "他のがいい！",
+        backBtn: "ホームに戻る",
         loading: "近くの美味しい店を探しています... 🔍",
         noResults: "近くに営業中の店が見つかりません。",
         geoError: "位置情報を取得できません。設定を確認してください。",
@@ -68,35 +74,56 @@ const translations = {
             bbq: '🔥 焼肉'
         }
     }
-
 };
 
 let currentLang = 'zh';
 const excludedTypes = new Set();
-let service;
+let currentRadius = 400; // Default 5 mins (80m/min)
+let lastFilteredResults = [];
 
-// Initial setup functions
+// Helper to get elements
+const getEl = id => document.getElementById(id);
 
+// Initialization: Auto-language detection with persistence
+function detectLanguage() {
+    const saved = localStorage.getItem('preferredLang');
+    if (saved) return saved;
 
-// Make setLanguage global
+    const userLang = navigator.language || navigator.userLanguage;
+    if (userLang.startsWith('ja')) return 'ja';
+    if (userLang.startsWith('zh')) return 'zh';
+    return 'en';
+}
+
+currentLang = detectLanguage();
+
+// Make setLanguage global and persist choice
 window.setLanguage = function (lang) {
     currentLang = lang;
+    localStorage.setItem('preferredLang', lang);
     updateUIStrings();
     initFilters();
 };
 
-
 function updateUIStrings() {
     const t = translations[currentLang];
-    document.getElementById('app-title').textContent = t.title;
-    document.getElementById('app-subtitle').textContent = t.subtitle;
-    document.getElementById('filter-title').textContent = t.filterTitle;
-    document.getElementById('find-btn').textContent = t.findBtn;
-    document.getElementById('retry-btn').textContent = t.retry;
-    document.getElementById('loading-text').textContent = t.loading;
-    if (document.getElementById('open-maps-btn')) {
-        document.getElementById('open-maps-btn').textContent = t.openMaps;
+    getEl('app-title').textContent = t.title;
+    getEl('app-subtitle').textContent = t.subtitle;
+    getEl('distance-title').innerHTML = `${t.distanceTitle} (<span id="distance-val">${currentRadius / 80}</span> mins)`;
+    getEl('filter-title').textContent = t.filterTitle;
+    getEl('find-btn').textContent = t.findBtn;
+    getEl('retry-btn').textContent = t.retry;
+    getEl('back-btn').textContent = t.backBtn;
+    getEl('loading-text').textContent = t.loading;
+    if (getEl('open-maps-btn')) {
+        getEl('open-maps-btn').textContent = t.openMaps;
     }
+
+    // Update active state in selector
+    document.querySelectorAll('.lang-selector span').forEach(span => {
+        const spanLang = span.onclick.toString().match(/'(\w+)'/)[1];
+        span.classList.toggle('active', spanLang === currentLang);
+    });
 }
 
 function initFilters() {
@@ -121,9 +148,6 @@ function initFilters() {
     });
 }
 
-
-const getEl = id => document.getElementById(id);
-
 function showScreen(screenId) {
     ['main-flow', 'result-screen', 'loading-screen'].forEach(id => {
         const el = getEl(id);
@@ -132,7 +156,6 @@ function showScreen(screenId) {
     const target = getEl(screenId);
     if (target) target.classList.remove('hidden');
 }
-
 
 async function findRestaurant() {
     showScreen('loading-screen');
@@ -155,55 +178,75 @@ async function findRestaurant() {
         const userLoc = { lat: latitude, lng: longitude };
 
         try {
-            // New pattern: import libraries dynamically
-            const { Place, SearchNearbyRankPreference } = await google.maps.importLibrary("places");
+            /** 
+             * NOTE on Error: Failed to load resource: the server responded with a status of 500 (gen_204)
+             * This error is often an internal Google Maps CSP (Content Security Policy) test or connectivity ping.
+             * It usually DOES NOT affect the actual Places search functionality.
+             */
+            // Import Place library
+            const { Place } = await google.maps.importLibrary("places");
 
             const request = {
-                // Required fields for the new Places API
-                fields: ["displayName", "location", "rating", "formattedAddress", "id", "types"],
                 locationRestriction: {
                     center: userLoc,
-                    radius: 1000,
+                    radius: currentRadius,
                 },
                 includedPrimaryTypes: ["restaurant"],
-                maxResultCount: 20,
+                fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber"],
+                maxResultCount: 20
             };
 
             const { places } = await Place.searchNearby(request);
+            console.log("Found places:", places); // Debug log for user
 
             if (places && places.length > 0) {
-                // Map the new Place objects to our expected format
-                const results = places.map(p => ({
-                    name: p.displayName,
-                    rating: p.rating,
-                    vicinity: p.formattedAddress,
-                    place_id: p.id,
-                    types: p.types || []
-                }));
+                // Map the new Place objects and filter for "Currently Open"
+                const results = places.map(p => {
+                    // Resilience: handle different forms of displayName
+                    let name = "Unknown";
+                    if (p.displayName) {
+                        if (typeof p.displayName === 'string') {
+                            name = p.displayName;
+                        } else if (p.displayName.text) {
+                            name = p.displayName.text;
+                        } else {
+                            try { name = p.displayName.toString(); } catch (e) { }
+                        }
+                    }
 
-                let filtered = results;
-                if (excludedTypes.size > 0) {
-                    filtered = results.filter(place => {
-                        const placeTypes = place.types || [];
-                        const name = (place.name || "").toLowerCase();
+                    return {
+                        name: name,
+                        rating: p.rating,
+                        userRatingCount: p.userRatingCount,
+                        vicinity: p.formattedAddress || p.vicinity || "地址不詳",
+                        place_id: p.id || p.place_id,
+                        types: p.types || [],
+                        isOpen: p.regularOpeningHours?.openNow,
+                        priceLevel: p.priceLevel,
+                        phone: p.nationalPhoneNumber
+                    };
+                }).filter(p => p.isOpen !== false);
 
-                        return !Array.from(excludedTypes).some(id => {
-                            const mapping = {
-                                chinese: ['chinese', 'dim sum', 'cantonese', '中', '粵', '點心'],
-                                japanese: ['japanese', 'sushi', 'ramen', '日本', '壽司', '拉麵'],
-                                korean: ['korean', '韓國'],
-                                western: ['steak', 'italian', 'french', 'burger', 'pasta', 'western', '西', '意', '法', '漢堡'],
-                                thai: ['thai', '泰'],
-                                cafe: ['cafe', 'coffee', '咖啡'],
-                                fast_food: ['fast food', 'mcdonald', 'kfc', '快餐'],
-                                dessert: ['dessert', 'cake', 'bakery', '甜', '甜品', '蛋糕'],
-                                bbq: ['bbq', 'barbecue', 'yakiniku', '燒', '燒肉']
-                            };
-                            const keywords = mapping[id] || [];
-                            return keywords.some(kw => placeTypes.includes(kw.replace(' ', '_')) || name.includes(kw));
-                        });
+                const filtered = results.filter(place => {
+                    const placeTypes = place.types || [];
+                    const name = (place.name || "").toLowerCase();
+
+                    return !Array.from(excludedTypes).some(id => {
+                        const mapping = {
+                            chinese: ['chinese', 'dim sum', 'cantonese', '中', '粵', '點心'],
+                            japanese: ['japanese', 'sushi', 'ramen', '日本', '壽司', '拉麵'],
+                            korean: ['korean', '韓國'],
+                            western: ['steak', 'italian', 'french', 'burger', 'pasta', 'western', '西', '意', '法', '漢堡'],
+                            thai: ['thai', '泰'],
+                            cafe: ['cafe', 'coffee', '咖啡'],
+                            fast_food: ['fast food', 'mcdonald', 'kfc', '快餐'],
+                            dessert: ['dessert', 'cake', 'bakery', '甜', '甜品', '蛋糕'],
+                            bbq: ['bbq', 'barbecue', 'yakiniku', '燒', '燒肉']
+                        };
+                        const keywords = mapping[id] || [];
+                        return keywords.some(kw => placeTypes.includes(kw.replace(' ', '_')) || name.includes(kw));
                     });
-                }
+                });
 
                 if (filtered.length === 0) {
                     alert(t.noResults);
@@ -211,15 +254,15 @@ async function findRestaurant() {
                     return;
                 }
 
-                const randomPlace = filtered[Math.floor(Math.random() * filtered.length)];
-                displayResult(randomPlace);
+                lastFilteredResults = filtered;
+                reRoll();
             } else {
                 alert(t.noResults);
                 showScreen('main-flow');
             }
         } catch (error) {
             console.error("Google Places Error:", error);
-            alert("Google Maps API failed to search. Please check your API key and billing status.");
+            alert("Google Maps API Error: Check billing/API restrictions.");
             showScreen('main-flow');
         }
     }, (error) => {
@@ -229,30 +272,74 @@ async function findRestaurant() {
     }, geoOptions);
 }
 
+function reRoll() {
+    if (lastFilteredResults.length === 0) {
+        findRestaurant();
+        return;
+    }
+    const randomPlace = lastFilteredResults[Math.floor(Math.random() * lastFilteredResults.length)];
+    displayResult(randomPlace);
+}
+
+function getPriceDisplay(level) {
+    if (level === undefined || level === null || level < 0) return "";
+    const mapping = {
+        'PRICE_LEVEL_FREE': 'Free',
+        'PRICE_LEVEL_INEXPENSIVE': '$',
+        'PRICE_LEVEL_MODERATE': '$$',
+        'PRICE_LEVEL_EXPENSIVE': '$$$',
+        'PRICE_LEVEL_VERY_EXPENSIVE': '$$$$'
+    };
+    return mapping[level] || "";
+}
 
 function displayResult(place) {
-    document.getElementById('res-name').textContent = place.name;
-    document.getElementById('res-rating').textContent = place.rating ? `⭐ ${place.rating}` : "⭐ New!";
-    document.getElementById('res-address').textContent = place.vicinity;
+    getEl('res-name').textContent = place.name;
+
+    // Rating display logic
+    const ratingVal = place.rating;
+
+    if (typeof ratingVal === 'number' && ratingVal > 0) {
+        getEl('res-rating').textContent = `⭐ ${ratingVal}`;
+    } else {
+        getEl('res-rating').textContent = "⭐ New!";
+    }
+    const priceText = getPriceDisplay(place.priceLevel);
+    getEl('res-price').textContent = priceText;
+    getEl('res-price').style.display = priceText ? 'inline-block' : 'none';
+
+    getEl('res-address').textContent = place.vicinity;
+
+    // Phone
+    const phoneEl = getEl('res-phone');
+    if (place.phone) {
+        phoneEl.textContent = place.phone;
+        phoneEl.href = `tel:${place.phone.replace(/\s+/g, '')}`;
+        phoneEl.style.display = 'block';
+    } else {
+        phoneEl.style.display = 'none';
+    }
 
     const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
-    const btn = document.getElementById('open-maps-btn');
+    const btn = getEl('open-maps-btn');
     btn.href = mapLink;
-    btn.textContent = translations[currentLang].openMaps;
 
     showScreen('result-screen');
 }
 
-
-// Event Listeners & Initialization
+// Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
-    const findBtn = getEl('find-btn');
-    const retryBtn = getEl('retry-btn');
+    getEl('find-btn').onclick = findRestaurant;
+    getEl('retry-btn').onclick = reRoll;
+    getEl('back-btn').onclick = () => showScreen('main-flow');
 
-    if (findBtn) findBtn.onclick = findRestaurant;
-    if (retryBtn) retryBtn.onclick = () => showScreen('main-flow');
+    const slider = getEl('distance-slider');
+    slider.oninput = function () {
+        const mins = this.value;
+        currentRadius = mins * 80;
+        getEl('distance-val').textContent = mins;
+    };
 
     updateUIStrings();
     initFilters();
 });
-

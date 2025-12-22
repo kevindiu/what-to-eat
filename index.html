@@ -13,6 +13,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="app_icon_192.png">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
@@ -24,7 +25,7 @@
                 <span onclick="setLanguage('ja')">日</span>
             </div>
             <h1 id="app-title">食乜好？</h1>
-            <p id="app-subtitle">唔知食咩？我幫你揀！</p>
+            <p id="app-subtitle">唔知食咩？等我幫你揀！</p>
         </header>
 
         <main>
@@ -37,7 +38,17 @@
                 </div>
 
                 <div class="filter-section">
-                    <h3 id="filter-title">今日唔想食咩類型？</h3>
+                    <h3 id="price-title">價錢預算？</h3>
+                    <div id="price-list" class="price-grid">
+                        <div class="price-item active" data-price="1">$</div>
+                        <div class="price-item active" data-price="2">$$</div>
+                        <div class="price-item active" data-price="3">$$$</div>
+                        <div class="price-item active" data-price="4">$$$$</div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h3 id="filter-title">今日唔想食咩？</h3>
                     <div id="filter-list" class="filter-grid">
                         <!-- Generated in JS -->
                     </div>
@@ -55,6 +66,9 @@
                     </div>
                     <p id="res-address"></p>
                     <a id="res-phone" class="phone-link"></a>
+
+                    <div id="res-map-container" class="map-preview"></div>
+
                     <a id="open-maps-btn" href="#" target="_blank" class="primary-btn">喺 Google Maps 打開</a>
 
                     <div class="button-group">
@@ -66,7 +80,10 @@
 
             <div id="loading-screen" class="screen hidden">
                 <div class="loader"></div>
-                <p id="loading-text">搜尋緊附近好嘢食...</p>
+                <div id="slot-container" class="slot-machine">
+                    <span id="slot-name">...</span>
+                </div>
+                <p id="loading-text">搜尋緊附近好嘢食... 🔍</p>
             </div>
         </main>
     </div>

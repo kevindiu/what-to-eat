@@ -1,8 +1,10 @@
+console.log("食乜好 App v2.2 - Dynamic Maps Enabled");
 const translations = {
     zh: {
         title: "食乜好？",
         subtitle: "唔知食咩？等我幫你揀！",
         distanceTitle: "想搵徒步幾耐？",
+        priceTitle: "價錢預算？",
         filterTitle: "今日唔想食咩？",
         findBtn: "幫我揀！✨",
         openMaps: "喺 Google Maps 打開 🗺️",
@@ -28,6 +30,7 @@ const translations = {
         title: "What to Eat?",
         subtitle: "Don't know? Let me pick!",
         distanceTitle: "Walking Distance",
+        priceTitle: "Price Range",
         filterTitle: "What do you NOT want to eat?",
         findBtn: "Pick for me! ✨",
         openMaps: "Open in Google Maps 🗺️",
@@ -53,6 +56,7 @@ const translations = {
         title: "何食べる？",
         subtitle: "迷ったら、私に選ばせて！",
         distanceTitle: "徒歩何分？",
+        priceTitle: "予算は？",
         filterTitle: "今は食べたくないものは？",
         findBtn: "選んで！ ✨",
         openMaps: "Googleマップで開く 🗺️",
@@ -80,6 +84,7 @@ let currentLang = 'zh';
 const excludedTypes = new Set();
 let currentRadius = 400; // Default 5 mins (80m/min)
 let lastFilteredResults = [];
+const selectedPrices = new Set(['1', '2', '3', '4']); // Default all selected
 
 // Helper to get elements
 const getEl = id => document.getElementById(id);
@@ -110,6 +115,7 @@ function updateUIStrings() {
     getEl('app-title').textContent = t.title;
     getEl('app-subtitle').textContent = t.subtitle;
     getEl('distance-title').innerHTML = `${t.distanceTitle} (<span id="distance-val">${currentRadius / 80}</span> mins)`;
+    getEl('price-title').textContent = t.priceTitle;
     getEl('filter-title').textContent = t.filterTitle;
     getEl('find-btn').textContent = t.findBtn;
     getEl('retry-btn').textContent = t.retry;
@@ -127,24 +133,35 @@ function updateUIStrings() {
 }
 
 function initFilters() {
+    // Categories
     const list = getEl('filter-list');
-    if (!list) return;
-    list.innerHTML = '';
-    const cats = translations[currentLang].categories;
-    Object.keys(cats).forEach(id => {
-        const label = cats[id];
-        const div = document.createElement('div');
-        div.className = 'filter-item' + (excludedTypes.has(id) ? ' active' : '');
-        div.textContent = label;
-        div.onclick = () => {
-            div.classList.toggle('active');
-            if (excludedTypes.has(id)) {
-                excludedTypes.delete(id);
-            } else {
-                excludedTypes.add(id);
-            }
+    if (list) {
+        list.innerHTML = '';
+        const cats = translations[currentLang].categories;
+        Object.keys(cats).forEach(id => {
+            const div = document.createElement('div');
+            div.className = 'filter-item' + (excludedTypes.has(id) ? ' active' : '');
+            div.textContent = cats[id];
+            div.onclick = () => {
+                div.classList.toggle('active');
+                if (excludedTypes.has(id)) excludedTypes.delete(id);
+                else excludedTypes.add(id);
+                triggerHaptic(30);
+            };
+            list.appendChild(div);
+        });
+    }
+
+    // Prices
+    document.querySelectorAll('.price-item').forEach(item => {
+        const p = item.dataset.price;
+        item.classList.toggle('active', selectedPrices.has(p));
+        item.onclick = () => {
+            item.classList.toggle('active');
+            if (selectedPrices.has(p)) selectedPrices.delete(p);
+            else selectedPrices.add(p);
+            triggerHaptic(30);
         };
-        list.appendChild(div);
     });
 }
 
@@ -158,6 +175,7 @@ function showScreen(screenId) {
 }
 
 async function findRestaurant() {
+    triggerHaptic(50);
     showScreen('loading-screen');
     const t = translations[currentLang];
 
@@ -232,7 +250,8 @@ async function findRestaurant() {
                         isOpen: isOpenStatus,
                         priceLevel: p.priceLevel,
                         phone: p.nationalPhoneNumber,
-                        businessStatus: p.businessStatus
+                        businessStatus: p.businessStatus,
+                        location: p.location
                     };
                 }));
 
@@ -275,8 +294,27 @@ async function findRestaurant() {
                     return;
                 }
 
-                lastFilteredResults = filtered;
-                reRoll();
+                // Filter by price level strictly
+                const priceFiltered = filtered.filter(p => {
+                    if (!p.priceLevel) return true; // Keep unknown price levels
+                    const levelMap = {
+                        'PRICE_LEVEL_INEXPENSIVE': '1',
+                        'PRICE_LEVEL_MODERATE': '2',
+                        'PRICE_LEVEL_EXPENSIVE': '3',
+                        'PRICE_LEVEL_VERY_EXPENSIVE': '4'
+                    };
+                    const mapped = levelMap[p.priceLevel];
+                    return selectedPrices.has(mapped);
+                });
+
+                if (priceFiltered.length === 0) {
+                    alert(t.noResults + " (Try adjusting price filters)");
+                    showScreen('main-flow');
+                    return;
+                }
+
+                lastFilteredResults = priceFiltered;
+                startSlotAnimation();
             } else {
                 alert(t.noResults);
                 showScreen('main-flow');
@@ -293,7 +331,37 @@ async function findRestaurant() {
     }, geoOptions);
 }
 
+function triggerHaptic(duration) {
+    if (navigator.vibrate) navigator.vibrate(duration || 30);
+}
+
+function triggerConfetti() {
+    if (typeof confetti === 'function') {
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#ff6b81', '#ffd32a', '#2ecc71', '#3498db']
+        });
+    }
+}
+
+function startSlotAnimation() {
+    const slotName = getEl('slot-name');
+    let count = 0;
+    const interval = setInterval(() => {
+        const temp = lastFilteredResults[Math.floor(Math.random() * lastFilteredResults.length)];
+        slotName.textContent = temp.name;
+        count++;
+        if (count > 15) {
+            clearInterval(interval);
+            reRoll();
+        }
+    }, 100);
+}
+
 function reRoll() {
+    triggerHaptic([50, 30, 50]);
     if (lastFilteredResults.length === 0) {
         findRestaurant();
         return;
@@ -314,7 +382,7 @@ function getPriceDisplay(level) {
     return mapping[level] || "";
 }
 
-function displayResult(place) {
+async function displayResult(place) {
     getEl('res-name').textContent = place.name;
 
     // Rating display logic
@@ -331,6 +399,35 @@ function displayResult(place) {
 
     getEl('res-address').textContent = place.vicinity;
 
+    // Map Preview (Dynamic Map)
+    const mapDiv = getEl('res-map-container');
+    const loc = place.location;
+
+    if (loc) {
+        try {
+            const { Map } = await google.maps.importLibrary("maps");
+            const map = new Map(mapDiv, {
+                center: loc,
+                zoom: 16,
+                disableDefaultUI: true,
+                gestureHandling: 'none'
+            });
+
+            new google.maps.Marker({
+                position: loc,
+                map: map,
+                animation: google.maps.Animation.DROP
+            });
+
+            mapDiv.style.display = 'block';
+        } catch (e) {
+            console.error("Dynamic Map Error:", e);
+            mapDiv.style.display = 'none';
+        }
+    } else {
+        mapDiv.style.display = 'none';
+    }
+
     // Phone
     const phoneEl = getEl('res-phone');
     if (place.phone) {
@@ -346,6 +443,7 @@ function displayResult(place) {
     btn.href = mapLink;
 
     showScreen('result-screen');
+    triggerConfetti();
 }
 
 // Event Listeners
@@ -359,6 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mins = this.value;
         currentRadius = mins * 80;
         getEl('distance-val').textContent = mins;
+        triggerHaptic(10);
     };
 
     updateUIStrings();

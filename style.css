@@ -106,13 +106,19 @@ header p {
     color: #2d3436;
 }
 
-.filter-grid {
+.filter-grid,
+.price-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
 }
 
-.filter-item {
+.price-grid {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.filter-item,
+.price-item {
     background: #f8f9fa;
     padding: 15px 5px;
     border-radius: 22px;
@@ -124,13 +130,15 @@ header p {
     border: 2px solid transparent;
 }
 
-.filter-item:hover {
+.filter-item:hover,
+.price-item:hover {
     transform: scale(1.05);
     background: white;
     border-color: #ffeaa7;
 }
 
-.filter-item.active {
+.filter-item.active,
+.price-item.active {
     background: #ff7675;
     color: white;
     box-shadow: 0 8px 15px rgba(255, 118, 117, 0.3);
@@ -355,4 +363,52 @@ header p {
     font-size: 1.2rem;
     font-weight: 600;
     color: var(--primary-color);
+}
+
+.slot-machine {
+    height: 40px;
+    overflow: hidden;
+    margin: 1rem 0;
+    position: relative;
+    width: 100%;
+}
+
+#slot-name {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-align: center;
+    animation: slotFade 0.15s ease-in-out infinite alternate;
+}
+
+@keyframes slotFade {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 0.4;
+        transform: scale(0.95);
+    }
+}
+
+.map-preview {
+    width: 100%;
+    height: 180px;
+    background: #f1f2f6;
+    border-radius: 25px;
+    margin: 0.5rem 0;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 3px solid #fff5f5;
+}
+
+.map-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }

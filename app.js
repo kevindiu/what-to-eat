@@ -144,29 +144,43 @@ async function findRestaurant() {
         maximumAge: 0
     };
 
+    if (!navigator.geolocation) {
+        alert(t.noGeo);
+        showScreen('main-flow');
+        return;
+    }
+
     navigator.geolocation.getCurrentPosition(async (position) => {
-        const userLoc = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+        const { latitude, longitude } = position.coords;
+        const userLoc = { lat: latitude, lng: longitude };
 
-        if (!window.google || !window.google.maps || !window.google.maps.places) {
-            alert("Google Maps API failed to load. Please check your API key and connection.");
-            showScreen('main-flow');
-            return;
-        }
+        try {
+            // New pattern: import libraries dynamically
+            const { Place, SearchNearbyRankPreference } = await google.maps.importLibrary("places");
 
-        if (!service) {
-            const mapContainer = document.createElement('div');
-            service = new google.maps.places.PlacesService(mapContainer);
-        }
+            const request = {
+                // Required fields for the new Places API
+                fields: ["displayName", "location", "rating", "formattedAddress", "id", "types"],
+                locationRestriction: {
+                    center: userLoc,
+                    radius: 1000,
+                },
+                includedPrimaryTypes: ["restaurant"],
+                maxResultCount: 20,
+            };
 
-        const request = {
-            location: userLoc,
-            radius: '1000',
-            type: ['restaurant'],
-            openNow: true
-        };
+            const { places } = await Place.searchNearby(request);
 
-        service.nearbySearch(request, (results, status) => {
-            if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
+            if (places && places.length > 0) {
+                // Map the new Place objects to our expected format
+                const results = places.map(p => ({
+                    name: p.displayName,
+                    rating: p.rating,
+                    vicinity: p.formattedAddress,
+                    place_id: p.id,
+                    types: p.types || []
+                }));
+
                 let filtered = results;
                 if (excludedTypes.size > 0) {
                     filtered = results.filter(place => {
@@ -200,11 +214,14 @@ async function findRestaurant() {
                 const randomPlace = filtered[Math.floor(Math.random() * filtered.length)];
                 displayResult(randomPlace);
             } else {
-                console.error("Places API Status:", status);
                 alert(t.noResults);
                 showScreen('main-flow');
             }
-        });
+        } catch (error) {
+            console.error("Google Places Error:", error);
+            alert("Google Maps API failed to search. Please check your API key and billing status.");
+            showScreen('main-flow');
+        }
     }, (error) => {
         console.error("Geo Error:", error);
         alert(t.geoError);

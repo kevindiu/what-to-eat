@@ -15,15 +15,24 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+html {
+    background: var(--bg-gradient);
+}
+
 body {
     font-family: 'Fredoka', sans-serif;
     background: var(--bg-gradient);
+    background-attachment: fixed;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     color: #2d3436;
     padding: 20px;
+    padding-top: calc(20px + env(safe-area-inset-top));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    padding-left: calc(20px + env(safe-area-inset-left));
+    padding-right: calc(20px + env(safe-area-inset-right));
 }
 
 #app {

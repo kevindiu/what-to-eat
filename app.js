@@ -200,8 +200,16 @@ async function findRestaurant() {
             console.log("Found places:", places); // Debug log for user
 
             if (places && places.length > 0) {
-                // Map the new Place objects and filter for "Currently Open"
-                const results = places.map(p => {
+                // Use Promise.all with async mapping to check isOpen() strictly for the New Places API
+                const resultsWithStatus = await Promise.all(places.map(async p => {
+                    let isOpenStatus = null;
+                    try {
+                        isOpenStatus = await p.isOpen(); // Accurate check for current time
+                    } catch (e) {
+                        console.warn("Open check failed for:", p.id);
+                        isOpenStatus = p.regularOpeningHours?.openNow; // Fallback to property if method fails
+                    }
+
                     // Resilience: handle different forms of displayName
                     let name = "Unknown";
                     if (p.displayName) {
@@ -221,11 +229,14 @@ async function findRestaurant() {
                         vicinity: p.formattedAddress || p.vicinity || "地址不詳",
                         place_id: p.id || p.place_id,
                         types: p.types || [],
-                        isOpen: p.regularOpeningHours?.openNow,
+                        isOpen: isOpenStatus,
                         priceLevel: p.priceLevel,
                         phone: p.nationalPhoneNumber
                     };
-                }).filter(p => p.isOpen !== false);
+                }));
+
+                // Filter out restaurants that are definitely CLOSED
+                const results = resultsWithStatus.filter(p => p.isOpen !== false);
 
                 const filtered = results.filter(place => {
                     const placeTypes = place.types || [];

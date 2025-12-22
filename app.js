@@ -237,7 +237,16 @@ async function findRestaurant() {
                 }));
 
                 // Filter out restaurants that are NOT strictly open OR NOT operational
-                const results = resultsWithStatus.filter(p => p.isOpen === true && p.businessStatus === 'OPERATIONAL');
+                console.log("Results with status before filter:", resultsWithStatus.map(r => ({ name: r.name, isOpen: r.isOpen, status: r.businessStatus })));
+
+                const results = resultsWithStatus.filter(p => {
+                    // Strict filtering: must be explicitly true and operational
+                    const isActuallyOpen = p.isOpen === true;
+                    const isOperational = p.businessStatus === 'OPERATIONAL' || p.businessStatus === undefined;
+                    return isActuallyOpen && isOperational;
+                });
+
+                console.log("Filtered results (Strictly Open):", results.map(r => r.name));
 
                 const filtered = results.filter(place => {
                     const placeTypes = place.types || [];

@@ -192,7 +192,7 @@ async function findRestaurant() {
                     radius: currentRadius,
                 },
                 includedPrimaryTypes: ["restaurant"],
-                fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber"],
+                fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber", "businessStatus"],
                 maxResultCount: 20
             };
 
@@ -231,12 +231,13 @@ async function findRestaurant() {
                         types: p.types || [],
                         isOpen: isOpenStatus,
                         priceLevel: p.priceLevel,
-                        phone: p.nationalPhoneNumber
+                        phone: p.nationalPhoneNumber,
+                        businessStatus: p.businessStatus
                     };
                 }));
 
-                // Filter out restaurants that are definitely CLOSED
-                const results = resultsWithStatus.filter(p => p.isOpen !== false);
+                // Filter out restaurants that are NOT strictly open OR NOT operational
+                const results = resultsWithStatus.filter(p => p.isOpen === true && p.businessStatus === 'OPERATIONAL');
 
                 const filtered = results.filter(place => {
                     const placeTypes = place.types || [];

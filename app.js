@@ -207,17 +207,19 @@ async function findRestaurant() {
             const { Place } = await google.maps.importLibrary("places");
 
             const request = {
-                locationRestriction: {
+                // When using DISTANCE ranking, we use locationBias and cannot use radius in locationRestriction
+                locationBias: {
                     center: userLoc,
-                    radius: currentRadius,
+                    radius: currentRadius
                 },
                 includedPrimaryTypes: ["restaurant"],
                 fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber", "businessStatus"],
-                maxResultCount: 20
+                maxResultCount: 20,
+                rankPreference: 'DISTANCE'
             };
 
             const { places } = await Place.searchNearby(request);
-            console.log("Found places:", places); // Debug log for user
+            console.log("Found places (Distance Ranked):", places);
 
             if (places && places.length > 0) {
                 // Use Promise.all with async mapping to check isOpen() strictly for the New Places API
@@ -276,7 +278,35 @@ async function findRestaurant() {
                     finalCandidates = resultsWithStatus.filter(p => p.businessStatus === 'OPERATIONAL' || p.businessStatus === undefined);
                 }
 
+                // Final filtering: Price, Excluded Types, AND Distance (since searchNearby DISTANCE doesn't restrict)
                 const filtered = finalCandidates.filter(place => {
+                    const loc = place.location;
+                    if (loc) {
+                        try {
+                            const lat1 = userLoc.lat;
+                            const lng1 = userLoc.lng;
+                            // Handle both function and property for lat/lng
+                            const lat2 = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
+                            const lng2 = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+
+                            // Simple Haversine approximation (meters)
+                            const R = 6371e3;
+                            const phi1 = lat1 * Math.PI / 180;
+                            const phi2 = lat2 * Math.PI / 180;
+                            const delPhi = (lat2 - lat1) * Math.PI / 180;
+                            const delLam = (lng2 - lng1) * Math.PI / 180;
+                            const a = Math.sin(delPhi / 2) * Math.sin(delPhi / 2) +
+                                Math.cos(phi1) * Math.cos(phi2) *
+                                Math.sin(delLam / 2) * Math.sin(delLam / 2);
+                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                            const dist = R * c;
+
+                            if (dist > currentRadius) return false;
+                        } catch (e) {
+                            console.warn("Distance check failed for:", place.name);
+                        }
+                    }
+
                     const placeTypes = place.types || [];
                     const name = (place.name || "").toLowerCase();
 

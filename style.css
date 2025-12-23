@@ -225,6 +225,31 @@ header p {
     border-color: #dfe6e9;
 }
 
+.install-btn {
+    margin-top: 1.5rem;
+    background: #55efc4;
+    color: #00b894;
+    border: 3px solid white;
+    padding: 1.2rem;
+    border-radius: 30px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    font-family: inherit;
+    box-shadow: 0 8px 20px rgba(85, 239, 196, 0.3);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.install-btn:hover {
+    transform: scale(1.03) translateY(-3px);
+    box-shadow: 0 10px 25px rgba(85, 239, 196, 0.4);
+}
+
+.install-btn:active {
+    transform: scale(0.97);
+}
+
 .button-group {
     display: flex;
     flex-direction: column;

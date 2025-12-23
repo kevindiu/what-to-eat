@@ -14,6 +14,7 @@ const translations = {
         noResults: "附近搵唔到開門嘅餐廳，試下搵遠啲？",
         geoError: "拎唔到你個位置，請檢查下權限。📍",
         noGeo: "你個瀏覽器唔支援取用地理位置。",
+        installBtn: "安裝 App 📲",
         categories: {
             chinese: '🍚 中餐',
             japanese: '🍣 日本菜',
@@ -40,6 +41,7 @@ const translations = {
         noResults: "No open restaurants found nearby. Try moving a bit?",
         geoError: "Unable to find location. Check permissions.",
         noGeo: "Geolocation not supported by this browser.",
+        installBtn: "Install App 📲",
         categories: {
             chinese: '🍚 Chinese',
             japanese: '🍣 Japanese',
@@ -66,6 +68,7 @@ const translations = {
         noResults: "近くに営業中の店が見つかりません。",
         geoError: "位置情報を取得できません。設定を確認してください。",
         noGeo: "お使いのブラウザは位置情報をサポートしていません。",
+        installBtn: "アプリをインストール 📲",
         categories: {
             chinese: '🍚 中華料理',
             japanese: '🍣 日本料理',
@@ -126,6 +129,9 @@ function updateUIStrings() {
     getEl('loading-text').textContent = t.loading;
     if (getEl('open-maps-btn')) {
         getEl('open-maps-btn').textContent = t.openMaps;
+    }
+    if (getEl('install-btn')) {
+        getEl('install-btn').textContent = t.installBtn;
     }
 
     // Update active state in selector using data-lang
@@ -564,4 +570,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateUIStrings();
     initFilters();
+});
+// --- PWA Installation Logic ---
+let deferredPrompt;
+const installBtnNode = getEl('install-btn');
+const installContainer = getEl('install-container');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Update UI notify the user they can install the PWA
+    if (installContainer) installContainer.classList.remove('hidden');
+    console.log("PWA Install Prompt available");
+});
+
+if (installBtnNode) {
+    installBtnNode.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        // Show the install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        // We've used the prompt, and can't use it again, throw it away
+        deferredPrompt = null;
+        // Hide the install button
+        if (installContainer) installContainer.classList.add('hidden');
+    });
+}
+
+window.addEventListener('appinstalled', (event) => {
+    console.log('PWA installed successfully');
+    // Clear prompt
+    deferredPrompt = null;
+    if (installContainer) installContainer.classList.add('hidden');
 });

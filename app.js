@@ -1,4 +1,4 @@
-console.log("食乜好 App v2.4 - Persistent Language & Enhanced Maps");
+console.log("食乜好 App v2.7 - High-Accuracy Distance Matrix Fix");
 const translations = {
     zh: {
         title: "食乜好？",
@@ -82,7 +82,8 @@ const translations = {
 
 let currentLang = 'zh';
 const excludedTypes = new Set();
-let currentRadius = 400; // Default 5 mins (80m/min)
+let currentRadius = 400; // Straight-line fallback
+let currentMins = 5;     // Actual walking time limit
 let lastFilteredResults = [];
 const selectedPrices = new Set(['1', '2', '3', '4']); // Default all selected
 let currentUserPos = null;
@@ -207,8 +208,8 @@ async function findRestaurant() {
             const { Place } = await google.maps.importLibrary("places");
 
             const request = {
-                // When using DISTANCE ranking, we use locationBias and cannot use radius in locationRestriction
-                locationBias: {
+                // Correct property for searchNearby is locationRestriction
+                locationRestriction: {
                     center: userLoc,
                     radius: currentRadius
                 },
@@ -272,87 +273,78 @@ async function findRestaurant() {
                 console.log("Filtered results (Strictly Open):", results.map(r => r.name));
 
                 // Fallback for late night testing: If NO open restaurants found, show all operational ones
-                let finalCandidates = results;
-                if (finalCandidates.length === 0) {
+                let candidates = results;
+                if (candidates.length === 0) {
                     console.log("No open restaurants found. Falling back to all operational shops for testing purposes.");
-                    finalCandidates = resultsWithStatus.filter(p => p.businessStatus === 'OPERATIONAL' || p.businessStatus === undefined);
+                    candidates = resultsWithStatus.filter(p => p.businessStatus === 'OPERATIONAL' || p.businessStatus === undefined);
                 }
 
-                // Final filtering: Price, Excluded Types, AND Distance (since searchNearby DISTANCE doesn't restrict)
-                const filtered = finalCandidates.filter(place => {
-                    const loc = place.location;
-                    if (loc) {
-                        try {
-                            const lat1 = userLoc.lat;
-                            const lng1 = userLoc.lng;
-                            // Handle both function and property for lat/lng
-                            const lat2 = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
-                            const lng2 = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
-
-                            // Simple Haversine approximation (meters)
-                            const R = 6371e3;
-                            const phi1 = lat1 * Math.PI / 180;
-                            const phi2 = lat2 * Math.PI / 180;
-                            const delPhi = (lat2 - lat1) * Math.PI / 180;
-                            const delLam = (lng2 - lng1) * Math.PI / 180;
-                            const a = Math.sin(delPhi / 2) * Math.sin(delPhi / 2) +
-                                Math.cos(phi1) * Math.cos(phi2) *
-                                Math.sin(delLam / 2) * Math.sin(delLam / 2);
-                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                            const dist = R * c;
-
-                            if (dist > currentRadius) return false;
-                        } catch (e) {
-                            console.warn("Distance check failed for:", place.name);
-                        }
-                    }
-
-                    const placeTypes = place.types || [];
-                    const name = (place.name || "").toLowerCase();
-
-                    return !Array.from(excludedTypes).some(id => {
-                        const mapping = {
-                            chinese: ['chinese', 'dim sum', 'cantonese', '中', '粵', '點心'],
-                            japanese: ['japanese', 'sushi', 'ramen', '日本', '壽司', '拉麵'],
-                            korean: ['korean', '韓國'],
-                            western: ['steak', 'italian', 'french', 'burger', 'pasta', 'western', '西', '意', '法', '漢堡'],
-                            thai: ['thai', '泰'],
-                            cafe: ['cafe', 'coffee', '咖啡'],
-                            fast_food: ['fast food', 'mcdonald', 'kfc', '快餐'],
-                            dessert: ['dessert', 'cake', 'bakery', '甜', '甜品', '蛋糕'],
-                            bbq: ['bbq', 'barbecue', 'yakiniku', '燒', '燒肉']
-                        };
-                        const keywords = mapping[id] || [];
-                        return keywords.some(kw => placeTypes.includes(kw.replace(' ', '_')) || name.includes(kw));
-                    });
-                });
-
-                if (filtered.length === 0) {
+                if (candidates.length === 0) {
                     alert(t.noResults);
                     showScreen('main-flow');
                     return;
                 }
 
-                // Filter by price level strictly
-                const priceFiltered = filtered.filter(p => {
-                    if (!p.priceLevel) return true; // Keep unknown price levels
-                    const levelMap = {
-                        'PRICE_LEVEL_INEXPENSIVE': '1',
-                        'PRICE_LEVEL_MODERATE': '2',
-                        'PRICE_LEVEL_EXPENSIVE': '3',
-                        'PRICE_LEVEL_VERY_EXPENSIVE': '4'
-                    };
-                    const mapped = levelMap[p.priceLevel];
-                    return selectedPrices.has(mapped);
+                // High-accuracy distance filtering using Distance Matrix
+                const candidatesWithDurations = await calculateDistances(userLoc, candidates);
+
+                // Filter by actual minutes
+                let filteredByTime = candidatesWithDurations.filter(p => {
+                    if (p.durationValue === null) return true; // Keep if calculation failed to avoid hiding results
+                    return (p.durationValue / 60) <= currentMins;
                 });
 
-                if (priceFiltered.length === 0) {
-                    alert(t.noResults + " (Try adjusting price filters)");
+                // If everything is filtered out by strict walking time, show closest few
+                if (filteredByTime.length === 0) {
+                    console.log("Everything filtered by strict walking time. Showing closest 3.");
+                    filteredByTime = candidatesWithDurations.sort((a, b) => (a.durationValue || 9999) - (b.durationValue || 9999)).slice(0, 3);
+                }
+
+                // Final category/price filtering
+                const finalFiltered = filteredByTime.filter(place => {
+                    const placeTypes = place.types || [];
+                    const name = (place.name || "").toLowerCase();
+
+                    const matchedExcluded = Array.from(excludedTypes).some(id => {
+                        const mapping = {
+                            chinese: ['chinese', 'dim sum', 'cantonese', '中', '粵', '點心'],
+                            japanese: ['japanese', 'sushi', 'ramen', '日本', '壽司', '拉麵'],
+                            korean: ['korean', '韓國'],
+                            western: ['steak', 'italian', 'french', 'burger', 'pasta', 'western', '意', '法', '漢堡'],
+                            thai: ['thai', '泰'],
+                            cafe: ['cafe', 'coffee', '咖啡'],
+                            fast_food: ['fast food', 'mcdonald', 'kfc', '快餐'],
+                            dessert: ['dessert', 'cake', 'bakery', '甜', '甜品', '蛋糕'],
+                            bbq: ['bbq', '燒肉', '韓燒', 'barbecue']
+                        };
+                        const keywords = mapping[id] || [];
+                        return keywords.some(k => name.includes(k) || placeTypes.some(pt => pt.toLowerCase().includes(k)));
+                    });
+
+                    if (matchedExcluded) return false;
+
+                    // Price filter
+                    if (place.priceLevel) {
+                        const levelMap = {
+                            'PRICE_LEVEL_INEXPENSIVE': '1',
+                            'PRICE_LEVEL_MODERATE': '2',
+                            'PRICE_LEVEL_EXPENSIVE': '3',
+                            'PRICE_LEVEL_VERY_EXPENSIVE': '4'
+                        };
+                        const mapped = levelMap[place.priceLevel];
+                        if (mapped && !selectedPrices.has(mapped)) return false;
+                    }
+
+                    return true;
+                });
+
+                if (finalFiltered.length === 0) {
+                    alert(t.noResults + " (Try adjusting filters)");
                     showScreen('main-flow');
                     return;
                 }
 
-                lastFilteredResults = priceFiltered;
+                lastFilteredResults = finalFiltered;
                 startSlotAnimation();
             } else {
                 alert(t.noResults);
@@ -368,6 +360,38 @@ async function findRestaurant() {
         alert(t.geoError);
         showScreen('main-flow');
     }, geoOptions);
+}
+
+async function calculateDistances(origin, destinations) {
+    const service = new google.maps.DistanceMatrixService();
+    // Chunk destinations (Google limit is 25 per request, we have max 20 usually)
+    const destCoords = destinations.map(d => d.location);
+
+    return new Promise((resolve) => {
+        service.getDistanceMatrix({
+            origins: [origin],
+            destinations: destCoords,
+            travelMode: google.maps.TravelMode.WALKING,
+            unitSystem: google.maps.UnitSystem.METRIC,
+        }, (response, status) => {
+            if (status !== "OK") {
+                console.warn("Distance Matrix failed:", status);
+                resolve(destinations.map(d => ({ ...d, durationText: null, durationValue: null })));
+                return;
+            }
+
+            const results = response.rows[0].elements;
+            const enhanced = destinations.map((d, i) => {
+                const element = results[i];
+                return {
+                    ...d,
+                    durationText: element.status === "OK" ? element.duration.text : null,
+                    durationValue: element.status === "OK" ? element.duration.value : null
+                };
+            });
+            resolve(enhanced);
+        });
+    });
 }
 
 function triggerHaptic(duration) {
@@ -513,6 +537,10 @@ async function displayResult(place) {
     const btn = getEl('open-maps-btn');
     btn.href = mapLink;
 
+    if (place.durationText) {
+        getEl('res-rating').textContent += `  •  🚶 ${place.durationText}`;
+    }
+
     showScreen('result-screen');
     triggerConfetti();
 }
@@ -526,6 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const slider = getEl('distance-slider');
     slider.oninput = function () {
         const mins = this.value;
+        currentMins = mins;
         currentRadius = mins * 80;
         getEl('distance-val').textContent = mins;
         triggerHaptic(10);

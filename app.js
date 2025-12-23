@@ -1,4 +1,4 @@
-console.log("食乜好 App v2.7 - High-Accuracy Distance Matrix Fix");
+console.log("食乜好 App v2.8 - Diversity & Range Optimization");
 const translations = {
     zh: {
         title: "食乜好？",
@@ -208,7 +208,6 @@ async function findRestaurant() {
             const { Place } = await google.maps.importLibrary("places");
 
             const request = {
-                // Correct property for searchNearby is locationRestriction
                 locationRestriction: {
                     center: userLoc,
                     radius: currentRadius
@@ -216,11 +215,13 @@ async function findRestaurant() {
                 includedPrimaryTypes: ["restaurant"],
                 fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber", "businessStatus"],
                 maxResultCount: 20,
-                rankPreference: 'DISTANCE'
+                // Using POPULARITY instead of DISTANCE to get a more diverse set of distances.
+                // Distance ranking tends to return 20 results all within <5-10 mins in dense cities.
+                rankPreference: 'POPULARITY'
             };
 
             const { places } = await Place.searchNearby(request);
-            console.log("Found places (Distance Ranked):", places);
+            console.log("Found places (Popularity Ranked):", places);
 
             if (places && places.length > 0) {
                 // Use Promise.all with async mapping to check isOpen() strictly for the New Places API

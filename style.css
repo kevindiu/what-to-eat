@@ -250,6 +250,22 @@ header p {
     transform: scale(0.97);
 }
 
+.install-btn.ios-guide {
+    background: #ffeaa7;
+    color: #d6a017;
+    cursor: default;
+    box-shadow: 0 8px 20px rgba(255, 234, 167, 0.4);
+    font-size: 1rem;
+    padding: 1rem;
+}
+
+.install-btn.ios-guide span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
 .button-group {
     display: flex;
     flex-direction: column;

@@ -1,4 +1,4 @@
-console.log("食乜好 App v2.9 - Language Localization Sync");
+console.log("食乜好 App v2.12 - Major Cuisine Expansion & PWA Fix");
 const translations = {
     zh: {
         title: "食乜好？",
@@ -15,16 +15,20 @@ const translations = {
         geoError: "拎唔到你個位置，請檢查下權限。📍",
         noGeo: "你個瀏覽器唔支援取用地理位置。",
         installBtn: "安裝 App 📲",
+        iosInstallText: "撳底部「分享」掣再揀「加入主畫面」就得喇！✨",
         categories: {
             chinese: '🍚 中餐',
             japanese: '🍣 日本菜',
             korean: '🇰🇷 韓國菜',
             western: '🍕 西餐',
-            thai: '🇹🇭 泰國菜',
-            cafe: '☕ Cafe',
-            fast_food: '🍔 快餐',
-            dessert: '🍰 甜品',
-            bbq: '🔥 燒肉'
+            se_asian: '� 東南亞',
+            noodles: '🍜 粉麵',
+            spicy: '🌶️ 辣嘢',
+            hotpot_bbq: '🔥 火鍋/燒烤',
+            dim_sum: '🥟 點心/飲茶',
+            dessert: '� 甜品/糖水',
+            fast_food: '🍔 快餐/小食',
+            cafe_light: '☕ 咖啡/輕食'
         }
     },
     en: {
@@ -42,16 +46,20 @@ const translations = {
         geoError: "Unable to find location. Check permissions.",
         noGeo: "Geolocation not supported by this browser.",
         installBtn: "Install App 📲",
+        iosInstallText: "Tap 'Share' and then 'Add to Home Screen'! ✨",
         categories: {
             chinese: '🍚 Chinese',
             japanese: '🍣 Japanese',
             korean: '🇰🇷 Korean',
             western: '🍕 Western',
-            thai: '🇹🇭 Thai',
-            cafe: '☕ Cafe',
+            se_asian: '� SE Asian',
+            noodles: '🍜 Noodles',
+            spicy: '🌶️ Spicy',
+            hotpot_bbq: '🔥 Hotpot/BBQ',
+            dim_sum: '🥟 Dim Sum',
+            dessert: '� Dessert',
             fast_food: '🍔 Fast Food',
-            dessert: '🍰 Dessert',
-            bbq: '🔥 BBQ'
+            cafe_light: '☕ Cafe/Light'
         }
     },
     ja: {
@@ -69,16 +77,20 @@ const translations = {
         geoError: "位置情報を取得できません。設定を確認してください。",
         noGeo: "お使いのブラウザは位置情報をサポートしていません。",
         installBtn: "アプリをインストール 📲",
+        iosInstallText: "「共有」から「ホーム画面に追加」をタップしてください！ ✨",
         categories: {
             chinese: '🍚 中華料理',
             japanese: '🍣 日本料理',
             korean: '🇰🇷 韓国料理',
             western: '🍕 洋食',
-            thai: '🇹🇭 タイ料理',
-            cafe: '☕ カフェ',
+            se_asian: '� 東南アジア',
+            noodles: '🍜 麺類',
+            spicy: '🌶️ 辛い料理',
+            hotpot_bbq: '🔥 火鍋/焼肉',
+            dim_sum: '🥟 点心',
+            dessert: '� デザート',
             fast_food: '🍔 ファストフード',
-            dessert: '🍰 デザート',
-            bbq: '🔥 焼肉'
+            cafe_light: '☕ カフェ/軽食'
         }
     }
 };
@@ -315,15 +327,18 @@ async function findRestaurant() {
 
                     const matchedExcluded = Array.from(excludedTypes).some(id => {
                         const mapping = {
-                            chinese: ['chinese', 'dim sum', 'cantonese', '中', '粵', '點心'],
+                            chinese: ['chinese', 'cantonese', '中', '粵', '點心'],
                             japanese: ['japanese', 'sushi', 'ramen', '日本', '壽司', '拉麵'],
                             korean: ['korean', '韓國'],
                             western: ['steak', 'italian', 'french', 'burger', 'pasta', 'western', '意', '法', '漢堡'],
-                            thai: ['thai', '泰'],
-                            cafe: ['cafe', 'coffee', '咖啡'],
-                            fast_food: ['fast food', 'mcdonald', 'kfc', '快餐'],
-                            dessert: ['dessert', 'cake', 'bakery', '甜', '甜品', '蛋糕'],
-                            bbq: ['bbq', '燒肉', '韓燒', 'barbecue']
+                            se_asian: ['thai', 'vietnamese', 'malaysian', '泰', '越', '星', '馬', '東南亞'],
+                            noodles: ['noodle', 'ramen', 'udon', '米線', '拉麵', '麵', '粉'],
+                            spicy: ['spicy', 'sichuan', 'mala', 'chili', '四川', '麻辣', '湘', '辣', '水煮'],
+                            hotpot_bbq: ['hot pot', 'hotpot', 'bbq', 'barbecue', 'yakiniku', '火鍋', '雞煲', '燒肉', '韓燒', '燒烤'],
+                            dim_sum: ['dim sum', 'yum cha', '點心', '飲茶'],
+                            dessert: ['dessert', 'sugar', 'sweet', '糖水', '甜', '雪糕', '冰'],
+                            fast_food: ['fast food', 'mcdonald', 'kfc', '快餐', '街頭小食', '小食'],
+                            cafe_light: ['cafe', 'coffee', 'sandwich', 'salad', '輕食', '咖啡', '三文治', '沙律']
                         };
                         const keywords = mapping[id] || [];
                         return keywords.some(k => name.includes(k) || placeTypes.some(pt => pt.toLowerCase().includes(k)));
@@ -576,13 +591,44 @@ let deferredPrompt;
 const installBtnNode = getEl('install-btn');
 const installContainer = getEl('install-container');
 
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js?v=2.10')
+            .then(reg => console.log('SW registered!', reg))
+            .catch(err => console.log('SW registration failed: ', err));
+    });
+}
+
+function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isInStandaloneMode() {
+    return (window.navigator.standalone) || (window.matchMedia('(display-mode: standalone)').matches);
+}
+
+// Initial check for iOS
+window.addEventListener('load', () => {
+    if (isIOS() && !isInStandaloneMode()) {
+        const t = translations[currentLang];
+        if (installContainer) {
+            installContainer.classList.remove('hidden');
+            installBtnNode.innerHTML = `<span>${t.iosInstallText}</span>`;
+            installBtnNode.classList.add('ios-guide');
+        }
+    }
+});
+
 window.addEventListener('beforeinstallprompt', (e) => {
     // Prevent the mini-infobar from appearing on mobile
     e.preventDefault();
     // Stash the event so it can be triggered later.
     deferredPrompt = e;
     // Update UI notify the user they can install the PWA
-    if (installContainer) installContainer.classList.remove('hidden');
+    if (installContainer && !isIOS()) {
+        installContainer.classList.remove('hidden');
+    }
     console.log("PWA Install Prompt available");
 });
 

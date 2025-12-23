@@ -1,4 +1,4 @@
-console.log("食乜好 App v2.8 - Diversity & Range Optimization");
+console.log("食乜好 App v2.9 - Language Localization Sync");
 const translations = {
     zh: {
         title: "食乜好？",
@@ -106,10 +106,11 @@ currentLang = detectLanguage();
 
 // Make setLanguage global and persist choice
 window.setLanguage = function (lang) {
+    if (currentLang === lang) return; // Skip if same
     currentLang = lang;
     localStorage.setItem('preferredLang', lang);
-    updateUIStrings();
-    initFilters();
+    // Reload is required to tell Google Maps to use the new language for Place names
+    window.location.reload();
 };
 
 function updateUIStrings() {

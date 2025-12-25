@@ -197,7 +197,7 @@ export async function displayResult(App, place) {
     getEl('res-category').style.display = cat ? 'inline-block' : 'none';
 
     getEl('res-address').textContent = place.vicinity;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    getEl('res-name').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     const mapDiv = getEl('res-map-container');
     if (place.location) {
@@ -220,7 +220,14 @@ export async function displayResult(App, place) {
     else phoneEl.style.display = 'none';
 
     getEl('open-maps-btn').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
-    if (place.durationText) resRatingEl.textContent += `  •  🚶 ${place.durationText}`;
+
+    const distEl = getEl('res-distance');
+    if (place.durationText) {
+        distEl.textContent = `🚶 ${place.durationText}`;
+        distEl.style.display = 'inline-block';
+    } else {
+        distEl.style.display = 'none';
+    }
 
     App.UI.showScreen('result-screen');
     App.UI.triggerConfetti();
@@ -244,15 +251,49 @@ export function getPriceDisplay(level) {
 export async function restoreSession(App) {
     const resId = App.Data.params.get('resId');
     if (!resId) return;
+
     window.history.replaceState({}, document.title, window.location.pathname);
     App.UI.showScreen('loading-screen');
+
     try {
         const { Place } = await google.maps.importLibrary("places");
         const p = new Place({ id: resId });
         await p.fetchFields({ fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber", "businessStatus"] });
-        const restored = { name: p.displayName?.text || p.displayName || "Unknown", rating: p.rating, userRatingCount: p.userRatingCount, vicinity: p.formattedAddress || "地址不詳", place_id: p.id, types: p.types || [], priceLevel: p.priceLevel, phone: p.nationalPhoneNumber, businessStatus: p.businessStatus, location: p.location };
+
         const lat = App.Data.params.get('lat'), lng = App.Data.params.get('lng');
         if (lat && lng) App.Data.userPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
+
+        const restored = {
+            name: p.displayName?.text || p.displayName || "Unknown",
+            rating: p.rating,
+            userRatingCount: p.userRatingCount,
+            vicinity: p.formattedAddress || "地址不詳",
+            place_id: p.id,
+            types: p.types || [],
+            priceLevel: p.priceLevel,
+            phone: p.nationalPhoneNumber,
+            businessStatus: p.businessStatus,
+            location: p.location
+        };
+
+        // Recalculate distance if we have position
+        if (App.Data.userPos && restored.location) {
+            const [withDuration] = await calculateDistances(App.Data.userPos, [restored]);
+            restored.durationText = withDuration.durationText;
+            restored.durationValue = withDuration.durationValue;
+        }
+
+        // Populate candidates in background so re-roll works
+        if (App.Data.userPos) {
+            const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius);
+            if (places && places.length > 0) {
+                App.Data.candidates = await processCandidates(places, App.Data.userPos, App);
+            }
+        }
+
         displayResult(App, restored);
-    } catch (e) { App.UI.showScreen('main-flow'); }
+    } catch (e) {
+        console.error("Session restoration failed:", e);
+        App.UI.showScreen('main-flow');
+    }
 }

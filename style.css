@@ -380,6 +380,16 @@ header p {
     display: inline-block;
 }
 
+.distance-pill {
+    background: #e8f5e9;
+    color: #2e7d32;
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 50px;
+    display: inline-block;
+}
+
 .phone-link {
     color: #0984e3;
     font-weight: 500;

@@ -1,9 +1,14 @@
-const CACHE_NAME = 'what-to-eat-v2.10';
+const CACHE_NAME = 'what-to-eat-v2.30';
 const ASSETS = [
     './',
     './index.html',
     './style.css',
-    './app.js',
+    './js/main.js',
+    './js/api.js',
+    './js/ui.js',
+    './js/translations.js',
+    './js/constants.js',
+    './js/pwa.js',
     './manifest.json',
     './icons/icon-192.png',
     './icons/icon-512.png'

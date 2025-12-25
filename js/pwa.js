@@ -1,11 +1,11 @@
-import { getEl } from './ui.js';
+import { getEl } from './utils.js';
 
 export const PWA = {
     deferredPrompt: null,
     init(translations, currentLang) {
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=2.22')
+                navigator.serviceWorker.register('./sw.js?v=2.42')
                     .then(() => console.log('SW registered!'))
                     .catch(err => console.log('SW failed', err));
             });

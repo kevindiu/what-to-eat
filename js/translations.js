@@ -20,15 +20,20 @@ export const translations = {
             japanese: '🍣 日本菜',
             korean: '🇰🇷 韓國菜',
             western: '🍕 西餐',
-            se_asian: ' 東南亞',
+            se_asian: '🍲 東南亞',
             noodles: '🍜 粉麵',
             spicy: '🌶️ 辣嘢',
             hotpot_bbq: '🔥 火鍋/燒烤',
             dim_sum: '🥟 點心/飲茶',
-            dessert: ' 甜品/糖水',
+            dessert: '🍧 甜品/糖水',
             fast_food: '🍔 快餐/小食',
             cafe_light: '☕ 咖啡/輕食'
-        }
+        },
+        unknownName: "名稱不詳",
+        noAddress: "地址不詳",
+        ratingNew: "⭐ 新開張！",
+        priceFree: "免費",
+        walkMins: "步行約 ${mins} 分鐘"
     },
     en: {
         title: "What to Eat?",
@@ -51,15 +56,20 @@ export const translations = {
             japanese: '🍣 Japanese',
             korean: '🇰🇷 Korean',
             western: '🍕 Western',
-            se_asian: ' SE Asian',
+            se_asian: '🍲 SE Asian',
             noodles: '🍜 Noodles',
             spicy: '🌶️ Spicy',
             hotpot_bbq: '🔥 Hotpot/BBQ',
             dim_sum: '🥟 Dim Sum',
-            dessert: ' Dessert',
+            dessert: '🍧 Dessert',
             fast_food: '🍔 Fast Food',
             cafe_light: '☕ Cafe/Light'
-        }
+        },
+        unknownName: "Unknown",
+        noAddress: "Address Unknown",
+        ratingNew: "⭐ New!",
+        priceFree: "Free",
+        walkMins: "🚶 ${mins} min walk"
     },
     ja: {
         title: "何食べる？",
@@ -82,14 +92,19 @@ export const translations = {
             japanese: '🍣 日本料理',
             korean: '🇰🇷 韓国料理',
             western: '🍕 洋食',
-            se_asian: ' 東南亞',
+            se_asian: '🍲 東南亞',
             noodles: '🍜 麺類',
             spicy: '🌶️ 辛い料理',
             hotpot_bbq: '🔥 火鍋/焼肉',
             dim_sum: '🥟 点心',
-            dessert: ' デザート',
+            dessert: '🍧 デザート',
             fast_food: '🍔 ファストフード',
             cafe_light: '☕ カフェ/軽食'
-        }
+        },
+        unknownName: "不明",
+        noAddress: "住所不明",
+        ratingNew: "⭐ 新規オープン！",
+        priceFree: "無料",
+        walkMins: "🚶 徒歩 ${mins} 分"
     }
 };

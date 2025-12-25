@@ -53,11 +53,12 @@ async function processCandidates(places, userLoc, App) {
         let isOpenStatus = null;
         try { isOpenStatus = await p.isOpen(); } catch (e) { isOpenStatus = p.regularOpeningHours?.openNow; }
 
+        const t = App.translations[App.currentLang];
         return {
-            name: typeof p.displayName === 'string' ? p.displayName : (p.displayName?.text || "Unknown"),
+            name: typeof p.displayName === 'string' ? p.displayName : (p.displayName?.text || t.unknownName),
             rating: p.rating,
             userRatingCount: p.userRatingCount,
-            vicinity: p.formattedAddress || p.vicinity || "地址不詳",
+            vicinity: p.formattedAddress || p.vicinity || t.noAddress,
             place_id: p.id || p.place_id,
             types: p.types || [],
             isOpen: isOpenStatus,
@@ -184,11 +185,12 @@ export async function displayResult(App, place) {
     App.Data.lastPickedId = place.place_id;
     getEl('res-name').textContent = place.name;
 
+    const t = App.translations[App.currentLang];
     const ratingVal = place.rating;
     const resRatingEl = getEl('res-rating');
-    resRatingEl.textContent = (typeof ratingVal === 'number' && ratingVal > 0) ? `⭐ ${ratingVal}` : "⭐ New!";
+    resRatingEl.textContent = (typeof ratingVal === 'number' && ratingVal > 0) ? `⭐ ${ratingVal}` : t.ratingNew;
 
-    const priceText = getPriceDisplay(place.priceLevel);
+    const priceText = getPriceDisplay(place.priceLevel, t);
     getEl('res-price').textContent = priceText;
     getEl('res-price').style.display = priceText ? 'inline-block' : 'none';
 
@@ -243,8 +245,8 @@ export function getPlaceCategory(place, App) {
     return null;
 }
 
-export function getPriceDisplay(level) {
-    const mapping = { 'PRICE_LEVEL_FREE': 'Free', 'PRICE_LEVEL_INEXPENSIVE': '$', 'PRICE_LEVEL_MODERATE': '$$', 'PRICE_LEVEL_EXPENSIVE': '$$$', 'PRICE_LEVEL_VERY_EXPENSIVE': '$$$$' };
+export function getPriceDisplay(level, t) {
+    const mapping = { 'PRICE_LEVEL_FREE': t.priceFree, 'PRICE_LEVEL_INEXPENSIVE': '$', 'PRICE_LEVEL_MODERATE': '$$', 'PRICE_LEVEL_EXPENSIVE': '$$$', 'PRICE_LEVEL_VERY_EXPENSIVE': '$$$$' };
     return mapping[level] || "";
 }
 
@@ -263,11 +265,12 @@ export async function restoreSession(App) {
         const lat = App.Data.params.get('lat'), lng = App.Data.params.get('lng');
         if (lat && lng) App.Data.userPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
 
+        const t = App.translations[App.currentLang];
         const restored = {
-            name: p.displayName?.text || p.displayName || "Unknown",
+            name: p.displayName?.text || p.displayName || t.unknownName,
             rating: p.rating,
             userRatingCount: p.userRatingCount,
-            vicinity: p.formattedAddress || "地址不詳",
+            vicinity: p.formattedAddress || t.noAddress,
             place_id: p.id,
             types: p.types || [],
             priceLevel: p.priceLevel,

@@ -11,8 +11,15 @@ const App = {
         excluded: new Set(JSON.parse(localStorage.getItem('excludedTypes') || '[]')),
         prices: new Set(JSON.parse(localStorage.getItem('selectedPrices') || '["1","2","3","4"]')),
         lang: (function () {
-            const saved = localStorage.getItem('preferredLang');
-            if (saved) return saved;
+            const params = new URLSearchParams(window.location.search);
+            let lang = params.get('lang') || localStorage.getItem('preferredLang');
+
+            if (lang) {
+                if (lang.startsWith('zh')) lang = 'zh';
+                if (lang.startsWith('ja')) lang = 'ja';
+                if (['zh', 'en', 'ja'].includes(lang)) return lang;
+            }
+
             const userLang = navigator.language || navigator.userLanguage;
             if (userLang.startsWith('ja')) return 'ja';
             if (userLang.startsWith('zh')) return 'zh';
@@ -28,14 +35,7 @@ const App = {
     UI: UI,
     PWA: PWA,
     translations: translations,
-    currentLang: (function () {
-        const saved = localStorage.getItem('preferredLang');
-        if (saved) return saved;
-        const userLang = navigator.language || navigator.userLanguage;
-        if (userLang.startsWith('ja')) return 'ja';
-        if (userLang.startsWith('zh')) return 'zh';
-        return 'en';
-    })(),
+    get currentLang() { return this.Config.lang; },
 
     saveSettings() {
         localStorage.setItem('currentMins', this.Config.mins.toString());

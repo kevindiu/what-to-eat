@@ -1,4 +1,4 @@
-console.log("食乜好 App v2.17 - Location Persistence Fix");
+console.log("食乜好 App v2.18 - Ultimate State Persistence");
 const translations = {
     zh: {
         title: "食乜好？",
@@ -96,11 +96,16 @@ const translations = {
 };
 
 let currentLang = 'zh';
-const excludedTypes = new Set();
-let currentRadius = 400; // Straight-line fallback
-let currentMins = 5;     // Actual walking time limit
+const savedExcludes = localStorage.getItem('excludedTypes');
+const excludedTypes = new Set(savedExcludes ? JSON.parse(savedExcludes) : []);
+
+let currentMins = parseInt(localStorage.getItem('currentMins') || '5');
+let currentRadius = currentMins * 80;
+
 let lastFilteredResults = [];
-const selectedPrices = new Set(['1', '2', '3', '4']); // Default all selected
+
+const savedPrices = localStorage.getItem('selectedPrices');
+const selectedPrices = new Set(savedPrices ? JSON.parse(savedPrices) : ['1', '2', '3', '4']);
 let currentUserPos = null;
 let lastPickedId = null;
 
@@ -126,14 +131,18 @@ window.setLanguage = function (lang) {
     currentLang = lang;
     localStorage.setItem('preferredLang', lang);
 
-    // Save current state if on result screen to persist across reload
+    // CRITICAL: Save all filter states before reload
+    localStorage.setItem('currentMins', currentMins.toString());
+    localStorage.setItem('selectedPrices', JSON.stringify(Array.from(selectedPrices)));
+    localStorage.setItem('excludedTypes', JSON.stringify(Array.from(excludedTypes)));
+
+    // Save current result state if on result screen
     if (!getEl('result-screen').classList.contains('hidden') && lastPickedId) {
         localStorage.setItem('pendingResultId', lastPickedId);
         if (currentUserPos) {
             localStorage.setItem('pendingUserPos', JSON.stringify(currentUserPos));
         }
         if (lastFilteredResults.length > 0) {
-            // Save both ID and Name to keep the slot animation looking good during restore
             const simplified = lastFilteredResults.map(p => ({ id: p.place_id, name: p.name }));
             localStorage.setItem('pendingFilteredData', JSON.stringify(simplified));
         }
@@ -147,7 +156,7 @@ function updateUIStrings() {
     const t = translations[currentLang];
     getEl('app-title').textContent = t.title;
     getEl('app-subtitle').textContent = t.subtitle;
-    getEl('distance-title').innerHTML = `${t.distanceTitle} (<span id="distance-val">${currentRadius / 80}</span> mins)`;
+    getEl('distance-title').innerHTML = `${t.distanceTitle} (<span id="distance-val">${currentMins}</span> mins)`;
     getEl('price-title').textContent = t.priceTitle;
     getEl('filter-title').textContent = t.filterTitle;
     getEl('find-btn').textContent = t.findBtn;
@@ -182,6 +191,7 @@ function initFilters() {
                 div.classList.toggle('active');
                 if (excludedTypes.has(id)) excludedTypes.delete(id);
                 else excludedTypes.add(id);
+                localStorage.setItem('excludedTypes', JSON.stringify(Array.from(excludedTypes)));
                 triggerHaptic(30);
             };
             list.appendChild(div);
@@ -196,6 +206,7 @@ function initFilters() {
             item.classList.toggle('active');
             if (selectedPrices.has(p)) selectedPrices.delete(p);
             else selectedPrices.add(p);
+            localStorage.setItem('selectedPrices', JSON.stringify(Array.from(selectedPrices)));
             triggerHaptic(30);
         };
     });
@@ -721,14 +732,22 @@ async function restoreSession() {
 document.addEventListener('DOMContentLoaded', () => {
     getEl('find-btn').onclick = findRestaurant;
     getEl('retry-btn').onclick = reRoll;
-    getEl('back-btn').onclick = () => showScreen('main-flow');
+    getEl('back-btn').onclick = () => {
+        // Clear session data when going back so we don't restore it on next refresh
+        localStorage.removeItem('pendingResultId');
+        localStorage.removeItem('pendingFilteredData');
+        localStorage.removeItem('pendingUserPos');
+        showScreen('main-flow');
+    };
 
     const slider = getEl('distance-slider');
+    slider.value = currentMins;
     slider.oninput = function () {
         const mins = this.value;
         currentMins = mins;
         currentRadius = mins * 80;
         getEl('distance-val').textContent = mins;
+        localStorage.setItem('currentMins', mins);
         triggerHaptic(10);
     };
 

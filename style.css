@@ -365,6 +365,16 @@ header p {
     color: #1976d2;
 }
 
+.category-pill {
+    background: #f3e5f5;
+    color: #8e24aa;
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 50px;
+    display: inline-block;
+}
+
 .phone-link {
     color: #0984e3;
     font-weight: 500;

@@ -2,10 +2,76 @@
 
 :root {
     --primary-color: #ff6b81;
+    --primary-bg: #fff5f5;
     --accent-color: #ffd32a;
     --bg-gradient: linear-gradient(135deg, #fff5f5 0%, #e0f2f1 100%);
     --card-bg: rgba(255, 255, 255, 0.95);
+    --card-border: #ffffff;
+    --text-main: #2d3436;
+    --text-muted: #636e72;
+    --text-inactive: #b2bec3;
     --glass-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    --item-bg: #f8f9fa;
+    --item-hover-bg: #ffffff;
+    --item-border: transparent;
+    --item-active-bg: #ff7675;
+    --item-active-text: #ffffff;
+    --slider-bg: #f1f2f6;
+    --btn-secondary-bg: #ffffff;
+    --btn-secondary-border: #f1f2f6;
+    --pill-rating-bg: #fff9db;
+    --pill-rating-text: #f0932b;
+    --pill-price-bg: #e3f2fd;
+    --pill-price-text: #1976d2;
+    --pill-category-bg: #f3e5f5;
+    --pill-category-text: #8e24aa;
+    --pill-distance-bg: #e8f5e9;
+    --pill-distance-text: #2e7d32;
+    --address-bg: #f8f9fa;
+    --address-border: #ebebeb;
+    --phone-bg: #f1f2f6;
+    --phone-text: #0984e3;
+    --accent-bg: #54a0ff;
+    --accent-hover-bg: #2e86de;
+    --map-bg: #f1f2f6;
+    --map-border: #fff5f5;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-bg: #2d1b1e;
+        --bg-gradient: linear-gradient(135deg, #121212 0%, #1a1a2e 100%);
+        --card-bg: rgba(30, 30, 30, 0.9);
+        --card-border: #2d2d2d;
+        --text-main: #f1f2f6;
+        --text-muted: #b2bec3;
+        --text-inactive: #636e72;
+        --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        --item-bg: #2d2d2d;
+        --item-hover-bg: #3d3d3d;
+        --item-border: #3d3d3d;
+        --item-active-bg: #ff7675;
+        --item-active-text: #ffffff;
+        --slider-bg: #2d2d2d;
+        --btn-secondary-bg: #2d2d2d;
+        --btn-secondary-border: #3d3d3d;
+        --pill-rating-bg: #3d2b1f;
+        --pill-rating-text: #ff9f43;
+        --pill-price-bg: #1a2a3a;
+        --pill-price-text: #54a0ff;
+        --pill-category-bg: #2a1a3a;
+        --pill-category-text: #a29bfe;
+        --pill-distance-bg: #1a3a2a;
+        --pill-distance-text: #55efc4;
+        --address-bg: #2d2d2d;
+        --address-border: #3d3d3d;
+        --phone-bg: #2d2d2d;
+        --phone-text: #54a0ff;
+        --accent-bg: #54a0ff;
+        --accent-hover-bg: #3d8bff;
+        --map-bg: #1a1a1a;
+        --map-border: #2d2d2d;
+    }
 }
 
 html {
@@ -32,7 +98,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #2d3436;
+    color: var(--text-main);
     margin: 0;
     padding: 20px;
     padding-top: calc(20px + env(safe-area-inset-top));
@@ -55,19 +121,19 @@ header {
 .lang-selector {
     font-size: 1rem;
     margin-bottom: 1.2rem;
-    background: white;
+    background: var(--btn-secondary-bg);
     display: inline-block;
     padding: 10px 20px;
     border-radius: 50px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    border: 2px solid #fff5f5;
+    border: 2px solid var(--btn-secondary-border);
 }
 
 .lang-selector span {
     cursor: pointer;
     padding: 0 10px;
     font-weight: 600;
-    color: #b2bec3;
+    color: var(--text-inactive);
     transition: color 0.2s;
 }
 
@@ -81,13 +147,13 @@ header h1 {
     font-weight: 700;
     color: var(--primary-color);
     margin-bottom: 8px;
-    text-shadow: 2px 2px 0px white;
+    text-shadow: 2px 2px 0px var(--card-border);
 }
 
 header p {
     font-size: 1.1rem;
     opacity: 0.8;
-    color: #636e72;
+    color: var(--text-muted);
 }
 
 .filter-section {
@@ -96,14 +162,14 @@ header p {
     border-radius: 40px;
     box-shadow: var(--glass-shadow);
     margin-bottom: 2rem;
-    border: 4px solid white;
+    border: 4px solid var(--card-border);
 }
 
 .filter-section h3 {
     margin-bottom: 1.5rem;
     font-size: 1.2rem;
     font-weight: 600;
-    color: #2d3436;
+    color: var(--text-main);
 }
 
 .filter-grid,
@@ -119,7 +185,7 @@ header p {
 
 .filter-item,
 .price-item {
-    background: #f8f9fa;
+    background: var(--item-bg);
     padding: 15px 5px;
     border-radius: 22px;
     font-size: 0.9rem;
@@ -127,20 +193,20 @@ header p {
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     text-align: center;
-    border: 2px solid transparent;
+    border: 2px solid var(--item-border);
 }
 
 .filter-item:hover,
 .price-item:hover {
     transform: scale(1.05);
-    background: white;
-    border-color: #ffeaa7;
+    background: var(--item-hover-bg);
+    border-color: var(--accent-color);
 }
 
 .filter-item.active,
 .price-item.active {
-    background: #ff7675;
-    color: white;
+    background: var(--item-active-bg);
+    color: var(--item-active-text);
     box-shadow: 0 8px 15px rgba(255, 118, 117, 0.3);
     transform: scale(0.92);
 }
@@ -157,9 +223,9 @@ header p {
     width: 100%;
     height: 12px;
     border-radius: 10px;
-    background: #f1f2f6;
+    background: var(--slider-bg);
     outline: none;
-    border: 2px solid white;
+    border: 2px solid var(--card-border);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -172,7 +238,7 @@ header p {
     background: var(--primary-color);
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(255, 107, 129, 0.3);
-    border: 3px solid white;
+    border: 3px solid var(--card-border);
     transition: transform 0.2s;
 }
 
@@ -193,7 +259,7 @@ header p {
     box-shadow: 0 12px 25px rgba(255, 107, 129, 0.35);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     font-family: inherit;
-    border: 3px solid white;
+    border: 3px solid var(--card-border);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -212,9 +278,9 @@ header p {
 
 .secondary-btn {
     margin-top: 1.2rem;
-    background: white;
-    color: #636e72;
-    border: 2px solid #f1f2f6;
+    background: var(--btn-secondary-bg);
+    color: var(--text-muted);
+    border: 2px solid var(--btn-secondary-border);
     padding: 1.2rem;
     border-radius: 30px;
     font-size: 1.1rem;
@@ -226,15 +292,15 @@ header p {
 }
 
 .secondary-btn:hover {
-    background: #fdfdfd;
-    border-color: #dfe6e9;
+    background: var(--item-hover-bg);
+    border-color: var(--text-inactive);
 }
 
 .install-btn {
     margin-top: 1.5rem;
     background: #55efc4;
     color: #00b894;
-    border: 3px solid white;
+    border: 3px solid var(--card-border);
     padding: 1.2rem;
     border-radius: 30px;
     font-size: 1.2rem;
@@ -279,21 +345,49 @@ header p {
     margin-top: 1rem;
 }
 
+.accent-btn {
+    background: var(--accent-bg);
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(84, 160, 255, 0.3);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-family: inherit;
+    border: 3px solid var(--card-border);
+}
+
+.accent-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(84, 160, 255, 0.4);
+    background: var(--accent-hover-bg);
+}
+
 .text-btn {
     background: none;
     border: none;
-    color: #636e72;
-    text-decoration: underline;
-    font-size: 1rem;
+    color: var(--text-muted);
+    font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
-    padding: 10px;
-    transition: color 0.2s;
+    padding: 12px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0.7;
 }
 
 .text-btn:hover {
     color: var(--primary-color);
+    opacity: 1;
+    transform: translateY(-2px);
 }
 
 .screen {
@@ -313,7 +407,7 @@ header p {
 }
 
 .restaurant-card {
-    background: white;
+    background: var(--card-bg);
     padding: 3rem 2rem;
     border-radius: 45px;
     box-shadow: var(--glass-shadow);
@@ -322,7 +416,7 @@ header p {
     flex-direction: column;
     gap: 1.2rem;
     animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    border: 4px solid #fff5f5;
+    border: 4px solid var(--map-border);
 }
 
 @keyframes bounceIn {
@@ -386,38 +480,38 @@ header p {
 }
 
 .rating {
-    background: #fff9db;
-    color: #f0932b;
+    background: var(--pill-rating-bg);
+    color: var(--pill-rating-text);
 }
 
 .price-pill {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: var(--pill-price-bg);
+    color: var(--pill-price-text);
 }
 
 .category-pill {
-    background: #f3e5f5;
-    color: #8e24aa;
+    background: var(--pill-category-bg);
+    color: var(--pill-category-text);
 }
 
 .distance-pill {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: var(--pill-distance-bg);
+    color: var(--pill-distance-text);
 }
 
 .address-box {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: #f8f9fa;
+    background: var(--address-bg);
     padding: 10px 15px;
     border-radius: 18px;
     margin: 0.5rem 0 1rem;
-    color: #636e72;
+    color: var(--text-muted);
     font-size: 0.9rem;
     line-height: 1.4;
     text-align: left;
-    border: 1px solid #ebebeb;
+    border: 1px solid var(--address-border);
 }
 
 .meta-icon-small {
@@ -430,7 +524,7 @@ header p {
 }
 
 .phone-link {
-    color: #0984e3;
+    color: var(--phone-text);
     font-weight: 500;
     margin: 0.5rem 0 1.2rem;
     font-size: 1.05rem;
@@ -439,21 +533,21 @@ header p {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    background: #f1f2f6;
+    background: var(--phone-bg);
     padding: 10px 20px;
     border-radius: 50px;
     transition: all 0.2s ease;
 }
 
 .phone-link:hover {
-    background: #e1e2e6;
+    background: var(--item-hover-bg);
     transform: scale(1.02);
 }
 
 .loader {
     width: 60px;
     height: 60px;
-    border: 8px solid #fff;
+    border: 8px solid var(--card-border);
     border-bottom-color: var(--primary-color);
     border-radius: 50%;
     display: block;
@@ -509,13 +603,13 @@ header p {
 .map-preview {
     width: 100%;
     height: 180px;
-    background: #f1f2f6;
+    background: var(--map-bg);
     border-radius: 25px;
     margin: 0.5rem 0;
     overflow: hidden;
     position: relative;
     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 3px solid #fff5f5;
+    border: 3px solid var(--map-border);
 }
 
 .map-preview img {

@@ -222,7 +222,7 @@ export async function displayResult(App, place) {
     if (place.location) {
         try {
             const [{ Map }, { Marker }] = await Promise.all([google.maps.importLibrary("maps"), google.maps.importLibrary("marker")]);
-            const map = new Map(mapDiv, { center: place.location, zoom: 16, disableDefaultUI: false, mapTypeControl: false, streetViewControl: false, gestureHandling: 'greedy' });
+            const map = new Map(mapDiv, { center: place.location, zoom: 16, disableDefaultUI: false, mapTypeControl: false, streetViewControl: false, gestureHandling: 'greedy', colorScheme: 'FOLLOW_SYSTEM' });
             new Marker({ position: place.location, map: map, title: place.name, animation: google.maps.Animation.DROP });
             if (App.Data.userPos) {
                 new Marker({ position: App.Data.userPos, map: map, title: "Your Location", icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 2, strokeColor: "white" } });

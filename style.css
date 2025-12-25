@@ -35,6 +35,7 @@
     --accent-hover-bg: #2e86de;
     --map-bg: #f1f2f6;
     --map-border: #fff5f5;
+    --html-bg: #fff5f5;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -71,11 +72,13 @@
         --accent-hover-bg: #3d8bff;
         --map-bg: #1a1a1a;
         --map-border: #2d2d2d;
+        --html-bg: #121212;
     }
 }
 
 html {
     background: var(--bg-gradient);
+    background-color: var(--html-bg);
     background-attachment: fixed;
     min-height: 100%;
 }
@@ -85,10 +88,6 @@ html {
     margin: 0;
     padding: 0;
     -webkit-tap-highlight-color: transparent;
-}
-
-html {
-    background: var(--bg-gradient);
 }
 
 body {
@@ -502,13 +501,13 @@ header p {
 .address-box {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     background: var(--address-bg);
-    padding: 10px 15px;
+    padding: 8px 12px;
     border-radius: 18px;
     margin: 0.5rem 0 1rem;
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     line-height: 1.4;
     text-align: left;
     border: 1px solid var(--address-border);

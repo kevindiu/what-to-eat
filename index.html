@@ -64,15 +64,26 @@
                 <div class="restaurant-card">
                     <h2 id="res-name">餐廳名稱</h2>
                     <div class="res-meta">
-                        <span id="res-rating" class="rating"></span>
-                        <span id="res-price" class="price-pill"></span>
-                        <span id="res-category" class="category-pill"></span>
-                        <span id="res-distance" class="distance-pill"></span>
+                        <div id="res-rating-container" class="meta-box rating">
+                            <span class="meta-icon">⭐</span>
+                            <span id="res-rating" class="meta-val"></span>
+                        </div>
+                        <div id="res-price-container" class="meta-box price-pill">
+                            <span class="meta-icon">💰</span>
+                            <span id="res-price" class="meta-val"></span>
+                        </div>
+                        <div id="res-category-container" class="meta-box category-pill">
+                            <span id="res-category-icon" class="meta-icon"></span>
+                            <span id="res-category" class="meta-val"></span>
+                        </div>
+                        <div id="res-distance-container" class="meta-box distance-pill">
+                            <span class="meta-icon">🚶</span>
+                            <span id="res-distance" class="meta-val"></span>
+                        </div>
                     </div>
                     <p id="res-address"></p>
-                    <a id="res-phone" class="phone-link"></a>
-
                     <div id="res-map-container" class="map-preview"></div>
+                    <a id="res-phone" class="phone-link"></a>
 
                     <a id="open-maps-btn" href="#" target="_blank" class="primary-btn">喺 Google Maps 打開</a>
 
@@ -111,7 +122,7 @@
             language: mapLangMap[savedLang] || 'zh-HK'
         });
     </script>
-    <script type="module" src="js/main.js?v=2.44"></script>
+    <script type="module" src="js/main.js?v=2.51"></script>
 </body>
 
 </html>

@@ -350,19 +350,44 @@ header p {
 .res-meta {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin-bottom: 0.5rem;
+    gap: 10px;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
 }
 
-.rating,
-.price-pill {
+.meta-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 8px;
+    border-radius: 20px;
+    flex: 1;
+    min-width: 75px;
+    max-width: 100px;
+    transition: transform 0.2s ease;
+}
+
+.meta-box:hover {
+    transform: translateY(-2px);
+}
+
+.meta-icon {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+    line-height: 1;
+}
+
+.meta-val {
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.rating {
     background: #fff9db;
     color: #f0932b;
-    font-size: 1.1rem;
-    font-weight: 700;
-    padding: 8px 18px;
-    border-radius: 50px;
-    display: inline-block;
 }
 
 .price-pill {
@@ -373,35 +398,32 @@ header p {
 .category-pill {
     background: #f3e5f5;
     color: #8e24aa;
-    font-size: 1.1rem;
-    font-weight: 700;
-    padding: 8px 18px;
-    border-radius: 50px;
-    display: inline-block;
 }
 
 .distance-pill {
     background: #e8f5e9;
     color: #2e7d32;
-    font-size: 1.1rem;
-    font-weight: 700;
-    padding: 8px 18px;
-    border-radius: 50px;
-    display: inline-block;
 }
 
 .phone-link {
     color: #0984e3;
     font-weight: 500;
-    margin-bottom: 0.5rem;
+    margin: 1rem 0;
     font-size: 1.1rem;
-    text-decoration: underline;
-    display: block;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
+    background: #f1f2f6;
+    padding: 8px 16px;
+    border-radius: 50px;
+    transition: all 0.2s ease;
 }
 
 .phone-link:hover {
-    color: var(--primary-color);
+    background: #e1e2e6;
+    transform: scale(1.02);
 }
 
 .loader {

@@ -187,17 +187,33 @@ export async function displayResult(App, place) {
     getEl('res-name').textContent = place.name;
 
     const t = App.translations[App.currentLang];
-    const ratingVal = place.rating;
-    const resRatingEl = getEl('res-rating');
-    resRatingEl.textContent = (typeof ratingVal === 'number' && ratingVal > 0) ? `⭐ ${ratingVal}` : t.ratingNew;
 
+    // Rating
+    const ratingVal = place.rating;
+    const hasRating = typeof ratingVal === 'number' && ratingVal > 0;
+    getEl('res-rating').textContent = hasRating ? ratingVal : (t.ratingNew.replace(/⭐\s*/, ''));
+    getEl('res-rating-container').style.display = 'flex';
+
+    // Price
     const priceText = getPriceDisplay(place.priceLevel, t);
     getEl('res-price').textContent = priceText;
-    getEl('res-price').style.display = priceText ? 'inline-block' : 'none';
+    getEl('res-price-container').style.display = priceText ? 'flex' : 'none';
 
-    const cat = getPlaceCategory(place, App);
-    getEl('res-category').textContent = cat || "";
-    getEl('res-category').style.display = cat ? 'inline-block' : 'none';
+    // Category
+    const catFull = getPlaceCategory(place, App);
+    if (catFull) {
+        const emojiMatch = catFull.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*(.*)$/u);
+        if (emojiMatch) {
+            getEl('res-category-icon').textContent = emojiMatch[1];
+            getEl('res-category').textContent = emojiMatch[2];
+        } else {
+            getEl('res-category-icon').textContent = "🍴";
+            getEl('res-category').textContent = catFull;
+        }
+        getEl('res-category-container').style.display = 'flex';
+    } else {
+        getEl('res-category-container').style.display = 'none';
+    }
 
     getEl('res-address').textContent = place.vicinity;
     getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -219,17 +235,22 @@ export async function displayResult(App, place) {
     } else mapDiv.style.display = 'none';
 
     const phoneEl = getEl('res-phone');
-    if (place.phone) { phoneEl.textContent = place.phone; phoneEl.href = `tel:${place.phone.replace(/\s+/g, '')}`; phoneEl.style.display = 'block'; }
+    if (place.phone) {
+        phoneEl.textContent = `📞 ${place.phone}`;
+        phoneEl.href = `tel:${place.phone.replace(/\s+/g, '')}`;
+        phoneEl.style.display = 'inline-flex';
+    }
     else phoneEl.style.display = 'none';
 
     getEl('open-maps-btn').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
 
-    const distEl = getEl('res-distance');
+    // Distance
+    const distContainer = getEl('res-distance-container');
     if (place.durationText) {
-        distEl.textContent = `🚶 ${place.durationText}`;
-        distEl.style.display = 'inline-block';
+        getEl('res-distance').textContent = place.durationText;
+        distContainer.style.display = 'flex';
     } else {
-        distEl.style.display = 'none';
+        distContainer.style.display = 'none';
     }
 
     App.UI.triggerConfetti();

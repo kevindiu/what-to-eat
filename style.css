@@ -405,18 +405,42 @@ header p {
     color: #2e7d32;
 }
 
+.address-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 18px;
+    margin: 0.5rem 0 1rem;
+    color: #636e72;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    text-align: left;
+    border: 1px solid #ebebeb;
+}
+
+.meta-icon-small {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+#res-address {
+    margin: 0;
+}
+
 .phone-link {
     color: #0984e3;
     font-weight: 500;
-    margin: 1rem 0;
-    font-size: 1.1rem;
+    margin: 0.5rem 0 1.2rem;
+    font-size: 1.05rem;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
     background: #f1f2f6;
-    padding: 8px 16px;
+    padding: 10px 20px;
     border-radius: 50px;
     transition: all 0.2s ease;
 }

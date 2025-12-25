@@ -1,4 +1,4 @@
-export const getEl = id => document.getElementById(id);
+import { getEl } from './utils.js';
 
 export const UI = {
     showScreen(screenId) {
@@ -10,8 +10,8 @@ export const UI = {
         if (target) target.classList.remove('hidden');
     },
 
-    updateStrings(App, translations, currentLang) {
-        const t = translations[currentLang];
+    updateStrings(App) {
+        const t = App.translations[App.currentLang];
         getEl('app-title').textContent = t.title;
         getEl('app-subtitle').textContent = t.subtitle;
         getEl('distance-title').innerHTML = `${t.distanceTitle} (<span id="distance-val">${App.Config.mins}</span> mins)`;
@@ -25,15 +25,15 @@ export const UI = {
         if (getEl('install-btn')) getEl('install-btn').textContent = t.installBtn;
 
         document.querySelectorAll('.lang-selector span').forEach(span => {
-            span.classList.toggle('active', span.dataset.lang === currentLang);
+            span.classList.toggle('active', span.dataset.lang === App.currentLang);
         });
     },
 
-    initFilters(App, translations, currentLang) {
+    initFilters(App) {
         const list = getEl('filter-list');
         if (list) {
             list.innerHTML = '';
-            const cats = translations[currentLang].categories;
+            const cats = App.translations[App.currentLang].categories;
             Object.keys(cats).forEach(id => {
                 const div = document.createElement('div');
                 div.className = 'filter-item' + (App.Config.excluded.has(id) ? ' active' : '');

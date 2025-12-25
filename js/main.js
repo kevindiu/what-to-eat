@@ -1,7 +1,8 @@
 import { translations } from './translations.js';
-import { getEl, UI } from './ui.js';
+import { UI } from './ui.js';
 import { PWA } from './pwa.js';
 import { findRestaurant, reRoll, restoreSession } from './api.js';
+import { getEl } from './utils.js';
 
 const App = {
     Config: {
@@ -43,7 +44,7 @@ const App = {
     },
 
     setLanguage(lang) {
-        if (this.Config.lang === lang) return;
+        if (this.currentLang === lang) return;
         localStorage.setItem('preferredLang', lang);
         this.saveSettings();
 
@@ -56,21 +57,20 @@ const App = {
     },
 
     init() {
-        this.UI.updateStrings(this, this.translations, this.currentLang);
-        this.UI.initFilters(this, this.translations, this.currentLang);
+        this.UI.updateStrings(this);
+        this.UI.initFilters(this);
         this.PWA.init(this.translations, this.currentLang);
-        restoreSession(this, this.translations, this.currentLang);
+        restoreSession(this);
     }
 };
 
-// Expose setLanguage globally for the HTML onclick handlers
+// Expose globally
 window.App = App;
 window.setLanguage = (lang) => App.setLanguage(lang);
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Attach event listeners
-    getEl('find-btn').onclick = () => findRestaurant(App, App.translations, App.currentLang);
-    getEl('retry-btn').onclick = () => reRoll(App, App.translations, App.currentLang);
+    getEl('find-btn').onclick = () => findRestaurant(App);
+    getEl('retry-btn').onclick = () => reRoll(App);
     getEl('back-btn').onclick = () => App.UI.showScreen('main-flow');
 
     const slider = getEl('distance-slider');
@@ -84,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
             App.UI.triggerHaptic(10);
         };
     }
-
     App.init();
 });
 

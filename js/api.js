@@ -182,6 +182,7 @@ export async function reRoll(App) {
 }
 
 export async function displayResult(App, place) {
+    App.UI.showScreen('result-screen');
     App.Data.lastPickedId = place.place_id;
     getEl('res-name').textContent = place.name;
 
@@ -199,7 +200,7 @@ export async function displayResult(App, place) {
     getEl('res-category').style.display = cat ? 'inline-block' : 'none';
 
     getEl('res-address').textContent = place.vicinity;
-    getEl('res-name').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     const mapDiv = getEl('res-map-container');
     if (place.location) {
@@ -231,7 +232,6 @@ export async function displayResult(App, place) {
         distEl.style.display = 'none';
     }
 
-    App.UI.showScreen('result-screen');
     App.UI.triggerConfetti();
 }
 

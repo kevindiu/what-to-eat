@@ -184,9 +184,9 @@ header p {
     background: var(--primary-color);
     color: white;
     border: none;
-    padding: 1.5rem;
+    padding: 1.2rem;
     border-radius: 35px;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 700;
     width: 100%;
     cursor: pointer;
@@ -194,6 +194,11 @@ header p {
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     font-family: inherit;
     border: 3px solid white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    box-sizing: border-box;
 }
 
 .primary-btn:hover {

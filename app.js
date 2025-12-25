@@ -1,4 +1,4 @@
-console.log("食乜好 App v2.14 - Language Persistence & Localization");
+console.log("食乜好 App v2.17 - Location Persistence Fix");
 const translations = {
     zh: {
         title: "食乜好？",
@@ -129,8 +129,13 @@ window.setLanguage = function (lang) {
     // Save current state if on result screen to persist across reload
     if (!getEl('result-screen').classList.contains('hidden') && lastPickedId) {
         localStorage.setItem('pendingResultId', lastPickedId);
+        if (currentUserPos) {
+            localStorage.setItem('pendingUserPos', JSON.stringify(currentUserPos));
+        }
         if (lastFilteredResults.length > 0) {
-            localStorage.setItem('pendingFilteredIds', JSON.stringify(lastFilteredResults.map(p => p.place_id)));
+            // Save both ID and Name to keep the slot animation looking good during restore
+            const simplified = lastFilteredResults.map(p => ({ id: p.place_id, name: p.name }));
+            localStorage.setItem('pendingFilteredData', JSON.stringify(simplified));
         }
     }
 
@@ -456,7 +461,7 @@ function startSlotAnimation() {
     }, 100);
 }
 
-function reRoll() {
+async function reRoll() {
     triggerHaptic([50, 30, 50]);
     if (lastFilteredResults.length === 0) {
         findRestaurant();
@@ -470,7 +475,37 @@ function reRoll() {
         if (others.length > 0) candidates = others;
     }
 
-    const randomPlace = candidates[Math.floor(Math.random() * candidates.length)];
+    let randomPlace = candidates[Math.floor(Math.random() * candidates.length)];
+
+    // If it's a skeleton from restoreSession (missing full details), fetch them now
+    if (!randomPlace.vicinity && randomPlace.place_id) {
+        showScreen('loading-screen');
+        try {
+            const { Place } = await google.maps.importLibrary("places");
+            const p = new Place({ id: randomPlace.place_id });
+            await p.fetchFields({
+                fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber", "businessStatus"]
+            });
+            randomPlace = {
+                name: p.displayName?.text || p.displayName || "Unknown",
+                rating: p.rating,
+                userRatingCount: p.userRatingCount,
+                vicinity: p.formattedAddress || "地址不詳",
+                place_id: p.id,
+                types: p.types || [],
+                priceLevel: p.priceLevel,
+                phone: p.nationalPhoneNumber,
+                businessStatus: p.businessStatus,
+                location: p.location
+            };
+            // Update the stored list so we don't have to fetch this one again
+            const idx = lastFilteredResults.findIndex(item => item.place_id === randomPlace.place_id);
+            if (idx !== -1) lastFilteredResults[idx] = randomPlace;
+        } catch (e) {
+            console.error("Failed to fetch candidate details during re-roll:", e);
+        }
+    }
+
     displayResult(randomPlace);
 }
 
@@ -625,13 +660,16 @@ async function displayResult(place) {
 
 async function restoreSession() {
     const pendingId = localStorage.getItem('pendingResultId');
-    const pendingFilteredIdsJson = localStorage.getItem('pendingFilteredIds');
+    const pendingDataJson = localStorage.getItem('pendingFilteredData');
+    const pendingPosJson = localStorage.getItem('pendingUserPos');
 
     if (!pendingId) return;
 
     // Clear immediate to avoid infinite loops or re-restores on manual refresh
     localStorage.removeItem('pendingResultId');
-    localStorage.removeItem('pendingFilteredIds');
+    localStorage.removeItem('pendingFilteredData');
+    localStorage.removeItem('pendingUserPos');
+    localStorage.removeItem('pendingFilteredIds'); // Also clear old key just in case
 
     showScreen('loading-screen');
 
@@ -658,18 +696,18 @@ async function restoreSession() {
         };
 
         // 2. Try to restore the candidate list for re-rolling
-        if (pendingFilteredIdsJson) {
-            const filteredIds = JSON.parse(pendingFilteredIdsJson);
-            // We just populate the list with temporary objects. 
-            // If the user re-rolls, they will get a localized one because displayResult re-fetches or uses these.
-            // Note: displayResult doesn't re-fetch currently, it uses the object in the list.
-            // To be perfect, we'd re-fetch all, but that's too heavy. 
-            // We'll just populate names/ids. Re-roll will show the non-localized name UNTIL they re-roll to it, 
-            // then we could potentially fetch details. But for now, let's keep it simple.
-            lastFilteredResults = filteredIds.map(id => ({ place_id: id, name: "Loading..." }));
+        if (pendingDataJson) {
+            const history = JSON.parse(pendingDataJson);
+            // Restore as skeletons (id + name). Re-roll will fetch full details on-demand.
+            lastFilteredResults = history.map(item => ({
+                place_id: item.id || item,
+                name: item.name || "Loading..."
+            }));
+        }
 
-            // Actually, if we want re-roll to work well, we should probably just trigger a fresh search in the background?
-            // Or just store the names too. For now, let's just restore the current one.
+        // 3. Restore user position for map display
+        if (pendingPosJson) {
+            currentUserPos = JSON.parse(pendingPosJson);
         }
 
         displayResult(restoredPlace);

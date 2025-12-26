@@ -400,7 +400,52 @@ header p {
     text-align: center;
     transition: opacity 0.3s ease;
     width: 100%;
-    min-height: 50vh;
+}
+
+#result-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    justify-content: flex-start;
+    background: var(--bg-gradient);
+    z-index: 1000;
+}
+
+.result-content {
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    padding-top: calc(20px + env(safe-area-inset-top));
+    padding-bottom: 40px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.result-actions {
+    width: 100%;
+    max-width: 480px;
+    background: var(--card-bg);
+    padding: 1.2rem;
+    padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
+    border-top: 2px solid var(--card-border);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    z-index: 1001;
+    margin-top: auto;
+    display: flex;
+    gap: 12px;
+}
+
+.result-actions .primary-btn,
+.result-actions .accent-btn {
+    margin: 0;
+    flex: 1;
 }
 
 

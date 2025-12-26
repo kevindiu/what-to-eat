@@ -1,6 +1,6 @@
 export const translations = {
     zh: {
-        title: "食乜好？",
+        title: "食乜好",
         subtitle: "唔知食咩？等我幫你揀！",
         distanceTitle: "想搵徒步幾耐？",
         priceTitle: "價錢預算？",
@@ -40,7 +40,7 @@ export const translations = {
         shareText: "我喺「食乜好」抽中咗呢間：${name}！一齊去試下？🥗"
     },
     en: {
-        title: "What to Eat?",
+        title: "What to Eat",
         subtitle: "Don't know? Let me pick!",
         distanceTitle: "Walking Distance",
         priceTitle: "Price Range",
@@ -80,7 +80,7 @@ export const translations = {
         shareText: "I picked this on What to Eat: ${name}! Want to try? 🥗"
     },
     ja: {
-        title: "何食べる？",
+        title: "メシ決",
         subtitle: "迷ったら、私に選ばせて！",
         distanceTitle: "徒歩何分？",
         priceTitle: "予算は？",
@@ -117,6 +117,6 @@ export const translations = {
         priceFree: "無料",
         walkMins: "🚶 徒歩 ${mins} 分",
         shareBtn: "📤 シェア",
-        shareText: "「何食べる？」でこれを選んだよ：${name}！一緒にどう？🥗"
+        shareText: "「メシ決」でこれを選んだよ：${name}！一緒にどう？🥗"
     }
 };

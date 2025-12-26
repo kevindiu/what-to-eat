@@ -5,9 +5,18 @@ export const PWA = {
     init(translations, currentLang) {
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=3.26')
+                navigator.serviceWorker.register('./sw.js?v=3.27')
                     .then(() => console.log('SW registered!'))
                     .catch(err => console.log('SW failed', err));
+            });
+
+            // Reload page when new SW takes control
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    window.location.reload();
+                    refreshing = true;
+                }
             });
         }
         window.addEventListener('beforeinstallprompt', (e) => {

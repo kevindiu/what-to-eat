@@ -1,4 +1,4 @@
-const CACHE_NAME = 'what-to-eat-v3.26';
+const CACHE_NAME = 'what-to-eat-v3.27';
 const ASSETS = [
     './',
     './index.html',
@@ -17,6 +17,7 @@ const ASSETS = [
 
 // Install event - cache assets
 self.addEventListener('install', (event) => {
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             console.log('Service Worker: Caching Assets');
@@ -37,7 +38,7 @@ self.addEventListener('activate', (event) => {
                     }
                 })
             );
-        })
+        }).then(() => self.clients.claim())
     );
 });
 

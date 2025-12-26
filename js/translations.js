@@ -33,7 +33,9 @@ export const translations = {
         noAddress: "地址不詳",
         ratingNew: "⭐ 新開張！",
         priceFree: "免費",
-        walkMins: "步行約 ${mins} 分鐘"
+        walkMins: "步行約 ${mins} 分鐘",
+        shareBtn: "📤 分享餐廳",
+        shareText: "我喺「食乜好」抽中咗呢間：${name}！一齊去試下？🥗"
     },
     en: {
         title: "What to Eat?",
@@ -69,7 +71,9 @@ export const translations = {
         noAddress: "Address Unknown",
         ratingNew: "⭐ New!",
         priceFree: "Free",
-        walkMins: "🚶 ${mins} min walk"
+        walkMins: "🚶 ${mins} min walk",
+        shareBtn: "📤 Share",
+        shareText: "I picked this on What to Eat: ${name}! Want to try? 🥗"
     },
     ja: {
         title: "何食べる？",
@@ -105,6 +109,8 @@ export const translations = {
         noAddress: "住所不明",
         ratingNew: "⭐ 新規オープン！",
         priceFree: "無料",
-        walkMins: "🚶 徒歩 ${mins} 分"
+        walkMins: "🚶 徒歩 ${mins} 分",
+        shareBtn: "📤 シェア",
+        shareText: "「何食べる？」でこれを選んだよ：${name}！一緒にどう？🥗"
     }
 };

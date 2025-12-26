@@ -21,6 +21,7 @@ export const UI = {
             'back-btn': t.backBtn,
             'loading-text': t.loading,
             'open-maps-btn': t.openMaps,
+            'share-btn': t.shareBtn,
             'install-btn': t.installBtn
         };
 

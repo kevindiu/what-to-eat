@@ -316,6 +316,9 @@ export async function displayResult(App, place) {
     el.address.textContent = place.vicinity;
     getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+    el.mapCont.classList.add('skeleton');
+    el.mapCont.style.display = 'block';
+
     // Map logic
     if (place.location) {
         try {
@@ -336,7 +339,10 @@ export async function displayResult(App, place) {
                 bounds.extend(place.location); bounds.extend(App.Data.userPos);
                 map.fitBounds(bounds, 50);
             }
-            el.mapCont.style.display = 'block';
+            // Remove skeleton after map tiles settle a bit
+            google.maps.event.addListenerOnce(map, 'idle', () => {
+                el.mapCont.classList.remove('skeleton');
+            });
         } catch (e) { el.mapCont.style.display = 'none'; }
     } else el.mapCont.style.display = 'none';
 
@@ -348,6 +354,27 @@ export async function displayResult(App, place) {
     } else el.phone.style.display = 'none';
 
     el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
+
+    // Share logic
+    const shareBtn = getEl('share-btn');
+    if (shareBtn) {
+        shareBtn.onclick = async () => {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.place_id}${App.Data.userPos ? `&lat=${App.Data.userPos.lat}&lng=${App.Data.userPos.lng}` : ''}`;
+            const shareText = t.shareText.replace('${name}', place.name);
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title: place.name, text: shareText, url: shareUrl });
+                } catch (e) { console.log("Share failed", e); }
+            } else {
+                // Fallback: Copy to clipboard
+                try {
+                    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+                    alert("已複製連結到剪貼簿！📋");
+                } catch (e) { alert(shareUrl); }
+            }
+        };
+    }
 
     // Distance
     if (place.durationText) {

@@ -230,8 +230,12 @@ export async function displayResult(App, place) {
     // Text Content
     el.name.textContent = place.name;
     el.address.textContent = place.vicinity;
-    const contentArea = getEl('result-content');
-    if (contentArea) contentArea.scrollTop = 0;
+
+    // Reset scroll to top
+    requestAnimationFrame(() => {
+        const contentArea = getEl('result-content');
+        if (contentArea) contentArea.scrollTo(0, 0);
+    });
 
     // Rating
     const hasRating = typeof place.rating === 'number' && place.rating > 0;

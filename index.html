@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食乜好 - What to Eat</title>
-    <link rel="stylesheet" href="style.css?v=3.42">
+    <link rel="stylesheet" href="style.css?v=3.44">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fff5f5" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
@@ -23,9 +23,9 @@
             <div id="main-flow" class="screen">
                 <header>
                     <div class="lang-selector">
-                        <span data-lang="zh" class="active">繁</span>
-                        <span data-lang="en">EN</span>
-                        <span data-lang="ja">JP</span>
+                        <span onclick="setLanguage('zh')" data-lang="zh">繁</span>
+                        <span onclick="setLanguage('en')" data-lang="en">EN</span>
+                        <span onclick="setLanguage('ja')" data-lang="ja">JP</span>
                     </div>
                     <h1 class="app-title-text">食乜好</h1>
                     <p class="app-subtitle-text">唔知食咩？等我幫你揀！</p>
@@ -77,9 +77,9 @@
                 <div id="result-content" class="result-content">
                     <header class="result-header">
                         <div class="lang-selector">
-                            <span data-lang="zh" class="active">繁</span>
-                            <span data-lang="en">EN</span>
-                            <span data-lang="ja">JP</span>
+                            <span onclick="setLanguage('zh')" data-lang="zh">繁</span>
+                            <span onclick="setLanguage('en')" data-lang="en">EN</span>
+                            <span onclick="setLanguage('ja')" data-lang="ja">JP</span>
                         </div>
                         <h1 class="logo-small app-title-text">食乜好</h1>
                         <p class="app-subtitle-text"></p>
@@ -161,7 +161,7 @@
             language: mapLangMap[savedLang] || 'zh-HK'
         });
     </script>
-    <script type="module" src="js/main.js?v=3.42"></script>
+    <script type="module" src="js/main.js?v=3.44"></script>
 </body>
 
 </html>

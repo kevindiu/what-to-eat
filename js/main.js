@@ -78,6 +78,14 @@ document.addEventListener('DOMContentLoaded', () => {
     getEl('share-btn').onclick = () => App.UI.shareCurrentPlace(App);
     getEl('back-btn').onclick = () => App.UI.showScreen('main-flow');
 
+    // Language selector delegation
+    document.addEventListener('click', (e) => {
+        const span = e.target.closest('.lang-selector span');
+        if (span && span.dataset.lang) {
+            App.setLanguage(span.dataset.lang);
+        }
+    });
+
     const slider = getEl('distance-slider');
     if (slider) {
         slider.value = App.Config.mins;

@@ -527,16 +527,6 @@ header p {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.result-actions .primary-btn::before {
-    content: "🗺️";
-    font-size: 1.2rem;
-}
-
-.result-actions .accent-btn::before {
-    content: "🎲";
-    font-size: 1.2rem;
-}
-
 #result-screen .restaurant-card {
     margin-top: 20px;
     width: 100%;

@@ -33,7 +33,7 @@ export const UI = {
 
         Object.entries(mappings).forEach(([id, text]) => {
             const el = getEl(id);
-            if (el) el.textContent = text;
+            if (el) el.innerHTML = text;
         });
 
         Object.entries(classMappings).forEach(([cls, text]) => {
@@ -41,7 +41,7 @@ export const UI = {
                 if (cls === 'distance-title-text') {
                     el.innerHTML = `${text} (<span id="distance-val">${App.Config.mins}</span> mins)`;
                 } else {
-                    el.textContent = text;
+                    el.innerHTML = text;
                 }
             });
         });

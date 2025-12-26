@@ -204,7 +204,9 @@ export async function reRoll(App) {
 
     let randomPlace = candidates[Math.floor(Math.random() * candidates.length)];
 
-    if (!randomPlace.vicinity && randomPlace.place_id) {
+    // If we don't have detailed info (like weekday descriptions) or basic address, fetch details
+    const hasHours = randomPlace.openingHours?.weekdayDescriptions && randomPlace.openingHours.weekdayDescriptions.length > 0;
+    if ((!randomPlace.vicinity || !hasHours) && randomPlace.place_id) {
         App.UI.showScreen('loading-screen');
         try {
             const { Place } = await google.maps.importLibrary("places");
@@ -375,7 +377,8 @@ export async function restoreSession(App) {
             priceLevel: p.priceLevel,
             phone: p.nationalPhoneNumber,
             businessStatus: p.businessStatus,
-            location: p.location
+            location: p.location,
+            openingHours: p.regularOpeningHours
         };
 
         // Recalculate distance if we have position

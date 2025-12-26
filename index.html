@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食乜好 - What to Eat</title>
-    <link rel="stylesheet" href="style.css?v=3.50">
+    <link rel="stylesheet" href="style.css?v=3.49">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fff5f5" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
@@ -25,7 +25,7 @@
                 <span onclick="setLanguage('en')" data-lang="en">EN</span> |
                 <span onclick="setLanguage('ja')" data-lang="ja">日</span>
             </div>
-            <h1 id="app-title">食乜好</h1>
+            <h1 id="app-title">食乜好？</h1>
             <p id="app-subtitle">唔知食咩？等我幫你揀！</p>
         </header>
 
@@ -62,53 +62,48 @@
             </div>
 
             <div id="result-screen" class="screen hidden">
-                <div class="result-content" id="result-content">
-                    <div class="restaurant-card">
-                        <h2 id="res-name">餐廳名稱</h2>
-                        <div class="res-meta">
-                            <div id="res-rating-container" class="meta-box rating">
-                                <span class="meta-icon">⭐</span>
-                                <span id="res-rating" class="meta-val"></span>
-                            </div>
-                            <div id="res-price-container" class="meta-box price-pill">
-                                <span class="meta-icon">💰</span>
-                                <span id="res-price" class="meta-val"></span>
-                            </div>
-                            <div id="res-category-container" class="meta-box category-pill">
-                                <span id="res-category-icon" class="meta-icon"></span>
-                                <span id="res-category" class="meta-val"></span>
-                            </div>
-                            <div id="res-distance-container" class="meta-box distance-pill">
-                                <span class="meta-icon">🚶</span>
-                                <span id="res-distance" class="meta-val"></span>
-                            </div>
+                <div class="restaurant-card">
+                    <h2 id="res-name">餐廳名稱</h2>
+                    <div class="res-meta">
+                        <div id="res-rating-container" class="meta-box rating">
+                            <span class="meta-icon">⭐</span>
+                            <span id="res-rating" class="meta-val"></span>
                         </div>
-
-                        <div id="res-hours-container" class="hours-row">
-                            <span class="meta-icon-small">🕒</span>
-                            <p id="res-hours"></p>
+                        <div id="res-price-container" class="meta-box price-pill">
+                            <span class="meta-icon">💰</span>
+                            <span id="res-price" class="meta-val"></span>
                         </div>
-
-                        <div class="address-box">
-                            <span class="meta-icon-small">📍</span>
-                            <p id="res-address"></p>
+                        <div id="res-category-container" class="meta-box category-pill">
+                            <span id="res-category-icon" class="meta-icon"></span>
+                            <span id="res-category" class="meta-val"></span>
                         </div>
-
-                        <div id="res-map-container" class="map-preview"></div>
-
-                        <a id="res-phone" class="phone-link"></a>
-
-                        <div class="button-group secondary-actions">
-                            <button id="share-btn" class="text-btn" aria-label="Share this restaurant">📤 分享餐廳</button>
-                            <button id="back-btn" class="text-btn" aria-label="Back to home screen">返去主頁</button>
+                        <div id="res-distance-container" class="meta-box distance-pill">
+                            <span class="meta-icon">🚶</span>
+                            <span id="res-distance" class="meta-val"></span>
                         </div>
                     </div>
-                </div>
 
-                <!-- Sticky Action Bar -->
-                <div class="result-actions">
+                    <div id="res-hours-container" class="hours-row">
+                        <span class="meta-icon-small">🕒</span>
+                        <p id="res-hours"></p>
+                    </div>
+
+                    <div class="address-box">
+                        <span class="meta-icon-small">📍</span>
+                        <p id="res-address"></p>
+                    </div>
+
+                    <div id="res-map-container" class="map-preview"></div>
+
+                    <a id="res-phone" class="phone-link"></a>
+
                     <a id="open-maps-btn" href="#" target="_blank" class="primary-btn">喺 Google Maps 打開</a>
-                    <button id="retry-btn" class="accent-btn" aria-label="Re-roll restaurant">🎲 抽過部！</button>
+
+                    <div class="button-group">
+                        <button id="retry-btn" class="accent-btn" aria-label="Re-roll restaurant">🎲 抽過部！</button>
+                        <button id="share-btn" class="text-btn" aria-label="Share this restaurant">📤 分享餐廳</button>
+                        <button id="back-btn" class="text-btn" aria-label="Back to home screen">返去主頁</button>
+                    </div>
                 </div>
             </div>
 
@@ -140,7 +135,7 @@
             language: mapLangMap[savedLang] || 'zh-HK'
         });
     </script>
-    <script type="module" src="js/main.js?v=3.50"></script>
+    <script type="module" src="js/main.js?v=3.49"></script>
 </body>
 
 </html>

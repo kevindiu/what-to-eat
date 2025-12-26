@@ -28,8 +28,6 @@ const App = {
     },
     Data: {
         userPos: null,
-        manualPos: null,
-        manualLocationName: null,
         candidates: [],
         currentPlace: null,
         lastPickedId: null,
@@ -62,7 +60,6 @@ const App = {
     init() {
         this.UI.updateStrings(this);
         this.UI.initFilters(this);
-        this.UI.initLocationPicker(this);
         this.PWA.init(this.translations, this.currentLang);
         restoreSession(this);
     }
@@ -74,20 +71,9 @@ window.setLanguage = (lang) => App.setLanguage(lang);
 
 document.addEventListener('DOMContentLoaded', () => {
     getEl('find-btn').onclick = () => findRestaurant(App);
-    getEl('retry-btn').onclick = () => {
-        App.UI.showScreen('loading-screen');
-        startSlotAnimation(App);
-    };
+    getEl('retry-btn').onclick = () => reRoll(App);
     getEl('share-btn').onclick = () => App.UI.shareCurrentPlace(App);
     getEl('back-btn').onclick = () => App.UI.showScreen('main-flow');
-
-    // Language selector delegation
-    document.addEventListener('click', (e) => {
-        const span = e.target.closest('.lang-selector span');
-        if (span && span.dataset.lang) {
-            App.setLanguage(span.dataset.lang);
-        }
-    });
 
     const slider = getEl('distance-slider');
     if (slider) {

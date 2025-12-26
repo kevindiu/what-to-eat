@@ -30,13 +30,9 @@ export async function findRestaurant(App) {
     const t = App.translations[App.currentLang];
 
     try {
-        if (App.Data.manualPos) {
-            App.Data.userPos = App.Data.manualPos;
-        } else {
-            const position = await getCurrentPosition();
-            const { latitude, longitude } = position.coords;
-            App.Data.userPos = { lat: latitude, lng: longitude };
-        }
+        const position = await getCurrentPosition();
+        const { latitude, longitude } = position.coords;
+        App.Data.userPos = { lat: latitude, lng: longitude };
 
         const { Place } = await google.maps.importLibrary("places");
         const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius);
@@ -230,11 +226,7 @@ export async function displayResult(App, place) {
     // Text Content
     el.name.textContent = place.name;
     el.address.textContent = place.vicinity;
-
-    // Jump to restaurant name
-    requestAnimationFrame(() => {
-        if (el.name) el.name.scrollIntoView({ behavior: 'auto', block: 'start' });
-    });
+    getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     // Rating
     const hasRating = typeof place.rating === 'number' && place.rating > 0;

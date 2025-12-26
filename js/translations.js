@@ -1,11 +1,8 @@
 export const translations = {
     zh: {
-        title: "食乜好",
+        title: "食乜好？",
         subtitle: "唔知食咩？等我幫你揀！",
         distanceTitle: "想搵徒步幾耐？",
-        locationTitle: "想搵邊區？",
-        currentLocation: "📍 目前位置",
-        searchHint: "搜尋地區或地址...",
         priceTitle: "價錢預算？",
         filterTitle: "今日唔想食咩？",
         findBtn: "幫我揀！✨",
@@ -43,12 +40,9 @@ export const translations = {
         shareText: "我喺「食乜好」抽中咗呢間：${name}！一齊去試下？🥗"
     },
     en: {
-        title: "What to Eat",
+        title: "What to Eat?",
         subtitle: "Don't know? Let me pick!",
         distanceTitle: "Walking Distance",
-        locationTitle: "Pick a Location",
-        currentLocation: "📍 Near Current Position",
-        searchHint: "Search area or address...",
         priceTitle: "Price Range",
         filterTitle: "What do you NOT want to eat?",
         findBtn: "Pick for me! ✨",
@@ -86,12 +80,9 @@ export const translations = {
         shareText: "I picked this on What to Eat: ${name}! Want to try? 🥗"
     },
     ja: {
-        title: "メシ決",
+        title: "何食べる？",
         subtitle: "迷ったら、私に選ばせて！",
         distanceTitle: "徒歩何分？",
-        locationTitle: "エリアを選択",
-        currentLocation: "📍 現在地の近く",
-        searchHint: "場所を検索...",
         priceTitle: "予算は？",
         filterTitle: "今は食べたくないものは？",
         findBtn: "選んで！ ✨",

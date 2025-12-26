@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食乜好 - What to Eat</title>
-    <link rel="stylesheet" href="style.css?v=3.45">
+    <link rel="stylesheet" href="style.css?v=3.49">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fff5f5" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
@@ -19,38 +19,27 @@
 
 <body>
     <div id="app">
+        <header>
+            <div class="lang-selector">
+                <span onclick="setLanguage('zh')" data-lang="zh">繁</span> |
+                <span onclick="setLanguage('en')" data-lang="en">EN</span> |
+                <span onclick="setLanguage('ja')" data-lang="ja">日</span>
+            </div>
+            <h1 id="app-title">食乜好？</h1>
+            <p id="app-subtitle">唔知食咩？等我幫你揀！</p>
+        </header>
+
         <main>
             <div id="main-flow" class="screen">
-                <header>
-                    <div class="lang-selector">
-                        <span onclick="setLanguage('zh')" data-lang="zh">繁</span>
-                        <span onclick="setLanguage('en')" data-lang="en">EN</span>
-                        <span onclick="setLanguage('ja')" data-lang="ja">JP</span>
-                    </div>
-                    <h1 class="app-title-text">食乜好</h1>
-                    <p class="app-subtitle-text">唔知食咩？等我幫你揀！</p>
-                </header>
-
                 <div class="filter-section">
-                    <h3 id="location-title">想搵邊區？</h3>
-                    <div class="location-container">
-                        <div id="location-bar" class="location-bar">
-                            <span id="location-display">📍 目前位置</span>
-                            <span id="clear-location" class="clear-icon hidden">✕</span>
-                        </div>
-                        <input type="text" id="location-input" class="location-input hidden" placeholder="搜尋地區或地址...">
-                    </div>
-                </div>
-
-                <div class="filter-section">
-                    <h3 class="distance-title-text">徒步幾耐？ (<span id="distance-val">5</span> mins)</h3>
+                    <h3 id="distance-title">徒步幾耐？ (<span id="distance-val">5</span> mins)</h3>
                     <div class="distance-slider-container">
                         <input type="range" id="distance-slider" min="1" max="30" value="5" class="slider">
                     </div>
                 </div>
 
                 <div class="filter-section">
-                    <h3 class="price-title-text">價錢預算？</h3>
+                    <h3 id="price-title">價錢預算？</h3>
                     <div id="price-list" class="price-grid">
                         <div class="price-item active" data-price="1">$</div>
                         <div class="price-item active" data-price="2">$$</div>
@@ -60,76 +49,61 @@
                 </div>
 
                 <div class="filter-section">
-                    <h3 class="filter-title-text">今日唔想食咩？</h3>
+                    <h3 id="filter-title">今日唔想食咩？</h3>
                     <div id="filter-list" class="filter-grid">
                         <!-- Generated in JS -->
                     </div>
                 </div>
 
-                <button id="find-btn" class="primary-btn find-btn-text">幫我揀個餐廳！✨</button>
+                <button id="find-btn" class="primary-btn">幫我揀個餐廳！✨</button>
                 <div id="install-container" class="hidden">
                     <button id="install-btn" class="install-btn">安裝 App 📲</button>
                 </div>
             </div>
 
             <div id="result-screen" class="screen hidden">
-                <!-- Content Area -->
-                <div id="result-content" class="result-content">
-                    <header class="result-header">
-                        <div class="lang-selector">
-                            <span onclick="setLanguage('zh')" data-lang="zh">繁</span>
-                            <span onclick="setLanguage('en')" data-lang="en">EN</span>
-                            <span onclick="setLanguage('ja')" data-lang="ja">JP</span>
+                <div class="restaurant-card">
+                    <h2 id="res-name">餐廳名稱</h2>
+                    <div class="res-meta">
+                        <div id="res-rating-container" class="meta-box rating">
+                            <span class="meta-icon">⭐</span>
+                            <span id="res-rating" class="meta-val"></span>
                         </div>
-                        <h1 class="logo-small app-title-text">食乜好</h1>
-                        <p class="app-subtitle-text"></p>
-                    </header>
-                    <div class="restaurant-card">
-                        <h2 id="res-name">餐廳名稱</h2>
-                        <div class="res-meta">
-                            <div id="res-rating-container" class="meta-box rating">
-                                <span class="meta-icon">⭐</span>
-                                <span id="res-rating" class="meta-val"></span>
-                            </div>
-                            <div id="res-price-container" class="meta-box price-pill">
-                                <span class="meta-icon">💰</span>
-                                <span id="res-price" class="meta-val"></span>
-                            </div>
-                            <div id="res-category-container" class="meta-box category-pill">
-                                <span id="res-category-icon" class="meta-icon"></span>
-                                <span id="res-category" class="meta-val"></span>
-                            </div>
-                            <div id="res-distance-container" class="meta-box distance-pill">
-                                <span class="meta-icon">🚶</span>
-                                <span id="res-distance" class="meta-val"></span>
-                            </div>
+                        <div id="res-price-container" class="meta-box price-pill">
+                            <span class="meta-icon">💰</span>
+                            <span id="res-price" class="meta-val"></span>
                         </div>
-
-                        <div id="res-hours-container" class="hours-row">
-                            <span class="meta-icon-small">🕒</span>
-                            <p id="res-hours"></p>
+                        <div id="res-category-container" class="meta-box category-pill">
+                            <span id="res-category-icon" class="meta-icon"></span>
+                            <span id="res-category" class="meta-val"></span>
                         </div>
-
-                        <div class="address-box">
-                            <span class="meta-icon-small">📍</span>
-                            <p id="res-address"></p>
-                        </div>
-
-                        <div id="res-map-container" class="map-preview"></div>
-
-                        <a id="res-phone" class="phone-link"></a>
-
-                        <div class="button-group secondary-actions">
-                            <button id="share-btn" class="text-btn" aria-label="Share this restaurant">📤 分享餐廳</button>
-                            <button id="back-btn" class="text-btn" aria-label="Back to home screen">返去主頁</button>
+                        <div id="res-distance-container" class="meta-box distance-pill">
+                            <span class="meta-icon">🚶</span>
+                            <span id="res-distance" class="meta-val"></span>
                         </div>
                     </div>
-                </div>
 
-                <!-- Sticky Action Bar -->
-                <div class="result-actions">
+                    <div id="res-hours-container" class="hours-row">
+                        <span class="meta-icon-small">🕒</span>
+                        <p id="res-hours"></p>
+                    </div>
+
+                    <div class="address-box">
+                        <span class="meta-icon-small">📍</span>
+                        <p id="res-address"></p>
+                    </div>
+
+                    <div id="res-map-container" class="map-preview"></div>
+
+                    <a id="res-phone" class="phone-link"></a>
+
                     <a id="open-maps-btn" href="#" target="_blank" class="primary-btn">喺 Google Maps 打開</a>
-                    <button id="retry-btn" class="accent-btn" aria-label="Re-roll restaurant">🎲 抽過間！</button>
+
+                    <div class="button-group">
+                        <button id="retry-btn" class="accent-btn" aria-label="Re-roll restaurant">🎲 抽過部！</button>
+                        <button id="share-btn" class="text-btn" aria-label="Share this restaurant">📤 分享餐廳</button>
+                        <button id="back-btn" class="text-btn" aria-label="Back to home screen">返去主頁</button>
+                    </div>
                 </div>
             </div>
 
@@ -161,7 +135,7 @@
             language: mapLangMap[savedLang] || 'zh-HK'
         });
     </script>
-    <script type="module" src="js/main.js?v=3.45"></script>
+    <script type="module" src="js/main.js?v=3.49"></script>
 </body>
 
 </html>

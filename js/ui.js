@@ -12,39 +12,26 @@ export const UI = {
     updateStrings(App) {
         const t = App.translations[App.currentLang];
         const mappings = {
+            'app-title': t.title,
+            'app-subtitle': t.subtitle,
+            'price-title': t.priceTitle,
+            'filter-title': t.filterTitle,
+            'find-btn': t.findBtn,
             'retry-btn': t.retry,
             'back-btn': t.backBtn,
             'loading-text': t.loading,
             'open-maps-btn': t.openMaps,
             'share-btn': t.shareBtn,
-            'install-btn': t.installBtn,
-            'location-title': t.locationTitle,
-            'location-display': App.Data.manualPos ? App.Data.manualLocationName : t.currentLocation
-        };
-
-        const classMappings = {
-            'app-title-text': t.title,
-            'app-subtitle-text': t.subtitle,
-            'price-title-text': t.priceTitle,
-            'filter-title-text': t.filterTitle,
-            'find-btn-text': t.findBtn,
-            'distance-title-text': t.distanceTitle
+            'install-btn': t.installBtn
         };
 
         Object.entries(mappings).forEach(([id, text]) => {
             const el = getEl(id);
-            if (el) el.innerHTML = text;
+            if (el) el.textContent = text;
         });
 
-        Object.entries(classMappings).forEach(([cls, text]) => {
-            document.querySelectorAll(`.${cls}`).forEach(el => {
-                if (cls === 'distance-title-text') {
-                    el.innerHTML = `${text} (<span id="distance-val">${App.Config.mins}</span> mins)`;
-                } else {
-                    el.innerHTML = text;
-                }
-            });
-        });
+        const distTitle = getEl('distance-title');
+        if (distTitle) distTitle.innerHTML = `${t.distanceTitle} (<span id="distance-val">${App.Config.mins}</span> mins)`;
 
         document.querySelectorAll('.lang-selector span').forEach(span => {
             span.classList.toggle('active', span.dataset.lang === App.currentLang);
@@ -83,68 +70,6 @@ export const UI = {
                 this.triggerHaptic(30);
             };
         });
-    },
-
-    async initLocationPicker(App) {
-        const bar = getEl('location-bar');
-        const input = getEl('location-input');
-        const display = getEl('location-display');
-        const clear = getEl('clear-location');
-        const t = App.translations[App.currentLang];
-
-        if (!bar || !input) return;
-
-        bar.onclick = () => {
-            bar.classList.add('hidden');
-            input.classList.remove('hidden');
-            input.placeholder = t.searchHint;
-            input.focus();
-        };
-
-        try {
-            const { Autocomplete } = await google.maps.importLibrary("places");
-            const autocomplete = new Autocomplete(input, {
-                fields: ["formatted_address", "geometry", "name"],
-                types: ["geocode", "establishment"]
-            });
-
-            autocomplete.addListener("place_changed", () => {
-                const place = autocomplete.getPlace();
-                if (!place.geometry || !place.geometry.location) return;
-
-                App.Data.manualPos = {
-                    lat: place.geometry.location.lat(),
-                    lng: place.geometry.location.lng()
-                };
-                App.Data.manualLocationName = place.name || place.formatted_address;
-
-                display.textContent = App.Data.manualLocationName;
-                clear.classList.remove('hidden');
-
-                input.classList.add('hidden');
-                input.value = '';
-                bar.classList.remove('hidden');
-                this.triggerHaptic(50);
-            });
-
-            // Handle blur to go back if empty
-            input.onblur = () => {
-                if (!input.value) {
-                    input.classList.add('hidden');
-                    bar.classList.remove('hidden');
-                }
-            };
-
-            clear.onclick = (e) => {
-                e.stopPropagation();
-                App.Data.manualPos = null;
-                App.Data.manualLocationName = null;
-                display.textContent = t.currentLocation;
-                clear.classList.add('hidden');
-                this.triggerHaptic(30);
-            };
-
-        } catch (e) { console.error("Autocomplete init failed", e); }
     },
 
     triggerHaptic(duration) {

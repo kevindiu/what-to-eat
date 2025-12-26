@@ -5,7 +5,7 @@ export const PWA = {
     init(translations, currentLang) {
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=3.27')
+                navigator.serviceWorker.register('./sw.js?v=3.29')
                     .then(() => console.log('SW registered!'))
                     .catch(err => console.log('SW failed', err));
             });
@@ -44,6 +44,18 @@ export const PWA = {
     isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; },
     isStandalone() { return window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches; },
     async handleInstall() {
+        if (this.isIOS()) {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: document.title,
+                        url: window.location.href
+                    });
+                } catch (e) { console.log("iOS Install Share failed", e); }
+            }
+            return;
+        }
+
         if (!this.deferredPrompt) return;
         this.deferredPrompt.prompt();
         const { outcome } = await this.deferredPrompt.userChoice;

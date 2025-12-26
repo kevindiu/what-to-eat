@@ -47,7 +47,7 @@ export async function findRestaurant(App) {
         const candidates = await processCandidates(places, App.Data.userPos, App);
 
         if (candidates.length === 0) {
-            alert(t.noResults + " (Try adjusting filters)");
+            alert(t.noFilteredResults);
             App.UI.showScreen('main-flow');
             return;
         }

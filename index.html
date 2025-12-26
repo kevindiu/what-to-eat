@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食乜好 - What to Eat</title>
-    <link rel="stylesheet" href="style.css?v=3.02">
+    <link rel="stylesheet" href="style.css?v=3.11">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fff5f5" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
@@ -77,6 +77,10 @@
                             <span id="res-category-icon" class="meta-icon"></span>
                             <span id="res-category" class="meta-val"></span>
                         </div>
+                        <div id="res-hours-container" class="meta-box hours-pill">
+                            <span class="meta-icon">🕒</span>
+                            <span id="res-hours" class="meta-val"></span>
+                        </div>
                         <div id="res-distance-container" class="meta-box distance-pill">
                             <span class="meta-icon">🚶</span>
                             <span id="res-distance" class="meta-val"></span>
@@ -126,7 +130,7 @@
             language: mapLangMap[savedLang] || 'zh-HK'
         });
     </script>
-    <script type="module" src="js/main.js?v=3.02"></script>
+    <script type="module" src="js/main.js?v=3.11"></script>
 </body>
 
 </html>

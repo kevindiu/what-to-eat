@@ -65,13 +65,13 @@ async function processCandidates(places, userLoc, App) {
             priceLevel: p.priceLevel,
             phone: p.nationalPhoneNumber,
             businessStatus: p.businessStatus,
-            location: p.location
+            location: p.location,
+            openingHours: p.regularOpeningHours
         };
     }));
 
-    // Filter open/operational
-    let filtered = rawResults.filter(p => p.isOpen === true && (p.businessStatus === 'OPERATIONAL' || !p.businessStatus));
-    if (filtered.length === 0) filtered = rawResults.filter(p => p.businessStatus === 'OPERATIONAL' || !p.businessStatus);
+    // Filter: Include if strictly open OR if no data available (p.isOpen !== false)
+    let filtered = rawResults.filter(p => p.isOpen !== false && (p.businessStatus === 'OPERATIONAL' || !p.businessStatus));
 
     // Distance Matrix
     const withDurations = await calculateDistances(userLoc, filtered);
@@ -213,6 +213,26 @@ export async function displayResult(App, place) {
         getEl('res-category-container').style.display = 'flex';
     } else {
         getEl('res-category-container').style.display = 'none';
+    }
+
+    // Opening Hours
+    const hoursContainer = getEl('res-hours-container');
+    let todayHoursStr = "";
+    if (place.openingHours && place.openingHours.weekdayDescriptions) {
+        const todayIndex = (new Date().getDay() + 6) % 7; // Convert 0-6 (Sun-Sat) to 0-6 (Mon-Sun) to match standard array if needed, but Google often follows local order.
+        // Safer approach: match day name
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const todayName = dayNames[new Date().getDay()];
+        const match = place.openingHours.weekdayDescriptions.find(d => d.includes(todayName));
+        if (match) {
+            todayHoursStr = match.split(': ')[1] || "";
+        }
+    }
+    if (todayHoursStr) {
+        getEl('res-hours').textContent = todayHoursStr;
+        hoursContainer.style.display = 'flex';
+    } else {
+        hoursContainer.style.display = 'none';
     }
 
     getEl('res-address').textContent = place.vicinity;

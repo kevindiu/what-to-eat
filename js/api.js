@@ -51,7 +51,19 @@ async function fetchNearby(Place, location, radius) {
 async function processCandidates(places, userLoc, App) {
     const rawResults = await Promise.all(places.map(async p => {
         let isOpenStatus = null;
-        try { isOpenStatus = await p.isOpen(); } catch (e) { isOpenStatus = p.regularOpeningHours?.openNow; }
+        try {
+            isOpenStatus = await p.isOpen();
+            // Strict Override: If periods exist, double check manually
+            if (p.regularOpeningHours && p.regularOpeningHours.periods) {
+                const verifiedOpen = checkPeriodAvailability(p.regularOpeningHours.periods);
+                // If the period check says definitely closed, trust it more than the API flag
+                if (verifiedOpen === false) {
+                    isOpenStatus = false;
+                }
+            }
+        } catch (e) {
+            isOpenStatus = p.regularOpeningHours?.openNow;
+        }
 
         const t = App.translations[App.currentLang];
         return {
@@ -95,6 +107,36 @@ async function processCandidates(places, userLoc, App) {
             if (mapped && !App.Config.prices.has(mapped)) return false;
         }
         return true;
+    });
+}
+// Helper to check if current time is within any of the provided opening periods
+function checkPeriodAvailability(periods) {
+    if (!periods || !Array.isArray(periods)) return null;
+
+    const now = new Date();
+    const day = now.getDay(); // 0 (Sun) - 6 (Sat)
+    const currentTime = now.getHours() * 100 + now.getMinutes(); // Format: HHmm (e.g., 1905)
+
+    // Filter periods for today
+    const todaysPeriods = periods.filter(p => p.open && p.open.day === day);
+
+    if (todaysPeriods.length === 0) return false; // Confirmed closed today if periods exist but none for today
+
+    return todaysPeriods.some(period => {
+        const openTime = parseInt(period.open.hour) * 100 + parseInt(period.open.minute);
+
+        // Handle "Always Open" (no close time provided) or cases where it crosses midnight
+        if (!period.close) return true;
+
+        const closeDay = period.close.day;
+        const closeTime = parseInt(period.close.hour) * 100 + parseInt(period.close.minute);
+
+        if (closeDay === day) {
+            return currentTime >= openTime && currentTime < closeTime;
+        } else {
+            // Closes tomorrow (overnight)
+            return currentTime >= openTime;
+        }
     });
 }
 
@@ -170,7 +212,8 @@ export async function reRoll(App) {
                 priceLevel: p.priceLevel,
                 phone: p.nationalPhoneNumber,
                 businessStatus: p.businessStatus,
-                location: p.location
+                location: p.location,
+                openingHours: p.regularOpeningHours
             };
             const idx = App.Data.candidates.findIndex(item => item.place_id === randomPlace.place_id);
             if (idx !== -1) App.Data.candidates[idx] = randomPlace;
@@ -219,13 +262,20 @@ export async function displayResult(App, place) {
     const hoursContainer = getEl('res-hours-container');
     let todayHoursStr = "";
     if (place.openingHours && place.openingHours.weekdayDescriptions) {
-        const todayIndex = (new Date().getDay() + 6) % 7; // Convert 0-6 (Sun-Sat) to 0-6 (Mon-Sun) to match standard array if needed, but Google often follows local order.
-        // Safer approach: match day name
-        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const todayName = dayNames[new Date().getDay()];
-        const match = place.openingHours.weekdayDescriptions.find(d => d.includes(todayName));
+        const today = new Date();
+        // Try current system locale first (most likely to match Google's response)
+        const localeName = today.toLocaleDateString(undefined, { weekday: 'long' });
+        // Fallback to English names just in case
+        const enName = today.toLocaleDateString('en-US', { weekday: 'long' });
+
+        const match = place.openingHours.weekdayDescriptions.find(d =>
+            d.includes(localeName) || d.includes(enName)
+        );
+
         if (match) {
-            todayHoursStr = match.split(': ')[1] || "";
+            // Split by localized separator if possible, or just the first colon
+            const parts = match.split(/: |：/); // Handle both standard and full-width colons
+            todayHoursStr = parts[1] || "";
         }
     }
     if (todayHoursStr) {

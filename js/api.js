@@ -114,30 +114,40 @@ function checkPeriodAvailability(periods) {
     if (!periods || !Array.isArray(periods)) return null;
 
     const now = new Date();
-    const day = now.getDay(); // 0 (Sun) - 6 (Sat)
-    const currentTime = now.getHours() * 100 + now.getMinutes(); // Format: HHmm (e.g., 1905)
+    const dayToday = now.getDay();
+    const dayYesterday = (dayToday + 6) % 7;
+    const currentTime = now.getHours() * 100 + now.getMinutes();
 
-    // Filter periods for today
-    const todaysPeriods = periods.filter(p => p.open && p.open.day === day);
-
-    if (todaysPeriods.length === 0) return false; // Confirmed closed today if periods exist but none for today
-
-    return todaysPeriods.some(period => {
+    // 1. Check periods that START today
+    const startsToday = periods.filter(p => p.open && p.open.day === dayToday);
+    const isOpenToday = startsToday.some(period => {
         const openTime = parseInt(period.open.hour) * 100 + parseInt(period.open.minute);
-
-        // Handle "Always Open" (no close time provided) or cases where it crosses midnight
-        if (!period.close) return true;
+        if (!period.close) return true; // Always open
 
         const closeDay = period.close.day;
         const closeTime = parseInt(period.close.hour) * 100 + parseInt(period.close.minute);
 
-        if (closeDay === day) {
+        if (closeDay === dayToday) {
             return currentTime >= openTime && currentTime < closeTime;
         } else {
-            // Closes tomorrow (overnight)
+            // Closes tomorrow
             return currentTime >= openTime;
         }
     });
+
+    if (isOpenToday) return true;
+
+    // 2. Check periods that started YESTERDAY and cross midnight
+    const startedYesterday = periods.filter(p => p.open && p.open.day === dayYesterday && p.close && p.close.day === dayToday);
+    const stillOpenFromYesterday = startedYesterday.some(period => {
+        const closeTime = parseInt(period.close.hour) * 100 + parseInt(period.close.minute);
+        return currentTime < closeTime;
+    });
+
+    if (stillOpenFromYesterday) return true;
+
+    // If periods exist for today or yesterday but non matched the current time, it's definitively closed
+    return false;
 }
 
 function handleError(error, t, App) {

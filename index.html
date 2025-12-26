@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食乜好 - What to Eat</title>
-    <link rel="stylesheet" href="style.css?v=3.13">
+    <link rel="stylesheet" href="style.css?v=3.14">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fff5f5" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
@@ -76,39 +76,42 @@
                         <div id="res-category-container" class="meta-box category-pill">
                             <span id="res-category-icon" class="meta-icon"></span>
                             <span id="res-category" class="meta-val"></span>
+                            <div id="res-distance-container" class="meta-box distance-pill">
+                                <span class="meta-icon">🚶</span>
+                                <span id="res-distance" class="meta-val"></span>
+                            </div>
                         </div>
-                        <div id="res-hours-container" class="meta-box hours-pill">
-                            <span class="meta-icon">🕒</span>
-                            <span id="res-hours" class="meta-val"></span>
-                        </div>
-                        <div id="res-distance-container" class="meta-box distance-pill">
-                            <span class="meta-icon">🚶</span>
-                            <span id="res-distance" class="meta-val"></span>
-                        </div>
-                    </div>
-                    <div class="address-box">
-                        <span class="meta-icon-small">📍</span>
-                        <p id="res-address"></p>
-                    </div>
-                    <div id="res-map-container" class="map-preview"></div>
-                    <a id="res-phone" class="phone-link"></a>
 
-                    <a id="open-maps-btn" href="#" target="_blank" class="primary-btn">喺 Google Maps 打開</a>
+                        <div class="address-box">
+                            <span class="meta-icon-small">📍</span>
+                            <p id="res-address"></p>
+                        </div>
 
-                    <div class="button-group">
-                        <button id="retry-btn" class="accent-btn">🎲 抽過部！</button>
-                        <button id="back-btn" class="text-btn">返去主頁</button>
+                        <div id="res-map-container" class="map-preview"></div>
+
+                        <div id="res-hours-container" class="hours-row">
+                            <span class="meta-icon-small">🕒</span>
+                            <p id="res-hours"></p>
+                        </div>
+
+                        <a id="res-phone" class="phone-link"></a>
+
+                        <a id="open-maps-btn" href="#" target="_blank" class="primary-btn">喺 Google Maps 打開</a>
+
+                        <div class="button-group">
+                            <button id="retry-btn" class="accent-btn">🎲 抽過部！</button>
+                            <button id="back-btn" class="text-btn">返去主頁</button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="loading-screen" class="screen hidden">
-                <div class="loader"></div>
-                <div id="slot-container" class="slot-machine">
-                    <span id="slot-name">...</span>
+                <div id="loading-screen" class="screen hidden">
+                    <div class="loader"></div>
+                    <div id="slot-container" class="slot-machine">
+                        <span id="slot-name">...</span>
+                    </div>
+                    <p id="loading-text">搜尋緊附近好嘢食... 🔍</p>
                 </div>
-                <p id="loading-text">搜尋緊附近好嘢食... 🔍</p>
-            </div>
         </main>
     </div>
 
@@ -130,7 +133,7 @@
             language: mapLangMap[savedLang] || 'zh-HK'
         });
     </script>
-    <script type="module" src="js/main.js?v=3.13"></script>
+    <script type="module" src="js/main.js?v=3.14"></script>
 </body>
 
 </html>

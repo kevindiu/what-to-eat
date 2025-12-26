@@ -500,19 +500,20 @@ header p {
     color: var(--pill-distance-text);
 }
 
-.hours-pill {
-    background: var(--pill-hours-bg);
-    color: var(--pill-hours-text);
+.distance-pill {
+    background: var(--pill-distance-bg);
+    color: var(--pill-distance-text);
 }
 
-.address-box {
+.address-box,
+.hours-row {
     display: flex;
     align-items: center;
     gap: 8px;
     background: var(--address-bg);
     padding: 8px 12px;
     border-radius: 18px;
-    margin: 0.5rem 0 1rem;
+    margin: 0.5rem 0 0.5rem;
     color: var(--text-muted);
     font-size: 0.8rem;
     line-height: 1.4;
@@ -520,12 +521,20 @@ header p {
     border: 1px solid var(--address-border);
 }
 
+.hours-row {
+    color: var(--pill-hours-text);
+    background: var(--pill-hours-bg);
+    border-color: transparent;
+    font-weight: 500;
+}
+
 .meta-icon-small {
     font-size: 1.1rem;
     flex-shrink: 0;
 }
 
-#res-address {
+#res-address,
+#res-hours {
     margin: 0;
 }
 

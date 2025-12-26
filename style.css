@@ -445,20 +445,24 @@ header p {
 .res-meta {
     display: flex;
     justify-content: center;
-    gap: 8px;
-    margin-bottom: 1.2rem;
-    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 1rem;
+    flex-wrap: nowrap;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
 }
 
 .meta-box {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 12px 8px;
-    border-radius: 20px;
-    flex: 1;
-    min-width: 75px;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
     max-width: 100px;
     transition: transform 0.2s ease;
 }

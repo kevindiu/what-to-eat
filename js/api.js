@@ -52,17 +52,22 @@ async function processCandidates(places, userLoc, App) {
     const rawResults = await Promise.all(places.map(async p => {
         let isOpenStatus = null;
         try {
-            isOpenStatus = await p.isOpen();
-            // Strict Override: If periods exist, double check manually
+            // 1. Precise Period Check (Source of Truth if periods exist)
             if (p.regularOpeningHours && p.regularOpeningHours.periods) {
-                const verifiedOpen = checkPeriodAvailability(p.regularOpeningHours.periods);
-                // If the period check says definitely closed, trust it more than the API flag
-                if (verifiedOpen === false) {
-                    isOpenStatus = false;
-                }
+                isOpenStatus = checkPeriodAvailability(p.regularOpeningHours.periods);
+            }
+
+            // 2. Fallback to API flag if manual check is inconclusive or periods are missing
+            if (isOpenStatus === null) {
+                isOpenStatus = await p.isOpen();
+            }
+
+            // 3. Last fallback
+            if (isOpenStatus === null) {
+                isOpenStatus = p.regularOpeningHours?.openNow;
             }
         } catch (e) {
-            isOpenStatus = p.regularOpeningHours?.openNow;
+            isOpenStatus = null;
         }
 
         const t = App.translations[App.currentLang];
@@ -111,42 +116,35 @@ async function processCandidates(places, userLoc, App) {
 }
 // Helper to check if current time is within any of the provided opening periods
 function checkPeriodAvailability(periods) {
-    if (!periods || !Array.isArray(periods)) return null;
+    if (!periods || !Array.isArray(periods) || periods.length === 0) return null;
+
+    // Google Maps 24/7 signature: single period with open but no close
+    if (periods.length === 1 && !periods[0].close) return true;
 
     const now = new Date();
-    const dayToday = now.getDay();
-    const dayYesterday = (dayToday + 6) % 7;
-    const currentTime = now.getHours() * 100 + now.getMinutes();
+    const nowAbs = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+    const WEEK_MINUTES = 10080;
 
-    // 1. Check periods that START today
-    const startsToday = periods.filter(p => p.open && p.open.day === dayToday);
-    const isOpenToday = startsToday.some(period => {
-        const openTime = parseInt(period.open.hour) * 100 + parseInt(period.open.minute);
-        if (!period.close) return true; // Always open
+    for (const period of periods) {
+        if (!period.open || !period.close) continue;
 
-        const closeDay = period.close.day;
-        const closeTime = parseInt(period.close.hour) * 100 + parseInt(period.close.minute);
+        const openAbs = Number(period.open.day) * 1440 + Number(period.open.hour) * 60 + Number(period.open.minute);
+        let closeAbs = Number(period.close.day) * 1440 + Number(period.close.hour) * 60 + Number(period.close.minute);
 
-        if (closeDay === dayToday) {
-            return currentTime >= openTime && currentTime < closeTime;
-        } else {
-            // Closes tomorrow
-            return currentTime >= openTime;
+        // If close is numerically before open, it crosses the week boundary (Sunday 00:00)
+        if (closeAbs <= openAbs) {
+            closeAbs += WEEK_MINUTES;
         }
-    });
 
-    if (isOpenToday) return true;
+        // Check if current time falls within this period
+        // We check two windows: the current absolute time, and the "time + one week" 
+        // to catch periods that started late last week and are finishing now.
+        if ((nowAbs >= openAbs && nowAbs < closeAbs) ||
+            (nowAbs + WEEK_MINUTES >= openAbs && nowAbs + WEEK_MINUTES < closeAbs)) {
+            return true;
+        }
+    }
 
-    // 2. Check periods that started YESTERDAY and cross midnight
-    const startedYesterday = periods.filter(p => p.open && p.open.day === dayYesterday && p.close && p.close.day === dayToday);
-    const stillOpenFromYesterday = startedYesterday.some(period => {
-        const closeTime = parseInt(period.close.hour) * 100 + parseInt(period.close.minute);
-        return currentTime < closeTime;
-    });
-
-    if (stillOpenFromYesterday) return true;
-
-    // If periods exist for today or yesterday but non matched the current time, it's definitively closed
     return false;
 }
 

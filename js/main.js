@@ -74,7 +74,10 @@ window.setLanguage = (lang) => App.setLanguage(lang);
 
 document.addEventListener('DOMContentLoaded', () => {
     getEl('find-btn').onclick = () => findRestaurant(App);
-    getEl('retry-btn').onclick = () => reRoll(App);
+    getEl('retry-btn').onclick = () => {
+        App.UI.showScreen('loading-screen');
+        startSlotAnimation(App);
+    };
     getEl('share-btn').onclick = () => App.UI.shareCurrentPlace(App);
     getEl('back-btn').onclick = () => App.UI.showScreen('main-flow');
 

@@ -231,10 +231,9 @@ export async function displayResult(App, place) {
     el.name.textContent = place.name;
     el.address.textContent = place.vicinity;
 
-    // Reset scroll to top
+    // Jump to restaurant name
     requestAnimationFrame(() => {
-        const contentArea = getEl('result-content');
-        if (contentArea) contentArea.scrollTo(0, 0);
+        if (el.name) el.name.scrollIntoView({ behavior: 'auto', block: 'start' });
     });
 
     // Rating

@@ -20,9 +20,9 @@ export const PLACE_FIELDS = [
 ];
 
 export const PRICE_LEVEL_MAP = {
-    'PRICE_LEVEL_FREE': '0',
-    'PRICE_LEVEL_INEXPENSIVE': '1',
-    'PRICE_LEVEL_MODERATE': '2',
-    'PRICE_LEVEL_EXPENSIVE': '3',
-    'PRICE_LEVEL_VERY_EXPENSIVE': '4'
+    'PRICE_LEVEL_FREE': '0', '0': '0',
+    'PRICE_LEVEL_INEXPENSIVE': '1', '1': '1',
+    'PRICE_LEVEL_MODERATE': '2', '2': '2',
+    'PRICE_LEVEL_EXPENSIVE': '3', '3': '3',
+    'PRICE_LEVEL_VERY_EXPENSIVE': '4', '4': '4'
 };

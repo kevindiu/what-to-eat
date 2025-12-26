@@ -113,9 +113,9 @@ async function processCandidates(places, userLoc, App) {
         });
         if (isExcluded) return false;
 
-        if (p.priceLevel) {
+        if (p.priceLevel !== undefined && p.priceLevel !== null) {
             const mapped = PRICE_LEVEL_MAP[p.priceLevel];
-            if (mapped && !App.Config.prices.has(mapped)) return false;
+            if (mapped && App.Config.prices.size > 0 && !App.Config.prices.has(mapped)) return false;
         }
         return true;
     });

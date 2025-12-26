@@ -1,5 +1,29 @@
 import { getEl, getCurrentPosition } from './utils.js';
-import { CUISINE_MAPPING } from './constants.js';
+import { CUISINE_MAPPING, PLACE_FIELDS, PRICE_LEVEL_MAP } from './constants.js';
+
+/**
+ * Centalized mapping from Google Place object to internal restaurant model.
+ */
+function mapPlaceData(p, translations) {
+    const t = translations;
+    return {
+        name: typeof p.displayName === 'string' ? p.displayName : (p.displayName?.text || t.unknownName),
+        rating: p.rating,
+        userRatingCount: p.userRatingCount || 0,
+        vicinity: p.formattedAddress || p.vicinity || t.noAddress,
+        place_id: p.id || p.place_id,
+        types: p.types || [],
+        priceLevel: p.priceLevel,
+        phone: p.nationalPhoneNumber,
+        businessStatus: p.businessStatus,
+        location: p.location,
+        openingHours: p.regularOpeningHours,
+        // Cached/Derived values
+        isOpen: null, // To be filled by checkPeriodAvailability
+        durationText: null,
+        durationValue: null
+    };
+}
 
 export async function findRestaurant(App) {
     App.UI.triggerHaptic(50);
@@ -40,7 +64,7 @@ async function fetchNearby(Place, location, radius) {
     const request = {
         locationRestriction: { center: location, radius: radius },
         includedPrimaryTypes: ["restaurant"],
-        fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber", "businessStatus"],
+        fields: PLACE_FIELDS,
         maxResultCount: 20,
         rankPreference: 'POPULARITY'
     };
@@ -49,42 +73,24 @@ async function fetchNearby(Place, location, radius) {
 }
 
 async function processCandidates(places, userLoc, App) {
+    const t = App.translations[App.currentLang];
     const rawResults = await Promise.all(places.map(async p => {
-        let isOpenStatus = null;
+        const item = mapPlaceData(p, t);
+
         try {
-            // 1. Precise Period Check (Source of Truth if periods exist)
-            if (p.regularOpeningHours && p.regularOpeningHours.periods) {
-                isOpenStatus = checkPeriodAvailability(p.regularOpeningHours.periods);
+            // Precise Period Check
+            if (item.openingHours?.periods) {
+                item.isOpen = checkPeriodAvailability(item.openingHours.periods);
             }
 
-            // 2. Fallback to API flag if manual check is inconclusive or periods are missing
-            if (isOpenStatus === null) {
-                isOpenStatus = await p.isOpen();
-            }
-
-            // 3. Last fallback
-            if (isOpenStatus === null) {
-                isOpenStatus = p.regularOpeningHours?.openNow;
-            }
+            // Fallbacks
+            if (item.isOpen === null) item.isOpen = await p.isOpen();
+            if (item.isOpen === null) item.isOpen = item.openingHours?.openNow;
         } catch (e) {
-            isOpenStatus = null;
+            item.isOpen = null;
         }
 
-        const t = App.translations[App.currentLang];
-        return {
-            name: typeof p.displayName === 'string' ? p.displayName : (p.displayName?.text || t.unknownName),
-            rating: p.rating,
-            userRatingCount: p.userRatingCount,
-            vicinity: p.formattedAddress || p.vicinity || t.noAddress,
-            place_id: p.id || p.place_id,
-            types: p.types || [],
-            isOpen: isOpenStatus,
-            priceLevel: p.priceLevel,
-            phone: p.nationalPhoneNumber,
-            businessStatus: p.businessStatus,
-            location: p.location,
-            openingHours: p.regularOpeningHours
-        };
+        return item;
     }));
 
     // Filter: Include if strictly open OR if no data available (p.isOpen !== false)
@@ -108,7 +114,7 @@ async function processCandidates(places, userLoc, App) {
         if (isExcluded) return false;
 
         if (p.priceLevel) {
-            const mapped = { 'PRICE_LEVEL_INEXPENSIVE': '1', 'PRICE_LEVEL_MODERATE': '2', 'PRICE_LEVEL_EXPENSIVE': '3', 'PRICE_LEVEL_VERY_EXPENSIVE': '4' }[p.priceLevel];
+            const mapped = PRICE_LEVEL_MAP[p.priceLevel];
             if (mapped && !App.Config.prices.has(mapped)) return false;
         }
         return true;
@@ -204,27 +210,16 @@ export async function reRoll(App) {
 
     let randomPlace = candidates[Math.floor(Math.random() * candidates.length)];
 
-    // If we don't have detailed info (like weekday descriptions) or basic address, fetch details
-    const hasHours = randomPlace.openingHours?.weekdayDescriptions && randomPlace.openingHours.weekdayDescriptions.length > 0;
+    const hasHours = randomPlace.openingHours?.weekdayDescriptions?.length > 0;
     if ((!randomPlace.vicinity || !hasHours) && randomPlace.place_id) {
         App.UI.showScreen('loading-screen');
         try {
             const { Place } = await google.maps.importLibrary("places");
             const p = new Place({ id: randomPlace.place_id });
-            await p.fetchFields({ fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber", "businessStatus"] });
-            randomPlace = {
-                name: p.displayName?.text || p.displayName || "Unknown",
-                rating: p.rating,
-                userRatingCount: p.userRatingCount,
-                vicinity: p.formattedAddress || "地址不詳",
-                place_id: p.id,
-                types: p.types || [],
-                priceLevel: p.priceLevel,
-                phone: p.nationalPhoneNumber,
-                businessStatus: p.businessStatus,
-                location: p.location,
-                openingHours: p.regularOpeningHours
-            };
+            await p.fetchFields({ fields: PLACE_FIELDS });
+
+            randomPlace = mapPlaceData(p, App.translations[App.currentLang]);
+
             const idx = App.Data.candidates.findIndex(item => item.place_id === randomPlace.place_id);
             if (idx !== -1) App.Data.candidates[idx] = randomPlace;
         } catch (e) {
@@ -237,72 +232,89 @@ export async function reRoll(App) {
 export async function displayResult(App, place) {
     App.UI.showScreen('result-screen');
     App.Data.lastPickedId = place.place_id;
-    getEl('res-name').textContent = place.name;
 
     const t = App.translations[App.currentLang];
+    const el = {
+        name: getEl('res-name'),
+        rating: getEl('res-rating'),
+        ratingCont: getEl('res-rating-container'),
+        price: getEl('res-price'),
+        priceCont: getEl('res-price-container'),
+        cat: getEl('res-category'),
+        catIcon: getEl('res-category-icon'),
+        catCont: getEl('res-category-container'),
+        hours: getEl('res-hours'),
+        hoursCont: getEl('res-hours-container'),
+        address: getEl('res-address'),
+        mapCont: getEl('res-map-container'),
+        phone: getEl('res-phone'),
+        distance: getEl('res-distance'),
+        distanceCont: getEl('res-distance-container'),
+        mapsBtn: getEl('open-maps-btn')
+    };
+
+    el.name.textContent = place.name;
 
     // Rating
-    const ratingVal = place.rating;
-    const hasRating = typeof ratingVal === 'number' && ratingVal > 0;
-    getEl('res-rating').textContent = hasRating ? ratingVal : (t.ratingNew.replace(/⭐\s*/, ''));
-    getEl('res-rating-container').style.display = 'flex';
+    const hasRating = typeof place.rating === 'number' && place.rating > 0;
+    el.rating.textContent = hasRating ? place.rating : (t.ratingNew.replace(/⭐\s*/, ''));
+    el.ratingCont.style.display = 'flex';
 
     // Price
     const priceText = getPriceDisplay(place.priceLevel, t);
-    getEl('res-price').textContent = priceText;
-    getEl('res-price-container').style.display = priceText ? 'flex' : 'none';
+    el.price.textContent = priceText;
+    el.priceCont.style.display = priceText ? 'flex' : 'none';
 
     // Category
     const catFull = getPlaceCategory(place, App);
     if (catFull) {
         const emojiMatch = catFull.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*(.*)$/u);
         if (emojiMatch) {
-            getEl('res-category-icon').textContent = emojiMatch[1];
-            getEl('res-category').textContent = emojiMatch[2];
+            el.catIcon.textContent = emojiMatch[1];
+            el.cat.textContent = emojiMatch[2];
         } else {
-            getEl('res-category-icon').textContent = "🍴";
-            getEl('res-category').textContent = catFull;
+            el.catIcon.textContent = "🍴";
+            el.cat.textContent = catFull;
         }
-        getEl('res-category-container').style.display = 'flex';
+        el.catCont.style.display = 'flex';
     } else {
-        getEl('res-category-container').style.display = 'none';
+        el.catCont.style.display = 'none';
     }
 
     // Opening Hours
-    const hoursContainer = getEl('res-hours-container');
     let todayHoursStr = "";
-    if (place.openingHours && place.openingHours.weekdayDescriptions) {
+    if (place.openingHours?.weekdayDescriptions) {
         const today = new Date();
-        // Try current system locale first (most likely to match Google's response)
         const localeName = today.toLocaleDateString(undefined, { weekday: 'long' });
-        // Fallback to English names just in case
         const enName = today.toLocaleDateString('en-US', { weekday: 'long' });
 
-        const match = place.openingHours.weekdayDescriptions.find(d =>
-            d.includes(localeName) || d.includes(enName)
-        );
-
-        if (match) {
-            // Split by localized separator if possible, or just the first colon
-            const parts = match.split(/: |：/); // Handle both standard and full-width colons
-            todayHoursStr = parts[1] || "";
-        }
+        const match = place.openingHours.weekdayDescriptions.find(d => d.includes(localeName) || d.includes(enName));
+        if (match) todayHoursStr = match.split(/: |：/)[1] || "";
     }
+
     if (todayHoursStr) {
-        getEl('res-hours').textContent = todayHoursStr;
-        hoursContainer.style.display = 'flex';
+        el.hours.textContent = todayHoursStr;
+        el.hoursCont.style.display = 'flex';
     } else {
-        hoursContainer.style.display = 'none';
+        el.hoursCont.style.display = 'none';
     }
 
-    getEl('res-address').textContent = place.vicinity;
+    el.address.textContent = place.vicinity;
     getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    const mapDiv = getEl('res-map-container');
+    // Map logic
     if (place.location) {
         try {
             const [{ Map }, { Marker }] = await Promise.all([google.maps.importLibrary("maps"), google.maps.importLibrary("marker")]);
-            const map = new Map(mapDiv, { center: place.location, zoom: 16, disableDefaultUI: false, mapTypeControl: false, streetViewControl: false, gestureHandling: 'greedy', colorScheme: 'FOLLOW_SYSTEM' });
+            const map = new Map(el.mapCont, {
+                center: place.location,
+                zoom: 16,
+                disableDefaultUI: false,
+                mapTypeControl: false,
+                streetViewControl: false,
+                gestureHandling: 'greedy',
+                colorScheme: 'FOLLOW_SYSTEM'
+            });
             new Marker({ position: place.location, map: map, title: place.name, animation: google.maps.Animation.DROP });
             if (App.Data.userPos) {
                 new Marker({ position: App.Data.userPos, map: map, title: "Your Location", icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 2, strokeColor: "white" } });
@@ -310,27 +322,25 @@ export async function displayResult(App, place) {
                 bounds.extend(place.location); bounds.extend(App.Data.userPos);
                 map.fitBounds(bounds, 50);
             }
-            mapDiv.style.display = 'block';
-        } catch (e) { mapDiv.style.display = 'none'; }
-    } else mapDiv.style.display = 'none';
+            el.mapCont.style.display = 'block';
+        } catch (e) { el.mapCont.style.display = 'none'; }
+    } else el.mapCont.style.display = 'none';
 
-    const phoneEl = getEl('res-phone');
+    // Phone
     if (place.phone) {
-        phoneEl.textContent = `📞 ${place.phone}`;
-        phoneEl.href = `tel:${place.phone.replace(/\s+/g, '')}`;
-        phoneEl.style.display = 'inline-flex';
-    }
-    else phoneEl.style.display = 'none';
+        el.phone.textContent = `📞 ${place.phone}`;
+        el.phone.href = `tel:${place.phone.replace(/\s+/g, '')}`;
+        el.phone.style.display = 'inline-flex';
+    } else el.phone.style.display = 'none';
 
-    getEl('open-maps-btn').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
+    el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
 
     // Distance
-    const distContainer = getEl('res-distance-container');
     if (place.durationText) {
-        getEl('res-distance').textContent = place.durationText;
-        distContainer.style.display = 'flex';
+        el.distance.textContent = place.durationText;
+        el.distanceCont.style.display = 'flex';
     } else {
-        distContainer.style.display = 'none';
+        el.distanceCont.style.display = 'none';
     }
 
     App.UI.triggerConfetti();
@@ -361,25 +371,13 @@ export async function restoreSession(App) {
     try {
         const { Place } = await google.maps.importLibrary("places");
         const p = new Place({ id: resId });
-        await p.fetchFields({ fields: ["displayName", "location", "rating", "userRatingCount", "formattedAddress", "id", "types", "regularOpeningHours", "priceLevel", "nationalPhoneNumber", "businessStatus"] });
+        await p.fetchFields({ fields: PLACE_FIELDS });
 
         const lat = App.Data.params.get('lat'), lng = App.Data.params.get('lng');
         if (lat && lng) App.Data.userPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
 
         const t = App.translations[App.currentLang];
-        const restored = {
-            name: p.displayName?.text || p.displayName || t.unknownName,
-            rating: p.rating,
-            userRatingCount: p.userRatingCount,
-            vicinity: p.formattedAddress || t.noAddress,
-            place_id: p.id,
-            types: p.types || [],
-            priceLevel: p.priceLevel,
-            phone: p.nationalPhoneNumber,
-            businessStatus: p.businessStatus,
-            location: p.location,
-            openingHours: p.regularOpeningHours
-        };
+        const restored = mapPlaceData(p, t);
 
         // Recalculate distance if we have position
         if (App.Data.userPos && restored.location) {

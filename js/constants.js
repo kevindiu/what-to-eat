@@ -12,3 +12,17 @@ export const CUISINE_MAPPING = {
     fast_food: ['fast food', 'mcdonald', 'kfc', '快餐', '街頭小食', '小食'],
     cafe_light: ['cafe', 'coffee', 'sandwich', 'salad', '輕食', '咖啡', '三文治', '沙律']
 };
+
+export const PLACE_FIELDS = [
+    "displayName", "location", "rating", "userRatingCount",
+    "formattedAddress", "id", "types", "regularOpeningHours",
+    "priceLevel", "nationalPhoneNumber", "businessStatus"
+];
+
+export const PRICE_LEVEL_MAP = {
+    'PRICE_LEVEL_FREE': '0',
+    'PRICE_LEVEL_INEXPENSIVE': '1',
+    'PRICE_LEVEL_MODERATE': '2',
+    'PRICE_LEVEL_EXPENSIVE': '3',
+    'PRICE_LEVEL_VERY_EXPENSIVE': '4'
+};

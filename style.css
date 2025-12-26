@@ -499,13 +499,31 @@ header p {
     gap: 12px;
 }
 
+.result-header {
+    width: 100%;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.logo-small {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
 .result-actions .primary-btn,
 .result-actions .accent-btn {
     margin: 0;
     flex: 1;
-    padding: 1rem 10px;
-    font-size: 1rem;
-    white-space: nowrap;
+    padding: 1rem 8px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
+    min-height: 56px;
+    word-break: break-all;
 }
 
 #result-screen .restaurant-card {

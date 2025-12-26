@@ -12,11 +12,6 @@ export const UI = {
     updateStrings(App) {
         const t = App.translations[App.currentLang];
         const mappings = {
-            'app-title': t.title,
-            'app-subtitle': t.subtitle,
-            'price-title': t.priceTitle,
-            'filter-title': t.filterTitle,
-            'find-btn': t.findBtn,
             'retry-btn': t.retry,
             'back-btn': t.backBtn,
             'loading-text': t.loading,
@@ -27,13 +22,29 @@ export const UI = {
             'location-display': App.Data.manualPos ? App.Data.manualLocationName : t.currentLocation
         };
 
+        const classMappings = {
+            'app-title-text': t.title,
+            'app-subtitle-text': t.subtitle,
+            'price-title-text': t.priceTitle,
+            'filter-title-text': t.filterTitle,
+            'find-btn-text': t.findBtn,
+            'distance-title-text': t.distanceTitle
+        };
+
         Object.entries(mappings).forEach(([id, text]) => {
             const el = getEl(id);
             if (el) el.textContent = text;
         });
 
-        const distTitle = getEl('distance-title');
-        if (distTitle) distTitle.innerHTML = `${t.distanceTitle} (<span id="distance-val">${App.Config.mins}</span> mins)`;
+        Object.entries(classMappings).forEach(([cls, text]) => {
+            document.querySelectorAll(`.${cls}`).forEach(el => {
+                if (cls === 'distance-title-text') {
+                    el.innerHTML = `${text} (<span id="distance-val">${App.Config.mins}</span> mins)`;
+                } else {
+                    el.textContent = text;
+                }
+            });
+        });
 
         document.querySelectorAll('.lang-selector span').forEach(span => {
             span.classList.toggle('active', span.dataset.lang === App.currentLang);

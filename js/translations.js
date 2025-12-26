@@ -1,6 +1,6 @@
 export const translations = {
     zh: {
-        title: "食乜好？",
+        title: "食乜好",
         subtitle: "唔知食咩？等我幫你揀！",
         distanceTitle: "想搵徒步幾耐？",
         locationTitle: "想搵邊區？",
@@ -43,7 +43,7 @@ export const translations = {
         shareText: "我喺「食乜好」抽中咗呢間：${name}！一齊去試下？🥗"
     },
     en: {
-        title: "What to Eat?",
+        title: "What to Eat",
         subtitle: "Don't know? Let me pick!",
         distanceTitle: "Walking Distance",
         locationTitle: "Pick a Location",
@@ -86,7 +86,7 @@ export const translations = {
         shareText: "I picked this on What to Eat: ${name}! Want to try? 🥗"
     },
     ja: {
-        title: "何食べる？",
+        title: "メシ決",
         subtitle: "迷ったら、私に選ばせて！",
         distanceTitle: "徒歩何分？",
         locationTitle: "エリアを選択",

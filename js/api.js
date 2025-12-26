@@ -289,7 +289,10 @@ export async function displayResult(App, place) {
         const enName = today.toLocaleDateString('en-US', { weekday: 'long' });
 
         const match = place.openingHours.weekdayDescriptions.find(d => d.includes(localeName) || d.includes(enName));
-        if (match) todayHoursStr = match.split(/: |：/)[1] || "";
+        if (match) {
+            const parts = match.split(/: |：/);
+            todayHoursStr = parts[1] ? parts[1].trim() : match;
+        }
     }
 
     if (todayHoursStr) {

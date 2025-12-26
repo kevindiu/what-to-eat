@@ -15,7 +15,8 @@ export const translations = {
         geoError: "拎唔到你個位置，請檢查下權限。📍",
         noGeo: "你個瀏覽器唔支援取用地理位置。",
         installBtn: "安裝 App 📲",
-        iosInstallText: "安裝 App (開啟分享選單) 📲",
+        iosInstallText: "點擊查看「安裝 App」教學 📲",
+        iosInstallAlert: "想好似 App 咁用「食乜好」？\n\n1. 撳瀏覽器底部分享選單 (正方形向上箭頭)\n2. 向上掃並點選「加入主畫面」(Add to Home Screen)\n\n搞掂！✨",
         categories: {
             chinese: '🍚 中餐',
             japanese: '🍣 日本菜',
@@ -54,7 +55,8 @@ export const translations = {
         geoError: "Unable to find location. Check permissions.",
         noGeo: "Geolocation not supported by this browser.",
         installBtn: "Install App 📲",
-        iosInstallText: "Install App (Open Share Menu) 📲",
+        iosInstallText: "How to Install App 📲",
+        iosInstallAlert: "Want to use 'What to Eat' like an App?\n\n1. Tap the Share button in Safari (square with up arrow)\n2. Scroll down and tap 'Add to Home Screen'\n\nAll set! ✨",
         categories: {
             chinese: '🍚 Chinese',
             japanese: '🍣 Japanese',
@@ -93,7 +95,8 @@ export const translations = {
         geoError: "位置情報を取得できません。設定を確認してください。",
         noGeo: "お使いのブラウザは位置情報をサポートしていません。",
         installBtn: "アプリをインストール 📲",
-        iosInstallText: "アプリをインストール (共有メニューを開く) 📲",
+        iosInstallText: "アプリのインストール方法 📲",
+        iosInstallAlert: "「何食べる？」をアプリのように使う方法：\n\n1. Safari の共有アイコン（四角に上矢印）をタップ\n2. 下にスクロールして「ホーム画面に追加」をタップ\n\n完了です！✨",
         categories: {
             chinese: '🍚 中華料理',
             japanese: '🍣 日本料理',

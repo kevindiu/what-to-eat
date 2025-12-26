@@ -1,16 +1,16 @@
 export const CUISINE_MAPPING = {
-    chinese: ['chinese', 'cantonese', '中', '粵', '點心'],
-    japanese: ['japanese', 'sushi', 'ramen', '日本', '壽司', '拉麵'],
-    korean: ['korean', '韓國'],
-    western: ['steak', 'italian', 'french', 'burger', 'pasta', 'western', '意', '法', '漢堡'],
-    se_asian: ['thai', 'vietnamese', 'malaysian', '泰', '越', '星', '馬', '東南亞'],
-    noodles: ['noodle', 'ramen', 'udon', '米線', '拉麵', '麵', '粉'],
-    spicy: ['spicy', 'sichuan', 'mala', 'chili', '四川', '麻辣', '湘', '辣', '水煮'],
-    hotpot_bbq: ['hot pot', 'hotpot', 'bbq', 'barbecue', 'yakiniku', '火鍋', '雞煲', '燒肉', '韓燒', '燒烤'],
-    dim_sum: ['dim sum', 'yum cha', '點心', '飲茶'],
-    dessert: ['dessert', 'sugar', 'sweet', '糖水', '甜', '雪糕', '冰'],
-    fast_food: ['fast food', 'mcdonald', 'kfc', '快餐', '街頭小食', '小食'],
-    cafe_light: ['cafe', 'coffee', 'sandwich', 'salad', '輕食', '咖啡', '三文治', '沙律']
+    chinese: ['chinese_restaurant', 'chinese', 'cantonese', 'shanghainese', 'sichuan', 'dim sum', 'congee', '中菜', '中式', '粵菜', '點心', '粥'],
+    japanese: ['japanese_restaurant', 'sushi_restaurant', 'ramen_restaurant', 'japanese', 'sushi', 'ramen', 'izakaya', 'udon', 'soba', 'yakitori', 'tonkatsu', '日本', '壽司', '拉麵', '居酒屋', '烏冬', '燒鳥'],
+    korean: ['korean_restaurant', 'korean', 'kimchi', 'bibimbap', 'bbq', '韓國', '韓式', '泡菜', '飯卷', '韓燒'],
+    western: ['italian_restaurant', 'french_restaurant', 'american_restaurant', 'hamburger_restaurant', 'pizza_restaurant', 'steak_house', 'steak', 'italian', 'french', 'burger', 'pasta', 'pizza', 'western', 'mexican', 'spanish', '西餐', '意式', '法式', '漢堡', '薄餅', '牛扒'],
+    se_asian: ['thai_restaurant', 'vietnamese_restaurant', 'thai', 'vietnamese', 'malaysian', 'singaporean', 'indonesian', '泰國', '越南', '星馬', '印尼', '泰式', '越式'],
+    noodles: ['ramen_restaurant', 'noodle', 'ramen', 'udon', 'pho', '米線', '拉麵', '麵', '粉', '河'],
+    spicy: ['spicy', 'sichuan', 'mala', 'chili', '川菜', '麻辣', '辣', '水煮', '酸辣'],
+    hotpot_bbq: ['barbecue_restaurant', 'steak_house', 'hot pot', 'hotpot', 'bbq', 'barbecue', 'grill', 'yakiniku', '火鍋', '雞煲', '燒肉', '韓燒', '燒烤', '串燒'],
+    dim_sum: ['chinese_restaurant', 'dim sum', 'yum cha', 'dumpling', '點心', '飲茶', '餃子', '盅飯'],
+    dessert: ['bakery', 'ice_cream_shop', 'dessert', 'sugar', 'sweet', 'bakery', 'cake', 'ice cream', '糖水', '甜', '雪糕', '冰', '蛋糕', '餅'],
+    fast_food: ['fast_food_restaurant', 'hamburger_restaurant', 'sandwich_shop', 'fast food', 'mcdonald', 'kfc', 'burger', 'sandwich', '快餐', '小食', '漢堡', '三文治'],
+    cafe_light: ['cafe', 'coffee_shop', 'bakery', 'cafe', 'coffee', 'sandwich', 'salad', 'breakfast', 'brunch', '輕食', '咖啡', '沙律', '早餐', '早午餐', '文青']
 };
 
 export const PLACE_FIELDS = [

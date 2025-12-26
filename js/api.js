@@ -226,8 +226,12 @@ export async function displayResult(App, place) {
     // Text Content
     el.name.textContent = place.name;
     el.address.textContent = place.vicinity;
-    getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+    // Smooth scroll to restaurant name
+    requestAnimationFrame(() => {
+        if (el.name) el.name.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+   
     // Rating
     const hasRating = typeof place.rating === 'number' && place.rating > 0;
     el.rating.textContent = hasRating ? place.rating : (t.ratingNew.replace(/⭐\s*/, ''));

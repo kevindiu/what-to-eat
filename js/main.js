@@ -28,6 +28,8 @@ const App = {
     },
     Data: {
         userPos: null,
+        manualPos: null,
+        manualLocationName: null,
         candidates: [],
         currentPlace: null,
         lastPickedId: null,
@@ -60,6 +62,7 @@ const App = {
     init() {
         this.UI.updateStrings(this);
         this.UI.initFilters(this);
+        this.UI.initLocationPicker(this);
         this.PWA.init(this.translations, this.currentLang);
         restoreSession(this);
     }

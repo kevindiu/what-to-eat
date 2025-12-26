@@ -22,7 +22,9 @@ export const UI = {
             'loading-text': t.loading,
             'open-maps-btn': t.openMaps,
             'share-btn': t.shareBtn,
-            'install-btn': t.installBtn
+            'install-btn': t.installBtn,
+            'location-title': t.locationTitle,
+            'location-display': App.Data.manualPos ? App.Data.manualLocationName : t.currentLocation
         };
 
         Object.entries(mappings).forEach(([id, text]) => {
@@ -70,6 +72,68 @@ export const UI = {
                 this.triggerHaptic(30);
             };
         });
+    },
+
+    async initLocationPicker(App) {
+        const bar = getEl('location-bar');
+        const input = getEl('location-input');
+        const display = getEl('location-display');
+        const clear = getEl('clear-location');
+        const t = App.translations[App.currentLang];
+
+        if (!bar || !input) return;
+
+        bar.onclick = () => {
+            bar.classList.add('hidden');
+            input.classList.remove('hidden');
+            input.placeholder = t.searchHint;
+            input.focus();
+        };
+
+        try {
+            const { Autocomplete } = await google.maps.importLibrary("places");
+            const autocomplete = new Autocomplete(input, {
+                fields: ["formatted_address", "geometry", "name"],
+                types: ["geocode", "establishment"]
+            });
+
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (!place.geometry || !place.geometry.location) return;
+
+                App.Data.manualPos = {
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng()
+                };
+                App.Data.manualLocationName = place.name || place.formatted_address;
+
+                display.textContent = App.Data.manualLocationName;
+                clear.classList.remove('hidden');
+
+                input.classList.add('hidden');
+                input.value = '';
+                bar.classList.remove('hidden');
+                this.triggerHaptic(50);
+            });
+
+            // Handle blur to go back if empty
+            input.onblur = () => {
+                if (!input.value) {
+                    input.classList.add('hidden');
+                    bar.classList.remove('hidden');
+                }
+            };
+
+            clear.onclick = (e) => {
+                e.stopPropagation();
+                App.Data.manualPos = null;
+                App.Data.manualLocationName = null;
+                display.textContent = t.currentLocation;
+                clear.classList.add('hidden');
+                this.triggerHaptic(30);
+            };
+
+        } catch (e) { console.error("Autocomplete init failed", e); }
     },
 
     triggerHaptic(duration) {

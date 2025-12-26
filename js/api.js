@@ -1,5 +1,5 @@
 import { getEl, getCurrentPosition } from './utils.js';
-import { CUISINE_MAPPING, PLACE_FIELDS, PRICE_LEVEL_MAP } from './constants.js';
+import { CUISINE_MAPPING, PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
 
 /**
  * Centalized mapping from Google Place object to internal restaurant model.
@@ -18,8 +18,7 @@ function mapPlaceData(p, translations) {
         businessStatus: p.businessStatus,
         location: p.location,
         openingHours: p.regularOpeningHours,
-        // Cached/Derived values
-        isOpen: null, // To be filled by checkPeriodAvailability
+        isOpen: null,
         durationText: null,
         durationValue: null
     };
@@ -76,34 +75,22 @@ async function processCandidates(places, userLoc, App) {
     const t = App.translations[App.currentLang];
     const rawResults = await Promise.all(places.map(async p => {
         const item = mapPlaceData(p, t);
-
         try {
-            // Precise Period Check
             if (item.openingHours?.periods) {
                 item.isOpen = checkPeriodAvailability(item.openingHours.periods);
             }
-
-            // Fallbacks
             if (item.isOpen === null) item.isOpen = await p.isOpen();
             if (item.isOpen === null) item.isOpen = item.openingHours?.openNow;
-        } catch (e) {
-            item.isOpen = null;
-        }
-
+        } catch (e) { item.isOpen = null; }
         return item;
     }));
 
-    // Filter: Include if strictly open OR if no data available (p.isOpen !== false)
     let filtered = rawResults.filter(p => p.isOpen !== false && (p.businessStatus === 'OPERATIONAL' || !p.businessStatus));
-
-    // Distance Matrix
     const withDurations = await calculateDistances(userLoc, filtered);
 
-    // Filter by walking time
     let byTime = withDurations.filter(p => p.durationValue === null || (p.durationValue / 60) <= App.Config.mins);
     if (byTime.length === 0) byTime = withDurations.sort((a, b) => (a.durationValue || 9999) - (b.durationValue || 9999)).slice(0, 3);
 
-    // Filter by User Preferences (Categories/Price)
     return byTime.filter(p => {
         const nameNode = (p.name || "").toLowerCase();
         const types = p.types || [];
@@ -114,17 +101,17 @@ async function processCandidates(places, userLoc, App) {
         if (isExcluded) return false;
 
         if (p.priceLevel !== undefined && p.priceLevel !== null) {
-            const mapped = PRICE_LEVEL_MAP[p.priceLevel];
-            if (mapped && App.Config.prices.size > 0 && !App.Config.prices.has(mapped)) return false;
+            let key = p.priceLevel;
+            if (PRICE_VAL_TO_KEY[key]) key = PRICE_VAL_TO_KEY[key];
+            const config = PRICE_LEVEL_MAP[key];
+            if (config && App.Config.prices.size > 0 && !App.Config.prices.has(config.val)) return false;
         }
         return true;
     });
 }
-// Helper to check if current time is within any of the provided opening periods
+
 function checkPeriodAvailability(periods) {
     if (!periods || !Array.isArray(periods) || periods.length === 0) return null;
-
-    // Google Maps 24/7 signature: single period with open but no close
     if (periods.length === 1 && !periods[0].close) return true;
 
     const now = new Date();
@@ -133,30 +120,17 @@ function checkPeriodAvailability(periods) {
 
     for (const period of periods) {
         if (!period.open || !period.close) continue;
-
         const openAbs = Number(period.open.day) * 1440 + Number(period.open.hour) * 60 + Number(period.open.minute);
         let closeAbs = Number(period.close.day) * 1440 + Number(period.close.hour) * 60 + Number(period.close.minute);
-
-        // If close is numerically before open, it crosses the week boundary (Sunday 00:00)
-        if (closeAbs <= openAbs) {
-            closeAbs += WEEK_MINUTES;
-        }
-
-        // Check if current time falls within this period
-        // We check two windows: the current absolute time, and the "time + one week" 
-        // to catch periods that started late last week and are finishing now.
-        if ((nowAbs >= openAbs && nowAbs < closeAbs) ||
-            (nowAbs + WEEK_MINUTES >= openAbs && nowAbs + WEEK_MINUTES < closeAbs)) {
-            return true;
-        }
+        if (closeAbs <= openAbs) closeAbs += WEEK_MINUTES;
+        if ((nowAbs >= openAbs && nowAbs < closeAbs) || (nowAbs + WEEK_MINUTES >= openAbs && nowAbs + WEEK_MINUTES < closeAbs)) return true;
     }
-
     return false;
 }
 
 function handleError(error, t, App) {
     if (error.message === "GEOLOCATION_NOT_SUPPORTED") alert(t.noGeo);
-    else if (error.code === 1) alert(t.geoError); // PERMISSION_DENIED
+    else if (error.code === 1) alert(t.geoError);
     else alert("Error: " + error.message);
     App.UI.showScreen('main-flow');
 }
@@ -190,7 +164,7 @@ export function startSlotAnimation(App) {
     let count = 0;
     const interval = setInterval(() => {
         const temp = App.Data.candidates[Math.floor(Math.random() * App.Data.candidates.length)];
-        slotName.textContent = temp.name;
+        slotName.textContent = temp?.name || "...";
         if (++count > 15) {
             clearInterval(interval);
             reRoll(App);
@@ -209,7 +183,6 @@ export async function reRoll(App) {
     }
 
     let randomPlace = candidates[Math.floor(Math.random() * candidates.length)];
-
     const hasHours = randomPlace.openingHours?.weekdayDescriptions?.length > 0;
     if ((!randomPlace.vicinity || !hasHours) && randomPlace.place_id) {
         App.UI.showScreen('loading-screen');
@@ -217,14 +190,10 @@ export async function reRoll(App) {
             const { Place } = await google.maps.importLibrary("places");
             const p = new Place({ id: randomPlace.place_id });
             await p.fetchFields({ fields: PLACE_FIELDS });
-
             randomPlace = mapPlaceData(p, App.translations[App.currentLang]);
-
             const idx = App.Data.candidates.findIndex(item => item.place_id === randomPlace.place_id);
             if (idx !== -1) App.Data.candidates[idx] = randomPlace;
-        } catch (e) {
-            console.error("Fetch Details Error:", e);
-        }
+        } catch (e) { console.error("Fetch Details Error:", e); }
     }
     displayResult(App, randomPlace);
 }
@@ -232,6 +201,7 @@ export async function reRoll(App) {
 export async function displayResult(App, place) {
     App.UI.showScreen('result-screen');
     App.Data.lastPickedId = place.place_id;
+    App.Data.currentPlace = place;
 
     const t = App.translations[App.currentLang];
     const el = {
@@ -253,12 +223,14 @@ export async function displayResult(App, place) {
         mapsBtn: getEl('open-maps-btn')
     };
 
+    // Text Content
     el.name.textContent = place.name;
+    el.address.textContent = place.vicinity;
+    getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     // Rating
     const hasRating = typeof place.rating === 'number' && place.rating > 0;
     el.rating.textContent = hasRating ? place.rating : (t.ratingNew.replace(/⭐\s*/, ''));
-    el.ratingCont.style.display = 'flex';
 
     // Price
     const priceText = getPriceDisplay(place.priceLevel, t);
@@ -269,82 +241,21 @@ export async function displayResult(App, place) {
     const catFull = getPlaceCategory(place, App);
     if (catFull) {
         const emojiMatch = catFull.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*(.*)$/u);
-        if (emojiMatch) {
-            el.catIcon.textContent = emojiMatch[1];
-            el.cat.textContent = emojiMatch[2];
-        } else {
-            el.catIcon.textContent = "🍴";
-            el.cat.textContent = catFull;
-        }
+        el.catIcon.textContent = emojiMatch ? emojiMatch[1] : "🍴";
+        el.cat.textContent = emojiMatch ? emojiMatch[2] : catFull;
         el.catCont.style.display = 'flex';
-    } else {
-        el.catCont.style.display = 'none';
-    }
+    } else el.catCont.style.display = 'none';
 
     // Opening Hours
-    let todayHoursStr = "";
-    const descriptions = place.openingHours?.weekdayDescriptions;
-    if (descriptions && descriptions.length === 7) {
-        const today = new Date();
-        const dayIdx = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const todayHours = getTodayHours(place, App);
+    el.hours.textContent = todayHours;
+    el.hoursCont.style.display = todayHours ? 'flex' : 'none';
 
-        // 1. Try language-aware string matching (robust)
-        const mapLangMap = { 'zh': 'zh-HK', 'en': 'en-US', 'ja': 'ja-JP' };
-        const appLocale = mapLangMap[App.currentLang] || 'zh-HK';
-        const localeDayName = today.toLocaleDateString(appLocale, { weekday: 'long' });
-        const enDayName = today.toLocaleDateString('en-US', { weekday: 'long' });
-
-        let match = descriptions.find(d => d.includes(localeDayName) || d.includes(enDayName));
-
-        // 2. Fallback: Google's New Places API descriptions are Sunday-first.
-        // If we can't find by string, the index should be correct.
-        if (!match) match = descriptions[dayIdx];
-
-        if (match) {
-            const parts = match.split(/: |：/);
-            todayHoursStr = parts[1] ? parts[1].trim() : match;
-        }
-    }
-
-    if (todayHoursStr) {
-        el.hours.textContent = todayHoursStr;
-        el.hoursCont.style.display = 'flex';
-    } else {
-        el.hoursCont.style.display = 'none';
-    }
-
-    el.address.textContent = place.vicinity;
-    getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    el.mapCont.classList.add('skeleton');
-    el.mapCont.style.display = 'block';
-
-    // Map logic
-    if (place.location) {
-        try {
-            const [{ Map }, { Marker }] = await Promise.all([google.maps.importLibrary("maps"), google.maps.importLibrary("marker")]);
-            const map = new Map(el.mapCont, {
-                center: place.location,
-                zoom: 16,
-                disableDefaultUI: false,
-                mapTypeControl: false,
-                streetViewControl: false,
-                gestureHandling: 'greedy',
-                colorScheme: 'FOLLOW_SYSTEM'
-            });
-            new Marker({ position: place.location, map: map, title: place.name, animation: google.maps.Animation.DROP });
-            if (App.Data.userPos) {
-                new Marker({ position: App.Data.userPos, map: map, title: "Your Location", icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 2, strokeColor: "white" } });
-                const bounds = new google.maps.LatLngBounds();
-                bounds.extend(place.location); bounds.extend(App.Data.userPos);
-                map.fitBounds(bounds, 50);
-            }
-            // Remove skeleton after map tiles settle a bit
-            google.maps.event.addListenerOnce(map, 'idle', () => {
-                el.mapCont.classList.remove('skeleton');
-            });
-        } catch (e) { el.mapCont.style.display = 'none'; }
-    } else el.mapCont.style.display = 'none';
+    // Distance
+    if (place.durationText) {
+        el.distance.textContent = place.durationText;
+        el.distanceCont.style.display = 'flex';
+    } else el.distanceCont.style.display = 'none';
 
     // Phone
     if (place.phone) {
@@ -355,36 +266,57 @@ export async function displayResult(App, place) {
 
     el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
 
-    // Share logic
-    const shareBtn = getEl('share-btn');
-    if (shareBtn) {
-        shareBtn.onclick = async () => {
-            const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.place_id}${App.Data.userPos ? `&lat=${App.Data.userPos.lat}&lng=${App.Data.userPos.lng}` : ''}`;
-            const shareText = t.shareText.replace('${name}', place.name);
-
-            if (navigator.share) {
-                try {
-                    await navigator.share({ title: place.name, text: shareText, url: shareUrl });
-                } catch (e) { console.log("Share failed", e); }
-            } else {
-                // Fallback: Copy to clipboard
-                try {
-                    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-                    alert("已複製連結到剪貼簿！📋");
-                } catch (e) { alert(shareUrl); }
-            }
-        };
-    }
-
-    // Distance
-    if (place.durationText) {
-        el.distance.textContent = place.durationText;
-        el.distanceCont.style.display = 'flex';
-    } else {
-        el.distanceCont.style.display = 'none';
-    }
+    // Map logic
+    renderMap(el.mapCont, place, App);
 
     App.UI.triggerConfetti();
+}
+
+function getTodayHours(place, App) {
+    const descriptions = place.openingHours?.weekdayDescriptions;
+    if (!descriptions || descriptions.length !== 7) return "";
+    const today = new Date();
+    const mapLangMap = { 'zh': 'zh-HK', 'en': 'en-US', 'ja': 'ja-JP' };
+    const appLocale = mapLangMap[App.currentLang] || 'zh-HK';
+    const localeDayName = today.toLocaleDateString(appLocale, { weekday: 'long' });
+    const enDayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+
+    let match = descriptions.find(d => d.includes(localeDayName) || d.includes(enDayName));
+    if (!match) match = descriptions[today.getDay()];
+    if (match) {
+        const parts = match.split(/: |：/);
+        return parts[1] ? parts[1].trim() : match;
+    }
+    return "";
+}
+
+async function renderMap(container, place, App) {
+    if (!place.location) {
+        container.style.display = 'none';
+        return;
+    }
+    container.classList.add('skeleton');
+    container.style.display = 'block';
+    try {
+        const [{ Map }, { Marker }] = await Promise.all([google.maps.importLibrary("maps"), google.maps.importLibrary("marker")]);
+        const map = new Map(container, {
+            center: place.location,
+            zoom: 16,
+            disableDefaultUI: false,
+            mapTypeControl: false,
+            streetViewControl: false,
+            gestureHandling: 'greedy',
+            colorScheme: 'FOLLOW_SYSTEM'
+        });
+        new Marker({ position: place.location, map, title: place.name, animation: google.maps.Animation.DROP });
+        if (App.Data.userPos) {
+            new Marker({ position: App.Data.userPos, map, title: "Your Location", icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 2, strokeColor: "white" } });
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(place.location); bounds.extend(App.Data.userPos);
+            map.fitBounds(bounds, 50);
+        }
+        google.maps.event.addListenerOnce(map, 'idle', () => container.classList.remove('skeleton'));
+    } catch (e) { container.style.display = 'none'; }
 }
 
 export function getPlaceCategory(place, App) {
@@ -398,46 +330,35 @@ export function getPlaceCategory(place, App) {
 }
 
 export function getPriceDisplay(level, t) {
-    const mapping = { 'PRICE_LEVEL_FREE': t.priceFree, 'PRICE_LEVEL_INEXPENSIVE': '$', 'PRICE_LEVEL_MODERATE': '$$', 'PRICE_LEVEL_EXPENSIVE': '$$$', 'PRICE_LEVEL_VERY_EXPENSIVE': '$$$$' };
-    return mapping[level] || "";
+    if (level === undefined || level === null) return "";
+    let key = level;
+    if (PRICE_VAL_TO_KEY[key]) key = PRICE_VAL_TO_KEY[key];
+    const config = PRICE_LEVEL_MAP[key];
+    return config ? config.label(t) : "";
 }
 
 export async function restoreSession(App) {
     const resId = App.Data.params.get('resId');
     if (!resId) return;
-
     window.history.replaceState({}, document.title, window.location.pathname);
     App.UI.showScreen('loading-screen');
-
     try {
         const { Place } = await google.maps.importLibrary("places");
         const p = new Place({ id: resId });
         await p.fetchFields({ fields: PLACE_FIELDS });
-
         const lat = App.Data.params.get('lat'), lng = App.Data.params.get('lng');
         if (lat && lng) App.Data.userPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
-
         const t = App.translations[App.currentLang];
         const restored = mapPlaceData(p, t);
-
-        // Recalculate distance if we have position
         if (App.Data.userPos && restored.location) {
             const [withDuration] = await calculateDistances(App.Data.userPos, [restored]);
             restored.durationText = withDuration.durationText;
             restored.durationValue = withDuration.durationValue;
         }
-
-        // Populate candidates in background so re-roll works
         if (App.Data.userPos) {
             const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius);
-            if (places && places.length > 0) {
-                App.Data.candidates = await processCandidates(places, App.Data.userPos, App);
-            }
+            if (places && places.length > 0) App.Data.candidates = await processCandidates(places, App.Data.userPos, App);
         }
-
         displayResult(App, restored);
-    } catch (e) {
-        console.error("Session restoration failed:", e);
-        App.UI.showScreen('main-flow');
-    }
+    } catch (e) { console.error("Session restoration failed:", e); App.UI.showScreen('main-flow'); }
 }

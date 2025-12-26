@@ -85,5 +85,27 @@ export const UI = {
                 colors: ['#ff6b81', '#ffd32a', '#2ecc71', '#3498db']
             });
         }
+    },
+
+    async shareCurrentPlace(App) {
+        const place = App.Data.currentPlace;
+        if (!place) return;
+        const t = App.translations[App.currentLang];
+        const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.place_id}${App.Data.userPos ? `&lat=${App.Data.userPos.lat}&lng=${App.Data.userPos.lng}` : ''}`;
+        const shareText = t.shareText.replace('${name}', place.name);
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: place.name, text: shareText, url: shareUrl });
+            } catch (e) { console.log("Share failed", e); }
+        } else {
+            try {
+                await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+                const msg = App.currentLang === 'zh' ? "已複製連結到剪貼簿！📋" : App.currentLang === 'ja' ? "クリップボードにコピーしました！📋" : "Link copied to clipboard! 📋";
+                alert(msg);
+            } catch (e) { alert(shareUrl); }
+        }
     }
 };
+
+export default UI;

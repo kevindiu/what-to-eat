@@ -29,6 +29,7 @@ const App = {
     Data: {
         userPos: null,
         candidates: [],
+        currentPlace: null,
         lastPickedId: null,
         params: new URLSearchParams(window.location.search)
     },
@@ -71,6 +72,7 @@ window.setLanguage = (lang) => App.setLanguage(lang);
 document.addEventListener('DOMContentLoaded', () => {
     getEl('find-btn').onclick = () => findRestaurant(App);
     getEl('retry-btn').onclick = () => reRoll(App);
+    getEl('share-btn').onclick = () => App.UI.shareCurrentPlace(App);
     getEl('back-btn').onclick = () => App.UI.showScreen('main-flow');
 
     const slider = getEl('distance-slider');

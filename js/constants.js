@@ -20,9 +20,18 @@ export const PLACE_FIELDS = [
 ];
 
 export const PRICE_LEVEL_MAP = {
-    'PRICE_LEVEL_FREE': '0', '0': '0',
-    'PRICE_LEVEL_INEXPENSIVE': '1', '1': '1',
-    'PRICE_LEVEL_MODERATE': '2', '2': '2',
-    'PRICE_LEVEL_EXPENSIVE': '3', '3': '3',
-    'PRICE_LEVEL_VERY_EXPENSIVE': '4', '4': '4'
+    'PRICE_LEVEL_FREE': { val: '0', label: (t) => t.priceFree },
+    'PRICE_LEVEL_INEXPENSIVE': { val: '1', label: () => '$' },
+    'PRICE_LEVEL_MODERATE': { val: '2', label: () => '$$' },
+    'PRICE_LEVEL_EXPENSIVE': { val: '3', label: () => '$$$' },
+    'PRICE_LEVEL_VERY_EXPENSIVE': { val: '4', label: () => '$$$$' }
+};
+
+// Backwards compatibility and numeric mapping
+export const PRICE_VAL_TO_KEY = {
+    '0': 'PRICE_LEVEL_FREE',
+    '1': 'PRICE_LEVEL_INEXPENSIVE',
+    '2': 'PRICE_LEVEL_MODERATE',
+    '3': 'PRICE_LEVEL_EXPENSIVE',
+    '4': 'PRICE_LEVEL_VERY_EXPENSIVE'
 };

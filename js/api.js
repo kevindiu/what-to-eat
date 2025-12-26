@@ -283,12 +283,23 @@ export async function displayResult(App, place) {
 
     // Opening Hours
     let todayHoursStr = "";
-    if (place.openingHours?.weekdayDescriptions) {
+    const descriptions = place.openingHours?.weekdayDescriptions;
+    if (descriptions && descriptions.length === 7) {
         const today = new Date();
-        const localeName = today.toLocaleDateString(undefined, { weekday: 'long' });
-        const enName = today.toLocaleDateString('en-US', { weekday: 'long' });
+        const dayIdx = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
-        const match = place.openingHours.weekdayDescriptions.find(d => d.includes(localeName) || d.includes(enName));
+        // 1. Try language-aware string matching (robust)
+        const mapLangMap = { 'zh': 'zh-HK', 'en': 'en-US', 'ja': 'ja-JP' };
+        const appLocale = mapLangMap[App.currentLang] || 'zh-HK';
+        const localeDayName = today.toLocaleDateString(appLocale, { weekday: 'long' });
+        const enDayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+
+        let match = descriptions.find(d => d.includes(localeDayName) || d.includes(enDayName));
+
+        // 2. Fallback: Google's New Places API descriptions are Sunday-first.
+        // If we can't find by string, the index should be correct.
+        if (!match) match = descriptions[dayIdx];
+
         if (match) {
             const parts = match.split(/: |：/);
             todayHoursStr = parts[1] ? parts[1].trim() : match;

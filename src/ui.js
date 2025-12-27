@@ -1,4 +1,5 @@
 import { getEl } from './utils.js';
+import confetti from 'canvas-confetti';
 
 export const UI = {
     showScreen(screenId) {
@@ -98,14 +99,12 @@ export const UI = {
     },
 
     triggerConfetti() {
-        if (typeof confetti === 'function') {
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: ['#ff6b81', '#ffd32a', '#2ecc71', '#3498db']
-            });
-        }
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#ff6b81', '#ffd32a', '#2ecc71', '#3498db']
+        });
     },
 
     async shareCurrentPlace(App) {

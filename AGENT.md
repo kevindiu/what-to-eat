@@ -9,20 +9,18 @@ This document serves as a technical context and set of instructions for any AI A
 > **Branding**: The app title across all languages should NOT contain a question mark (e.g., "食乜好"). The Japanese title is specifically "**メシ決**".
 
 ## 🛠 Tech Stack
-- **Frontend**: Vanilla HTML5, CSS3 (Modern features like backdrop-filter, glassmorphism).
+- **Frontend**: Vanilla HTML5, CSS3 (Modern features like backdrop-filter, glassmorphism), Vite (Bundler).
 - **Logic**: Vanilla JavaScript (ESM Modules).
 - **APIs**: Google Maps Platform (Maps, Places Library v3/v4, Distance Matrix).
-- **PWA**: Service Workers (`sw.js`), Web Manifest (`manifest.json`).
+- **PWA**: Vite PWA Plugin (`vite-plugin-pwa`).
 
-## 🏗 Modular Architecture (`/js`)
-The JS logic is strictly modularized:
-- `main.js`: App initialization, global state management (`App` object), and event listeners.
-- `api.js`: Google Maps API interactions, search logic, and `displayResult` UI population.
-- `ui.js`: Screen management (show/hide), animations, and generic UI state.
-- `translations.js`: Centralized dictionary for Traditional Chinese (`zh`), English (`en`), and Japanese (`ja`).
-- `utils.js`: Shared helper functions (`getEl`, `getCurrentPosition`, `sleep`).
-- `pwa.js`: Service worker registration and installation prompt logic.
-- `constants.js`: Cuisine mappings and other static configurations.
+## 🏗 Project Structure
+-   **src/**: Source code (JS modules, CSS).
+    -   `main.js`: App entry point.
+    -   `style.css`: Stylesheet (imported in main.js).
+-   **public/**: Static assets (icons, manifest.json).
+-   **index.html**: Entry point.
+-   **vite.config.js**: Build configuration.
 
 ## 🧠 Core Logic & Features
 1. **Search Flow**: Fetches nearby restaurants, filters by price/cravings, calls Distance Matrix for exact walking minutes, and picks a winner.
@@ -32,15 +30,12 @@ The JS logic is strictly modularized:
    - History resets whenever a fresh "Find Restaurant" search is triggered.
 3. **Session Restoration**: Uses URL parameters (`placeId`, `lang`, `lat`, `lng`) to allow sharing and persistence.
 
-## ⚠️ Critical Rules for Agents
-1. **No Hardcoded Strings**: All UI text must go in `js/translations.js`.
-2. **Module Integrity**: Any new function added to a module MUST be exported and imported correctly in `main.js` or other dependent files.
-3. **Cache Busting**: Whenever modifying JS, CSS, or assets, increment the version number (`vX.XX`) consistently in:
-    - `index.html` (script/link tags)
-    - `sw.js` (`CACHE_NAME`)
-    - `js/pwa.js` (sw registration call)
-4. **Layout Stability**: Avoid nested fixed-positioning containers. Favor simple document scrolling with absolute/fixed overlays only when necessary.
-5. **DOM Access**: Always use `getEl(id)` from `utils.js`.
+## ⚠️ Workflow (Vite)
+1.  **Development**: Run `npm run dev` for local server with Hot Module Replacement (HMR).
+2.  **Build**: Run `npm run build` to generate `dist/`.
+3.  **Deploy**: Upload `dist/` folder contents.
+4.  **Versioning**: Done automatically by Vite (hashing). No manual versioning needed.
+5.  **DOM Access**: Always use `getEl(id)` from `utils.js`.
 
 ---
 *Maintained by Antigravity (Advanced Agentic Coding)*

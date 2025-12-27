@@ -1,22 +1,14 @@
 import { getEl } from './utils.js';
+import { registerSW } from 'virtual:pwa-register';
 
 export const PWA = {
     deferredPrompt: null,
     init(translations, currentLang) {
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=3.63')
-                    .then(() => console.log('SW registered!'))
-                    .catch(err => console.log('SW failed', err));
-            });
-
-            // Reload page when new SW takes control
-            let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    window.location.reload();
-                    refreshing = true;
-                }
+            registerSW({
+                immediate: true,
+                onNeedRefresh() { console.log("New content available, reload to update."); },
+                onOfflineReady() { console.log("App ready to work offline"); }
             });
         }
         window.addEventListener('beforeinstallprompt', (e) => {

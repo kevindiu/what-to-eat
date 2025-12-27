@@ -3,6 +3,7 @@ import { UI } from './ui.js';
 import { PWA } from './pwa.js';
 import { findRestaurant, reRoll, restoreSession, startSlotAnimation } from './api.js';
 import { getEl } from './utils.js';
+import './style.css';
 
 const App = {
     Config: {

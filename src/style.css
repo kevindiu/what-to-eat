@@ -43,20 +43,20 @@
     :root {
         --primary-bg: #2d1b1e;
         --bg-gradient: linear-gradient(135deg, #121212 0%, #1a1a2e 100%);
-        --card-bg: rgba(30, 30, 30, 0.9);
-        --card-border: #2d2d2d;
+        --card-bg: rgba(30, 30, 30, 0.95);
+        --card-border: #444444;
         --text-main: #f1f2f6;
         --text-muted: #b2bec3;
         --text-inactive: #636e72;
-        --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
         --item-bg: #2d2d2d;
-        --item-hover-bg: #3d3d3d;
-        --item-border: #3d3d3d;
+        --item-hover-bg: #404040;
+        --item-border: #444444;
         --item-active-bg: #ff7675;
         --item-active-text: #ffffff;
-        --slider-bg: #2d2d2d;
-        --btn-secondary-bg: #2d2d2d;
-        --btn-secondary-border: #3d3d3d;
+        --slider-bg: #1a1a1a;
+        --btn-secondary-bg: #262626;
+        --btn-secondary-border: #444444;
         --pill-rating-bg: #3d2b1f;
         --pill-rating-text: #ff9f43;
         --pill-price-bg: #1a2a3a;
@@ -251,10 +251,16 @@ header p {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 15px;
+    margin-top: 20px;
     background: var(--item-bg);
     border: 2px solid var(--item-border);
     transition: all 0.3s ease;
+    padding: 12px 20px;
+    border-radius: 25px;
+    color: var(--text-muted);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
 }
 
 .toggle-btn.active {

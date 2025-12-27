@@ -1,0 +1,31 @@
+{
+  "name": "what-to-eat",
+  "version": "1.0.0",
+  "description": "[![PWA](https://img.shields.io/badge/PWA-Ready-orange)](https://what2eatnow.org/)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "gh-pages -d dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevindiu/what-to-eat.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kevindiu/what-to-eat/issues"
+  },
+  "homepage": "https://github.com/kevindiu/what-to-eat#readme",
+  "devDependencies": {
+    "gh-pages": "^6.3.0",
+    "vite": "^7.3.0",
+    "vite-plugin-pwa": "^1.2.0"
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.4"
+  }
+}

@@ -62,6 +62,7 @@ const App = {
     init() {
         this.UI.updateStrings(this);
         this.UI.initFilters(this);
+        this.setupEventListeners();
         this.PWA.init(this.translations, this.currentLang);
         restoreSession(this);
         this.initLocationSearch();
@@ -130,33 +131,44 @@ const App = {
         } catch (e) {
             console.error("Autocomplete init failed:", e);
         }
+    },
+
+    setupEventListeners() {
+        // App buttons
+        const findBtn = getEl('find-btn');
+        if (findBtn) findBtn.onclick = () => findRestaurant(this);
+
+        const retryBtn = getEl('retry-btn');
+        if (retryBtn) retryBtn.onclick = () => reRoll(this);
+
+        const shareBtn = getEl('share-btn');
+        if (shareBtn) shareBtn.onclick = () => this.UI.shareCurrentPlace(this);
+
+        const backBtn = getEl('back-btn');
+        if (backBtn) backBtn.onclick = () => this.UI.showScreen('main-flow');
+
+        // Language selectors
+        document.querySelectorAll('.lang-selector span').forEach(span => {
+            span.onclick = () => this.setLanguage(span.dataset.lang);
+        });
+
+        // Distance Slider
+        const slider = getEl('distance-slider');
+        if (slider) {
+            slider.value = this.Config.mins;
+            slider.oninput = function () {
+                const mins = parseInt(this.value);
+                App.Config.mins = mins;
+                getEl('distance-val').textContent = mins;
+                App.saveSettings();
+                App.UI.triggerHaptic(10);
+            };
+        }
     }
 };
 
 // Expose globally
-window.App = App;
-window.setLanguage = (lang) => App.setLanguage(lang);
-
 document.addEventListener('DOMContentLoaded', () => {
-    getEl('find-btn').onclick = () => findRestaurant(App);
-    getEl('retry-btn').onclick = () => {
-        // Direct re-roll without loading screen as requested
-        reRoll(App);
-    };
-    getEl('share-btn').onclick = () => App.UI.shareCurrentPlace(App);
-    getEl('back-btn').onclick = () => App.UI.showScreen('main-flow');
-
-    const slider = getEl('distance-slider');
-    if (slider) {
-        slider.value = App.Config.mins;
-        slider.oninput = function () {
-            const mins = parseInt(this.value);
-            App.Config.mins = mins;
-            getEl('distance-val').textContent = mins;
-            App.saveSettings();
-            App.UI.triggerHaptic(10);
-        };
-    }
     App.init();
 });
 

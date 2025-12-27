@@ -8,6 +8,24 @@ export const UI = {
             const el = getEl(id);
             if (el) el.classList.toggle('hidden', id !== screenId);
         });
+
+        // Footer Management
+        const footerHome = getEl('footer-home');
+        const footerResult = getEl('footer-result');
+        const appFooter = getEl('app-footer');
+
+        if (screenId === 'main-flow') {
+            if (appFooter) appFooter.classList.remove('hidden');
+            if (footerHome) footerHome.classList.remove('hidden');
+            if (footerResult) footerResult.classList.add('hidden');
+        } else if (screenId === 'result-screen') {
+            if (appFooter) appFooter.classList.remove('hidden');
+            if (footerHome) footerHome.classList.add('hidden');
+            if (footerResult) footerResult.classList.remove('hidden');
+        } else {
+            // Loading screen or others - hide footer
+            if (appFooter) appFooter.classList.add('hidden');
+        }
     },
 
     updateStrings(App) {

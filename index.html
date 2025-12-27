@@ -71,7 +71,6 @@
                     </div>
                 </div>
 
-                <button id="find-btn" class="primary-btn">幫我揀個餐廳！✨</button>
                 <div id="install-container" class="hidden">
                     <button id="install-btn" class="install-btn">安裝 App 📲</button>
                 </div>
@@ -113,10 +112,7 @@
 
                     <a id="res-phone" class="phone-link"></a>
 
-                    <a id="open-maps-btn" href="#" target="_blank" class="primary-btn">喺 Google Maps 打開</a>
-
                     <div class="button-group">
-                        <button id="retry-btn" class="accent-btn" aria-label="Re-roll restaurant">🎲 抽過間！</button>
                         <button id="share-btn" class="text-btn" aria-label="Share this restaurant">📤 分享餐廳</button>
                         <button id="back-btn" class="text-btn" aria-label="Back to home screen">返去主頁</button>
                     </div>
@@ -131,6 +127,18 @@
                 <p id="loading-text">搜尋緊附近好嘢食... 🔍</p>
             </div>
         </main>
+
+        <div id="app-footer" class="app-footer">
+            <div id="footer-home" class="footer-content">
+                <button id="find-btn" class="primary-btn full-width">幫我揀個餐廳！✨</button>
+            </div>
+            <div id="footer-result" class="footer-content hidden">
+                <div class="result-actions">
+                    <button id="retry-btn" class="accent-btn" aria-label="Re-roll restaurant">🎲 抽過間！</button>
+                    <a id="open-maps-btn" href="#" target="_blank" class="primary-btn">喺 Google Maps 打開</a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>

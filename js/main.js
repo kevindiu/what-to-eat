@@ -167,12 +167,13 @@ const App = {
             };
         }
 
-        const includeClosedCheck = getEl('include-closed-check');
-        if (includeClosedCheck) {
-            includeClosedCheck.onchange = function () {
-                App.Config.includeClosed = this.checked;
+        const includeClosedBtn = getEl('include-closed-btn');
+        if (includeClosedBtn) {
+            includeClosedBtn.onclick = () => {
+                App.Config.includeClosed = !App.Config.includeClosed;
                 App.saveSettings();
-                App.UI.triggerHaptic(10);
+                App.UI.updateStrings(App); // Re-render to update class and text
+                App.UI.triggerHaptic(30);
             };
         }
     }

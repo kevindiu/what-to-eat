@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食乜好 - What to Eat</title>
-    <link rel="stylesheet" href="style.css?v=3.62">
+    <link rel="stylesheet" href="style.css?v=3.63">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fff5f5" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
@@ -47,9 +47,9 @@
                     <div class="distance-slider-container">
                         <input type="range" id="distance-slider" min="1" max="30" value="5" class="slider">
                     </div>
-                    <div class="toggle-container">
-                        <input type="checkbox" id="include-closed-check">
-                        <label for="include-closed-check" id="include-closed-label">包含已關門餐廳？ 🌙</label>
+                    <div id="include-closed-btn" class="secondary-btn toggle-btn">
+                        <span id="include-closed-label">包含已關門餐廳？ 🌙</span>
+                        <span id="include-closed-status">OFF</span>
                     </div>
                 </div>
 
@@ -150,7 +150,7 @@
             language: mapLangMap[savedLang] || 'zh-HK'
         });
     </script>
-    <script type="module" src="js/main.js?v=3.62"></script>
+    <script type="module" src="js/main.js?v=3.63"></script>
 </body>
 
 </html>

@@ -247,26 +247,21 @@ header p {
     transform: scale(1.15);
 }
 
-.toggle-container {
-    margin-top: 15px;
+.toggle-btn {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    font-size: 1rem;
-    color: var(--text-muted);
-    font-weight: 500;
-    justify-content: center;
+    margin-top: 15px;
+    background: var(--item-bg);
+    border: 2px solid var(--item-border);
+    transition: all 0.3s ease;
 }
 
-.toggle-container input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    accent-color: var(--primary-color);
-    cursor: pointer;
-}
-
-.toggle-container label {
-    cursor: pointer;
+.toggle-btn.active {
+    background: var(--item-active-bg);
+    color: var(--item-active-text);
+    border-color: var(--accent-color);
+    box-shadow: 0 8px 15px rgba(255, 118, 117, 0.3);
 }
 
 .primary-btn {

@@ -46,8 +46,13 @@ export const UI = {
         const includeClosedLabel = getEl('include-closed-label');
         if (includeClosedLabel) includeClosedLabel.textContent = t.includeClosed;
 
-        const includeClosedCheck = getEl('include-closed-check');
-        if (includeClosedCheck) includeClosedCheck.checked = App.Config.includeClosed;
+        const includeClosedBtn = getEl('include-closed-btn');
+        const includeClosedStatus = getEl('include-closed-status');
+        if (includeClosedBtn && includeClosedStatus) {
+            const isActive = App.Config.includeClosed;
+            includeClosedBtn.classList.toggle('active', isActive);
+            includeClosedStatus.textContent = isActive ? "ON" : "OFF";
+        }
 
         document.querySelectorAll('.lang-selector span').forEach(span => {
             span.classList.toggle('active', span.dataset.lang === App.currentLang);

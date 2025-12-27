@@ -5,7 +5,7 @@ export const PWA = {
     init(translations, currentLang) {
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=3.62')
+                navigator.serviceWorker.register('./sw.js?v=3.63')
                     .then(() => console.log('SW registered!'))
                     .catch(err => console.log('SW failed', err));
             });

@@ -117,7 +117,7 @@ async function processCandidates(places, userLoc, App) {
     });
 }
 
-export function checkPeriodAvailability(periods) {
+function checkPeriodAvailability(periods) {
     if (!periods || !Array.isArray(periods) || periods.length === 0) return null;
     if (periods.length === 1 && !periods[0].close) return true;
 

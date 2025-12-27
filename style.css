@@ -349,7 +349,6 @@ header p {
 .accent-btn {
     background: var(--accent-bg);
     color: white;
-    border: none;
     padding: 1rem;
     border-radius: 30px;
     font-size: 1.1rem;
@@ -498,11 +497,6 @@ header p {
 .category-pill {
     background: var(--pill-category-bg);
     color: var(--pill-category-text);
-}
-
-.distance-pill {
-    background: var(--pill-distance-bg);
-    color: var(--pill-distance-text);
 }
 
 .distance-pill {

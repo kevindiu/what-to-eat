@@ -322,25 +322,57 @@ async function renderMap(container, place, App) {
     container.classList.add('skeleton');
     container.style.display = 'block';
     try {
-        const [{ Map }, { Marker }] = await Promise.all([google.maps.importLibrary("maps"), google.maps.importLibrary("marker")]);
+        const [{ Map }, { AdvancedMarkerElement, PinElement }] = await Promise.all([
+            google.maps.importLibrary("maps"),
+            google.maps.importLibrary("marker")
+        ]);
+
         const map = new Map(container, {
             center: place.location,
             zoom: 16,
+            mapId: "DEMO_MAP_ID", // Required for AdvancedMarkerElement
             disableDefaultUI: false,
             mapTypeControl: false,
             streetViewControl: false,
             gestureHandling: 'greedy',
             colorScheme: 'FOLLOW_SYSTEM'
         });
-        new Marker({ position: place.location, map, title: place.name, animation: google.maps.Animation.DROP });
+
+        // Restaurant Marker (Default Red Pin)
+        const resMarker = new AdvancedMarkerElement({
+            map,
+            position: place.location,
+            title: place.name
+        });
+
+        // User Location Marker (Custom Blue Dot)
         if (App.Data.userPos) {
-            new Marker({ position: App.Data.userPos, map, title: "Your Location", icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: "#4285F4", fillOpacity: 1, strokeWeight: 2, strokeColor: "white" } });
+            const userDot = document.createElement('div');
+            userDot.style.width = '16px';
+            userDot.style.height = '16px';
+            userDot.style.backgroundColor = '#4285F4';
+            userDot.style.border = '2px solid white';
+            userDot.style.borderRadius = '50%';
+            userDot.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)';
+
+            new AdvancedMarkerElement({
+                map,
+                position: App.Data.userPos,
+                title: "Your Location",
+                content: userDot
+            });
+
             const bounds = new google.maps.LatLngBounds();
-            bounds.extend(place.location); bounds.extend(App.Data.userPos);
+            bounds.extend(place.location);
+            bounds.extend(App.Data.userPos);
             map.fitBounds(bounds, 50);
         }
+
         google.maps.event.addListenerOnce(map, 'idle', () => container.classList.remove('skeleton'));
-    } catch (e) { container.style.display = 'none'; }
+    } catch (e) {
+        console.error("Map Render Error:", e);
+        container.style.display = 'none';
+    }
 }
 
 export function getPlaceCategory(place, App) {

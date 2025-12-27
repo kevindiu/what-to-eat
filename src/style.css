@@ -292,6 +292,7 @@ header p {
     display: flex;
     justify-content: center;
     align-items: center;
+    text-align: center;
     line-height: 1.2;
     box-sizing: border-box;
 }

@@ -31,6 +31,7 @@ const App = {
         candidates: [],
         currentPlace: null,
         lastPickedId: null,
+        history: [],
         params: new URLSearchParams(window.location.search)
     },
     UI: UI,
@@ -71,7 +72,10 @@ window.setLanguage = (lang) => App.setLanguage(lang);
 
 document.addEventListener('DOMContentLoaded', () => {
     getEl('find-btn').onclick = () => findRestaurant(App);
-    getEl('retry-btn').onclick = () => reRoll(App);
+    getEl('retry-btn').onclick = () => {
+        getEl('loading-screen').classList.remove('hidden');
+        startSlotAnimation(App);
+    };
     getEl('share-btn').onclick = () => App.UI.shareCurrentPlace(App);
     getEl('back-btn').onclick = () => App.UI.showScreen('main-flow');
 

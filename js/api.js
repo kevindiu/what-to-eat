@@ -27,6 +27,7 @@ function mapPlaceData(p, translations) {
 export async function findRestaurant(App) {
     App.UI.triggerHaptic(50);
     App.UI.showScreen('loading-screen');
+    App.Data.history = [];
     const t = App.translations[App.currentLang];
 
     try {
@@ -177,9 +178,18 @@ export async function reRoll(App) {
     if (App.Data.candidates.length === 0) return findRestaurant(App);
 
     let candidates = App.Data.candidates;
-    if (candidates.length > 1 && App.Data.lastPickedId) {
-        const others = candidates.filter(p => p.place_id !== App.Data.lastPickedId);
-        if (others.length > 0) candidates = others;
+    if (candidates.length > 1) {
+        // Exclude everything in history if possible
+        const historyIds = new Set(App.Data.history || []);
+        const others = candidates.filter(p => !historyIds.has(p.place_id));
+
+        if (others.length > 0) {
+            candidates = others;
+        } else if (App.Data.lastPickedId) {
+            // If everything has been seen, at least avoid the immediate last one
+            const avoidLast = candidates.filter(p => p.place_id !== App.Data.lastPickedId);
+            if (avoidLast.length > 0) candidates = avoidLast;
+        }
     }
 
     let randomPlace = candidates[Math.floor(Math.random() * candidates.length)];
@@ -201,6 +211,10 @@ export async function reRoll(App) {
 export async function displayResult(App, place) {
     App.UI.showScreen('result-screen');
     App.Data.lastPickedId = place.place_id;
+    if (!App.Data.history) App.Data.history = [];
+    if (!App.Data.history.includes(place.place_id)) {
+        App.Data.history.push(place.place_id);
+    }
     App.Data.currentPlace = place;
 
     const t = App.translations[App.currentLang];

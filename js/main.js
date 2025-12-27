@@ -69,8 +69,40 @@ const App = {
 
     async initLocationSearch() {
         const input = getEl('location-input');
-        const gpsBtn = getEl('gps-btn');
-        if (!input || !gpsBtn) return;
+        const bar = getEl('location-bar');
+        const display = getEl('location-display');
+        const clearBtn = getEl('clear-location');
+        if (!input || !bar || !display || !clearBtn) return;
+
+        const t = this.translations[this.currentLang];
+        display.textContent = t.useCurrentLocation;
+
+        // Toggle Logic
+        bar.onclick = (e) => {
+            if (e.target.closest('.clear-icon')) return;
+            bar.classList.add('hidden');
+            input.classList.remove('hidden');
+            input.focus();
+        };
+
+        const resetToBar = () => {
+            setTimeout(() => {
+                input.classList.add('hidden');
+                bar.classList.remove('hidden');
+            }, 200);
+        };
+
+        input.onblur = resetToBar;
+
+        // Clear Logic
+        clearBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.Data.manualLocation = null;
+            input.value = "";
+            display.textContent = t.useCurrentLocation;
+            clearBtn.classList.add('hidden');
+            this.UI.triggerHaptic(30);
+        };
 
         try {
             const { Autocomplete } = await google.maps.importLibrary("places");
@@ -81,9 +113,7 @@ const App = {
 
             autocomplete.addListener("place_changed", () => {
                 const place = autocomplete.getPlace();
-                if (!place.geometry || !place.geometry.location) {
-                    return; // User entered name but didn't select suggestion
-                }
+                if (!place.geometry || !place.geometry.location) return;
 
                 this.Data.manualLocation = {
                     lat: place.geometry.location.lat(),
@@ -91,15 +121,12 @@ const App = {
                     name: place.name
                 };
 
-                input.value = "📍 " + place.name;
+                display.textContent = "📍 " + place.name;
+                clearBtn.classList.remove('hidden');
+                input.value = place.name;
+                resetToBar();
                 this.UI.triggerHaptic(50);
             });
-
-            gpsBtn.onclick = () => {
-                this.Data.manualLocation = null;
-                input.value = "";
-                this.UI.triggerHaptic(30);
-            };
         } catch (e) {
             console.error("Autocomplete init failed:", e);
         }

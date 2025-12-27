@@ -12,6 +12,7 @@ export const UI = {
     updateStrings(App) {
         const t = App.translations[App.currentLang];
         const mappings = {
+            'location-title': t.locationTitle,
             'app-title': t.title,
             'app-subtitle': t.subtitle,
             'price-title': t.priceTitle,
@@ -29,6 +30,15 @@ export const UI = {
             const el = getEl(id);
             if (el) el.textContent = text;
         });
+
+        // Location specific updates
+        const locInput = getEl('location-input');
+        if (locInput) locInput.placeholder = t.searchPlaceholder;
+
+        const locDisplay = getEl('location-display');
+        if (locDisplay && !App.Data.manualLocation) {
+            locDisplay.textContent = t.useCurrentLocation;
+        }
 
         const distTitle = getEl('distance-title');
         if (distTitle) distTitle.innerHTML = `${t.distanceTitle} (<span id="distance-val">${App.Config.mins}</span> mins)`;

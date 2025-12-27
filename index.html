@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食乜好 - What to Eat</title>
-    <link rel="stylesheet" href="style.css?v=3.60">
+    <link rel="stylesheet" href="style.css?v=3.62">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fff5f5" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
@@ -33,9 +33,12 @@
             <div id="main-flow" class="screen">
                 <div class="filter-section">
                     <h3 id="location-title">想搵邊頭？</h3>
-                    <div class="location-input-container">
-                        <input type="text" id="location-input" placeholder="🔍 搜尋地點" class="location-input">
-                        <button id="gps-btn" class="gps-btn" aria-label="Use current location">📍</button>
+                    <div class="location-container">
+                        <div id="location-bar" class="location-bar">
+                            <span id="location-display">📍 目前位置</span>
+                            <span id="clear-location" class="clear-icon hidden">✕</span>
+                        </div>
+                        <input type="text" id="location-input" class="location-input hidden" placeholder="搜尋地區或地址...">
                     </div>
                 </div>
 
@@ -143,7 +146,7 @@
             language: mapLangMap[savedLang] || 'zh-HK'
         });
     </script>
-    <script type="module" src="js/main.js?v=3.60"></script>
+    <script type="module" src="js/main.js?v=3.62"></script>
 </body>
 
 </html>

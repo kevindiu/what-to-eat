@@ -40,7 +40,8 @@ export const translations = {
         priceFree: "免費",
         walkMins: "步行約 ${mins} 分鐘",
         shareBtn: "📤 分享餐廳",
-        shareText: "我喺「食乜好」抽中咗呢間：${name}！一齊去試下？🥗"
+        shareText: "我喺「食乜好」抽中咗呢間：${name}！一齊去試下？🥗",
+        includeClosed: "包含已關門餐廳？ 🌙"
     },
     en: {
         title: "What to Eat",
@@ -83,7 +84,8 @@ export const translations = {
         priceFree: "Free",
         walkMins: "🚶 ${mins} min walk",
         shareBtn: "📤 Share",
-        shareText: "I picked this on What to Eat: ${name}! Want to try? 🥗"
+        shareText: "I picked this on What to Eat: ${name}! Want to try? 🥗",
+        includeClosed: "Include Closed Restaurants? 🌙"
     },
     ja: {
         title: "メシ決",
@@ -126,6 +128,7 @@ export const translations = {
         priceFree: "無料",
         walkMins: "🚶 徒歩 ${mins} 分",
         shareBtn: "📤 シェア",
-        shareText: "「メシ決」でこれを選んだよ：${name}！一緒にどう？🥗"
+        shareText: "「メシ決」でこれを選んだよ：${name}！一緒にどう？🥗",
+        includeClosed: "営業時間外も含める？ 🌙"
     }
 };

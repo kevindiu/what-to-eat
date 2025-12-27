@@ -92,7 +92,11 @@ async function processCandidates(places, userLoc, App) {
         return item;
     }));
 
-    let filtered = rawResults.filter(p => p.isOpen !== false && (p.businessStatus === 'OPERATIONAL' || !p.businessStatus));
+    let filtered = rawResults.filter(p => {
+        if (p.businessStatus !== 'OPERATIONAL' && p.businessStatus) return false;
+        if (App.Config.includeClosed) return true; // Keep all operational places if includeClosed is true
+        return p.isOpen !== false; // Otherwise filter out closed
+    });
     const withDurations = await calculateDistances(userLoc, filtered);
 
     let byTime = withDurations.filter(p => p.durationValue === null || (p.durationValue / 60) <= App.Config.mins);

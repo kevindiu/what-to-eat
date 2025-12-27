@@ -7,6 +7,7 @@ import { getEl } from './utils.js';
 const App = {
     Config: {
         mins: parseInt(localStorage.getItem('currentMins') || '5'),
+        includeClosed: localStorage.getItem('includeClosed') === 'true',
         get radius() { return this.mins * 80; },
         excluded: new Set(JSON.parse(localStorage.getItem('excludedTypes') || '[]')),
         prices: new Set(JSON.parse(localStorage.getItem('selectedPrices') || '["1","2","3","4"]')),
@@ -42,6 +43,7 @@ const App = {
 
     saveSettings() {
         localStorage.setItem('currentMins', this.Config.mins.toString());
+        localStorage.setItem('includeClosed', this.Config.includeClosed);
         localStorage.setItem('selectedPrices', JSON.stringify(Array.from(this.Config.prices)));
         localStorage.setItem('excludedTypes', JSON.stringify(Array.from(this.Config.excluded)));
     },
@@ -160,6 +162,15 @@ const App = {
                 const mins = parseInt(this.value);
                 App.Config.mins = mins;
                 getEl('distance-val').textContent = mins;
+                App.saveSettings();
+                App.UI.triggerHaptic(10);
+            };
+        }
+
+        const includeClosedCheck = getEl('include-closed-check');
+        if (includeClosedCheck) {
+            includeClosedCheck.onchange = function () {
+                App.Config.includeClosed = this.checked;
                 App.saveSettings();
                 App.UI.triggerHaptic(10);
             };

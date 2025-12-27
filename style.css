@@ -247,6 +247,28 @@ header p {
     transform: scale(1.15);
 }
 
+.toggle-container {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    justify-content: center;
+}
+
+.toggle-container input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.toggle-container label {
+    cursor: pointer;
+}
+
 .primary-btn {
     background: var(--primary-color);
     color: white;

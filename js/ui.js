@@ -43,6 +43,12 @@ export const UI = {
         const distTitle = getEl('distance-title');
         if (distTitle) distTitle.innerHTML = `${t.distanceTitle} (<span id="distance-val">${App.Config.mins}</span> mins)`;
 
+        const includeClosedLabel = getEl('include-closed-label');
+        if (includeClosedLabel) includeClosedLabel.textContent = t.includeClosed;
+
+        const includeClosedCheck = getEl('include-closed-check');
+        if (includeClosedCheck) includeClosedCheck.checked = App.Config.includeClosed;
+
         document.querySelectorAll('.lang-selector span').forEach(span => {
             span.classList.toggle('active', span.dataset.lang === App.currentLang);
         });

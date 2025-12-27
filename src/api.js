@@ -285,7 +285,7 @@ export async function displayResult(App, place) {
     if (place.phone) {
         el.phone.textContent = `📞 ${place.phone}`;
         el.phone.href = `tel:${place.phone.replace(/\s+/g, '')}`;
-        el.phone.style.display = 'inline-flex';
+        el.phone.style.display = ''; // Let CSS (.secondary-btn) handle display: flex
     } else el.phone.style.display = 'none';
 
     el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;

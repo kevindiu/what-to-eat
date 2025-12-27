@@ -104,7 +104,7 @@ export const translations = {
         noFilteredResults: "条件に合う店が見つかりません。フィルターを調整してみてください。🔍",
         geoError: "位置情報を取得できません。設定を確認してください。",
         noGeo: "お使いのブラウザは位置情報をサポートしていません。",
-        locationTitle: "場所はどこ？",
+        locationTitle: "どの辺で食べる？",
         searchPlaceholder: "🔍 場所を検索",
         useCurrentLocation: "📍 現在地を使用",
         installBtn: "アプリをインストール 📲",

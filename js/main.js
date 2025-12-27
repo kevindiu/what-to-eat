@@ -73,8 +73,8 @@ window.setLanguage = (lang) => App.setLanguage(lang);
 document.addEventListener('DOMContentLoaded', () => {
     getEl('find-btn').onclick = () => findRestaurant(App);
     getEl('retry-btn').onclick = () => {
-        getEl('loading-screen').classList.remove('hidden');
-        startSlotAnimation(App);
+        // Direct re-roll without loading screen as requested
+        reRoll(App);
     };
     getEl('share-btn').onclick = () => App.UI.shareCurrentPlace(App);
     getEl('back-btn').onclick = () => App.UI.showScreen('main-flow');

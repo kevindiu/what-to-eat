@@ -195,7 +195,7 @@ export async function reRoll(App) {
     let randomPlace = candidates[Math.floor(Math.random() * candidates.length)];
     const hasHours = randomPlace.openingHours?.weekdayDescriptions?.length > 0;
     if ((!randomPlace.vicinity || !hasHours) && randomPlace.place_id) {
-        App.UI.showScreen('loading-screen');
+        // App.UI.showScreen('loading-screen'); // Skipped as per user request
         try {
             const { Place } = await google.maps.importLibrary("places");
             const p = new Place({ id: randomPlace.place_id });

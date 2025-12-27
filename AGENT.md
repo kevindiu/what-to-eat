@@ -1,4 +1,4 @@
-# AI Agent Guidelines - What to Eat? 🍲 (v3.54)
+# AI Agent Guidelines - What to Eat? 🍲 (v3.57)
 
 This document serves as a technical context and set of instructions for any AI Agent working on the "What to Eat?" PWA project.
 

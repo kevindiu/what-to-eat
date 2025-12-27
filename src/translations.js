@@ -42,7 +42,7 @@ export const translations = {
         shareBtn: "📤 分享餐廳",
         shareText: "我喺「食乜好」抽中咗呢間：${name}！一齊去試下？🥗",
         includeClosed: "包含已關門餐廳 🌙",
-        excludeClosed: "不包含已關門餐廳 ☀️"
+        excludeClosed: "只選營業中餐廳 ☀️"
     },
     en: {
         title: "What to Eat",
@@ -86,8 +86,8 @@ export const translations = {
         walkMins: "🚶 ${mins} min walk",
         shareBtn: "📤 Share",
         shareText: "I picked this on What to Eat: ${name}! Want to try? 🥗",
-        includeClosed: "Include Closed Restaurants 🌙",
-        excludeClosed: "Exclude Closed Restaurants ☀️"
+        includeClosed: "Includes Closed Restaurants 🌙",
+        excludeClosed: "Open Restaurants Only ☀️"
     },
     ja: {
         title: "メシ決",
@@ -131,7 +131,7 @@ export const translations = {
         walkMins: "🚶 徒歩 ${mins} 分",
         shareBtn: "📤 シェア",
         shareText: "「メシ決」でこれを選んだよ：${name}！一緒にどう？🥗",
-        includeClosed: "閉店した店を含める 🌙",
-        excludeClosed: "閉店した店を含めない ☀️"
+        includeClosed: "営業時間外も含む 🌙",
+        excludeClosed: "営業中のみ ☀️"
     }
 };

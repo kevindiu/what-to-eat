@@ -51,7 +51,7 @@ export const UI = {
 
             const label = getEl('include-closed-label');
             if (label) {
-                label.textContent = isActive ? t.excludeClosed : t.includeClosed;
+                label.textContent = isActive ? t.includeClosed : t.excludeClosed;
             }
         }
 

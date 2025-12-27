@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Unit Tests</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #222;
+            color: #fff;
+        }
+
+        .pass {
+            color: #4cd137;
+        }
+
+        .fail {
+            color: #e84118;
+        }
+
+        .test-case {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Running Tests...</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        import { checkPeriodAvailability } from '../js/api.js';
+
+        const results = document.getElementById('results');
+        let passed = 0;
+        let total = 0;
+
+        function assert(desc, actual, expected) {
+            total++;
+            const div = document.createElement('div');
+            div.className = 'test-case';
+
+            if (actual === expected) {
+                passed++;
+                div.innerHTML = `<span class="pass">✔ PASS</span>: ${desc}`;
+            } else {
+                div.innerHTML = `<span class="fail">✘ FAIL</span>: ${desc} (Expected: ${expected}, Got: ${actual})`;
+            }
+            results.appendChild(div);
+        }
+
+        // --- Tests --
+        // Mocking 'now' is hard without refactoring api.js to accept a date, 
+        // so we will test logic by creating periods relative to the REAL current time for now,
+        // or just ensuring it handles basic malformed data.
+        // Ideally, we'd refactor checkPeriodAvailability to take a reference Date.
+
+        // Test 1: Empty input
+        assert('Returns null for empty periods', checkPeriodAvailability([]), null);
+
+        // Test 2: 24h open
+        assert('Returns true for 24h open', checkPeriodAvailability([{ open: { day: 0, hour: 0, minute: 0 } }]), true); // Close is undefined for 24h usually? Or just one period?
+        // Logic says: if (periods.length === 1 && !periods[0].close) return true;
+
+        // Test 3: Complex Open
+        // Let's rely on the logic analysis. logic uses `new Date()` internally. 
+        // We can't strictly test time-sensitive logic without dependency injection.
+        // Updating assert to reflect this limitation.
+        const div = document.createElement('div');
+        div.innerHTML = `<span class="fail">⚠ WARNING</span>: checkPeriodAvailability uses new Date() internally. Full time testing requires refactoring to dependency injection.`;
+        results.appendChild(div);
+
+        // Summary
+        const summary = document.createElement('h2');
+        summary.textContent = `Passed ${passed}/${total}`;
+        results.appendChild(summary);
+
+    </script>
+</body>
+
+</html>

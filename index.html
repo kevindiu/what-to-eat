@@ -6,7 +6,7 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>食乜好 - What to Eat</title>
-    <link rel="stylesheet" href="style.css?v=3.60">
+    <link rel="stylesheet" href="style.css?v=v1766847495828">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#fff5f5" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
@@ -14,16 +14,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="js/lib/confetti.browser.min.js"></script>
 </head>
 
 <body>
     <div id="app">
         <header>
             <div class="lang-selector">
-                <span onclick="setLanguage('zh')" data-lang="zh">繁</span> |
-                <span onclick="setLanguage('en')" data-lang="en">EN</span> |
-                <span onclick="setLanguage('ja')" data-lang="ja">日</span>
+                <span data-lang="zh">繁</span> |
+                <span data-lang="en">EN</span> |
+                <span data-lang="ja">日</span>
             </div>
             <h1 id="app-title">食乜好</h1>
             <p id="app-subtitle">唔知食咩？等我幫你揀！</p>
@@ -125,25 +125,8 @@
         </main>
     </div>
 
-    <script>
-        // Language sync for Google Maps API
-        const urlParams = new URLSearchParams(window.location.search);
-        let savedLang = urlParams.get('lang') || localStorage.getItem('preferredLang') || (navigator.language.startsWith('zh') ? 'zh' : navigator.language.startsWith('ja') ? 'ja' : 'en');
-        if (savedLang.startsWith('zh')) savedLang = 'zh';
-        if (savedLang.startsWith('ja')) savedLang = 'ja';
-        if (!['zh', 'en', 'ja'].includes(savedLang)) savedLang = 'en';
-
-        const mapLangMap = { 'zh': 'zh-HK', 'en': 'en', 'ja': 'ja' };
-
-        (g => { var h, a, k, p = "The Google Maps JavaScript API", c = "google", l = "importLibrary", q = "__ib__", m = document, b = window; b = b[c] || (b[c] = {}); var d = b.maps || (b.maps = {}), r = new Set, e = new URLSearchParams, u = () => h || (h = new Promise(async (f, n) => { await (a = m.createElement("script")); e.set("libraries", [...r] + ""); for (k in g) e.set(k.replace(/[A-Z]/g, t => "_" + t[0].toLowerCase()), g[k]); e.set("callback", c + ".maps." + q); a.src = `https://maps.${c}apis.com/maps/api/js?` + e; d[q] = f; a.onerror = () => h = n(Error(p + " could not load.")); a.nonce = m.querySelector("script[nonce]")?.nonce || ""; m.head.append(a) })); d[l] ? console.warn(p + " only loads once. Re-loads ignored.") : d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n)) })({
-            key: "AIzaSyCBBpOZpWTxxvYc3HjTR5dKb2acpkv6tl8",
-            v: "weekly",
-            libraries: ["places"],
-            loading: "async",
-            language: mapLangMap[savedLang] || 'zh-HK'
-        });
-    </script>
-    <script type="module" src="js/main.js?v=3.60"></script>
+    <!-- Map loader handled in main.js -->
+    <script type="module" src="js/main.js?v=v1766847495828"></script>
 </body>
 
 </html>

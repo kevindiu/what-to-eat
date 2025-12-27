@@ -1,4 +1,4 @@
-const CACHE_NAME = 'what-to-eat-v3.60';
+const CACHE_NAME = 'what-to-eat-v1766847495828';
 const ASSETS = [
     './',
     './index.html',
@@ -10,6 +10,7 @@ const ASSETS = [
     './js/constants.js',
     './js/pwa.js',
     './js/utils.js',
+    './js/lib/confetti.browser.min.js',
     './manifest.json',
     './icons/icon-192.png',
     './icons/icon-512.png'
@@ -42,11 +43,28 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch event - required for PWA installability
+// Stale-While-Revalidate Strategy
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        fetch(event.request).catch(() => {
-            return caches.match(event.request);
+        caches.match(event.request).then((cachedResponse) => {
+            const fetchPromise = fetch(event.request).then((networkResponse) => {
+                // Check if we received a valid response
+                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                    return networkResponse;
+                }
+
+                // Clone the response
+                const responseToCache = networkResponse.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(event.request, responseToCache);
+                });
+                return networkResponse;
+            }).catch(() => {
+                // If network fails, do nothing (we rely on cache)
+            });
+
+            // Return cached response immediately if available, otherwise wait for network
+            return cachedResponse || fetchPromise;
         })
     );
 });

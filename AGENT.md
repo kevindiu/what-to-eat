@@ -35,7 +35,8 @@ The JS logic is strictly modularized:
 ## ⚠️ Critical Rules for Agents
 1. **No Hardcoded Strings**: All UI text must go in `js/translations.js`.
 2. **Module Integrity**: Any new function added to a module MUST be exported and imported correctly in `main.js` or other dependent files.
-3. **Cache Busting**: Whenever modifying JS, CSS, or assets, increment the version number (`vX.XX`) consistently in:
+3. **Cache Busting**: Whenever modifying JS, CSS, or assets, increment the version number (`vX.XX`) consistently.
+    - **Method**: Run `node scripts/build.js` in the terminal to automatically update the version timestamp in `index.html` and `sw.js`.
     - `index.html` (script/link tags)
     - `sw.js` (`CACHE_NAME`)
     - `js/pwa.js` (sw registration call)

@@ -30,8 +30,13 @@ export const UI = {
             if (el) el.textContent = text;
         });
 
-        const distTitle = getEl('distance-title');
         if (distTitle) distTitle.innerHTML = `${t.distanceTitle} (<span id="distance-val">${App.Config.mins}</span> mins)`;
+
+        const locTitle = getEl('location-title');
+        if (locTitle) locTitle.textContent = t.locationTitle;
+
+        const locInput = getEl('location-input');
+        if (locInput) locInput.placeholder = t.searchPlaceholder;
 
         document.querySelectorAll('.lang-selector span').forEach(span => {
             span.classList.toggle('active', span.dataset.lang === App.currentLang);

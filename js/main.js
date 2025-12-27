@@ -3,6 +3,9 @@ import { UI } from './ui.js';
 import { PWA } from './pwa.js';
 import { findRestaurant, reRoll, restoreSession, startSlotAnimation } from './api.js';
 import { getEl } from './utils.js';
+import { loadGoogleMaps } from './maps-loader.js';
+
+const GOOGLE_MAPS_API_KEY = "AIzaSyCBBpOZpWTxxvYc3HjTR5dKb2acpkv6tl8";
 
 const App = {
     Config: {
@@ -59,18 +62,70 @@ const App = {
         window.location.href = url;
     },
 
-    init() {
+    async init() {
+        // Initialize Maps API first
+        const mapLangMap = { 'zh': 'zh-HK', 'en': 'en', 'ja': 'ja' };
+        try {
+            await loadGoogleMaps(GOOGLE_MAPS_API_KEY, mapLangMap[this.currentLang] || 'zh-HK');
+        } catch (e) {
+            console.error("Failed to load Maps API", e);
+        }
+
         this.UI.updateStrings(this);
         this.UI.initFilters(this);
         this.PWA.init(this.translations, this.currentLang);
         restoreSession(this);
         this.initLocationSearch();
+        this.attachGlobalListeners();
+    },
+
+    attachGlobalListeners() {
+        // Language Selectors
+        document.querySelectorAll('.lang-selector span').forEach(span => {
+            span.onclick = () => this.setLanguage(span.dataset.lang);
+        });
     },
 
     async initLocationSearch() {
         const input = getEl('location-input');
         const gpsBtn = getEl('gps-btn');
         if (!input || !gpsBtn) return;
+
+        // Toggle Clean/GPS button logic
+        const updateBtnState = () => {
+            if (input.value.trim().length > 0) {
+                // Show X (Clear)
+                gpsBtn.textContent = "✕";
+                gpsBtn.onclick = () => {
+                    input.value = "";
+                    this.Data.manualLocation = null;
+                    updateBtnState();
+                    input.focus();
+                };
+            } else {
+                // Show GPS
+                gpsBtn.textContent = "📍";
+                gpsBtn.onclick = () => {
+                    this.Data.manualLocation = null;
+                    input.value = "";
+                    this.UI.triggerHaptic(30);
+                    // Check if we can get location or just reset
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            () => {
+                                // Just a visual confirmation or reset logic
+                                input.placeholder = this.translations[this.currentLang].useCurrentLocation;
+                                // Actually we rely on findRestaurant to get the real pos, this just clears the manual one
+                            },
+                            (err) => console.log(err)
+                        );
+                    }
+                };
+            }
+        };
+
+        input.addEventListener('input', updateBtnState);
+        updateBtnState(); // Initial check
 
         try {
             const { Autocomplete } = await google.maps.importLibrary("places");
@@ -92,23 +147,15 @@ const App = {
                 };
 
                 input.value = "📍 " + place.name;
+                updateBtnState();
                 this.UI.triggerHaptic(50);
             });
 
-            gpsBtn.onclick = () => {
-                this.Data.manualLocation = null;
-                input.value = "";
-                this.UI.triggerHaptic(30);
-            };
         } catch (e) {
             console.error("Autocomplete init failed:", e);
         }
     }
 };
-
-// Expose globally
-window.App = App;
-window.setLanguage = (lang) => App.setLanguage(lang);
 
 document.addEventListener('DOMContentLoaded', () => {
     getEl('find-btn').onclick = () => findRestaurant(App);

@@ -44,15 +44,15 @@ export const UI = {
         const distTitle = getEl('distance-title');
         if (distTitle) distTitle.innerHTML = `${t.distanceTitle} (<span id="distance-val">${App.Config.mins}</span> mins)`;
 
-        const includeClosedLabel = getEl('include-closed-label');
-        if (includeClosedLabel) includeClosedLabel.textContent = t.includeClosed;
-
         const includeClosedBtn = getEl('include-closed-btn');
-        const includeClosedStatus = getEl('include-closed-status');
-        if (includeClosedBtn && includeClosedStatus) {
+        if (includeClosedBtn) {
             const isActive = App.Config.includeClosed;
             includeClosedBtn.classList.toggle('active', isActive);
-            includeClosedStatus.textContent = isActive ? "ON" : "OFF";
+
+            const label = getEl('include-closed-label');
+            if (label) {
+                label.textContent = isActive ? t.excludeClosed : t.includeClosed;
+            }
         }
 
         document.querySelectorAll('.lang-selector span').forEach(span => {

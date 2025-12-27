@@ -249,7 +249,7 @@ header p {
 
 .toggle-btn {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     margin-top: 20px;
     background: var(--item-bg);

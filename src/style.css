@@ -25,6 +25,8 @@
     --pill-price-text: #1976d2;
     --pill-category-bg: #f3e5f5;
     --pill-category-text: #8e24aa;
+    --pill-category-text: #8e24aa;
+    --pill-distance-bg: #e8f5e9;
     --pill-distance-text: #2e7d32;
     --pill-hours-bg: #e0f7fa;
     --pill-hours-text: #00796b;
@@ -63,6 +65,8 @@
         --pill-price-text: #54a0ff;
         --pill-category-bg: #2a1a3a;
         --pill-category-text: #a29bfe;
+        --pill-category-text: #a29bfe;
+        --pill-distance-bg: #1b3a2a;
         --pill-distance-text: #55efc4;
         --pill-hours-bg: #1a3a3a;
         --pill-hours-text: #80cbc4;

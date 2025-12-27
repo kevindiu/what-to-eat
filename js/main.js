@@ -28,6 +28,7 @@ const App = {
     },
     Data: {
         userPos: null,
+        manualLocation: null,
         candidates: [],
         currentPlace: null,
         lastPickedId: null,
@@ -63,6 +64,45 @@ const App = {
         this.UI.initFilters(this);
         this.PWA.init(this.translations, this.currentLang);
         restoreSession(this);
+        this.initLocationSearch();
+    },
+
+    async initLocationSearch() {
+        const input = getEl('location-input');
+        const gpsBtn = getEl('gps-btn');
+        if (!input || !gpsBtn) return;
+
+        try {
+            const { Autocomplete } = await google.maps.importLibrary("places");
+            const autocomplete = new Autocomplete(input, {
+                fields: ["geometry", "name"],
+                types: ["geocode", "establishment"]
+            });
+
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (!place.geometry || !place.geometry.location) {
+                    return; // User entered name but didn't select suggestion
+                }
+
+                this.Data.manualLocation = {
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng(),
+                    name: place.name
+                };
+
+                input.value = "📍 " + place.name;
+                this.UI.triggerHaptic(50);
+            });
+
+            gpsBtn.onclick = () => {
+                this.Data.manualLocation = null;
+                input.value = "";
+                this.UI.triggerHaptic(30);
+            };
+        } catch (e) {
+            console.error("Autocomplete init failed:", e);
+        }
     }
 };
 

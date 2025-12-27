@@ -31,7 +31,13 @@ export async function findRestaurant(App) {
     const t = App.translations[App.currentLang];
 
     try {
-        const position = await getCurrentPosition();
+        let position;
+        if (App.Data.manualLocation) {
+            position = { coords: { latitude: App.Data.manualLocation.lat, longitude: App.Data.manualLocation.lng } };
+        } else {
+            position = await getCurrentPosition();
+        }
+
         const { latitude, longitude } = position.coords;
         App.Data.userPos = { lat: latitude, lng: longitude };
 

@@ -59,7 +59,7 @@ export async function findRestaurant(App) {
         }
 
         App.Data.candidates = candidates;
-        startSlotAnimation(App);
+        App.UI.startSlotAnimation(App);
     } catch (error) {
         console.error("Search Error:", error);
         handleError(error, t, App);
@@ -170,19 +170,6 @@ export async function calculateDistances(origin, destinations) {
     });
 }
 
-export function startSlotAnimation(App) {
-    const slotName = getEl('slot-name');
-    let count = 0;
-    const interval = setInterval(() => {
-        const temp = App.Data.candidates[Math.floor(Math.random() * App.Data.candidates.length)];
-        slotName.textContent = temp?.name || "...";
-        if (++count > 15) {
-            clearInterval(interval);
-            reRoll(App);
-        }
-    }, 100);
-}
-
 export async function reRoll(App) {
     App.UI.triggerHaptic([50, 30, 50]);
     if (App.Data.candidates.length === 0) return findRestaurant(App);
@@ -215,182 +202,7 @@ export async function reRoll(App) {
             if (idx !== -1) App.Data.candidates[idx] = randomPlace;
         } catch (e) { console.error("Fetch Details Error:", e); }
     }
-    displayResult(App, randomPlace);
-}
-
-export async function displayResult(App, place) {
-    App.UI.showScreen('result-screen');
-    App.Data.lastPickedId = place.place_id;
-    if (!App.Data.history) App.Data.history = [];
-    if (!App.Data.history.includes(place.place_id)) {
-        App.Data.history.push(place.place_id);
-    }
-    App.Data.currentPlace = place;
-
-    const t = App.translations[App.currentLang];
-    const el = {
-        name: getEl('res-name'),
-        rating: getEl('res-rating'),
-        ratingCont: getEl('res-rating-container'),
-        price: getEl('res-price'),
-        priceCont: getEl('res-price-container'),
-        cat: getEl('res-category'),
-        catIcon: getEl('res-category-icon'),
-        catCont: getEl('res-category-container'),
-        hours: getEl('res-hours'),
-        hoursCont: getEl('res-hours-container'),
-        address: getEl('res-address'),
-        mapCont: getEl('res-map-container'),
-        phone: getEl('res-phone'),
-        distance: getEl('res-distance'),
-        distanceCont: getEl('res-distance-container'),
-        mapsBtn: getEl('open-maps-btn')
-    };
-
-    // Text Content
-    el.name.textContent = place.name;
-    el.address.textContent = place.vicinity;
-    getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    // Rating
-    const hasRating = typeof place.rating === 'number' && place.rating > 0;
-    el.rating.textContent = hasRating ? place.rating : (t.ratingNew.replace(/⭐\s*/, ''));
-
-    // Price
-    const priceText = getPriceDisplay(place.priceLevel, t);
-    el.price.textContent = priceText;
-    el.priceCont.style.display = priceText ? 'flex' : 'none';
-
-    // Category
-    const catFull = getPlaceCategory(place, App);
-    if (catFull) {
-        const emojiMatch = catFull.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*(.*)$/u);
-        el.catIcon.textContent = emojiMatch ? emojiMatch[1] : "🍴";
-        el.cat.textContent = emojiMatch ? emojiMatch[2] : catFull;
-        el.catCont.style.display = 'flex';
-    } else el.catCont.style.display = 'none';
-
-    // Opening Hours
-    const todayHours = getTodayHours(place, App);
-    el.hours.textContent = todayHours;
-    el.hoursCont.style.display = todayHours ? 'flex' : 'none';
-
-    // Distance
-    if (place.durationText) {
-        el.distance.textContent = place.durationText;
-        el.distanceCont.style.display = 'flex';
-    } else el.distanceCont.style.display = 'none';
-
-    // Phone
-    if (place.phone) {
-        el.phone.textContent = `📞 ${place.phone}`;
-        el.phone.href = `tel:${place.phone.replace(/\s+/g, '')}`;
-        el.phone.style.display = ''; // Let CSS (.secondary-btn) handle display: flex
-    } else el.phone.style.display = 'none';
-
-    el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
-
-    // Map logic
-    renderMap(el.mapCont, place, App);
-
-    App.UI.triggerConfetti();
-}
-
-function getTodayHours(place, App) {
-    const descriptions = place.openingHours?.weekdayDescriptions;
-    if (!descriptions || descriptions.length !== 7) return "";
-    const today = new Date();
-    const mapLangMap = { 'zh': 'zh-HK', 'en': 'en-US', 'ja': 'ja-JP' };
-    const appLocale = mapLangMap[App.currentLang] || 'zh-HK';
-    const localeDayName = today.toLocaleDateString(appLocale, { weekday: 'long' });
-    const enDayName = today.toLocaleDateString('en-US', { weekday: 'long' });
-
-    let match = descriptions.find(d => d.includes(localeDayName) || d.includes(enDayName));
-    if (!match) match = descriptions[today.getDay()];
-    if (match) {
-        const parts = match.split(/: |：/);
-        return parts[1] ? parts[1].trim() : match;
-    }
-    return "";
-}
-
-async function renderMap(container, place, App) {
-    if (!place.location) {
-        container.style.display = 'none';
-        return;
-    }
-    container.classList.add('skeleton');
-    container.style.display = 'block';
-    try {
-        const [{ Map }, { AdvancedMarkerElement, PinElement }] = await Promise.all([
-            google.maps.importLibrary("maps"),
-            google.maps.importLibrary("marker")
-        ]);
-
-        const map = new Map(container, {
-            center: place.location,
-            zoom: 16,
-            mapId: "DEMO_MAP_ID", // Required for AdvancedMarkerElement
-            disableDefaultUI: false,
-            mapTypeControl: false,
-            streetViewControl: false,
-            gestureHandling: 'greedy',
-            colorScheme: 'FOLLOW_SYSTEM'
-        });
-
-        // Restaurant Marker (Default Red Pin)
-        const resMarker = new AdvancedMarkerElement({
-            map,
-            position: place.location,
-            title: place.name
-        });
-
-        // User Location Marker (Custom Blue Dot)
-        if (App.Data.userPos) {
-            const userDot = document.createElement('div');
-            userDot.style.width = '16px';
-            userDot.style.height = '16px';
-            userDot.style.backgroundColor = '#4285F4';
-            userDot.style.border = '2px solid white';
-            userDot.style.borderRadius = '50%';
-            userDot.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)';
-
-            new AdvancedMarkerElement({
-                map,
-                position: App.Data.userPos,
-                title: "Your Location",
-                content: userDot
-            });
-
-            const bounds = new google.maps.LatLngBounds();
-            bounds.extend(place.location);
-            bounds.extend(App.Data.userPos);
-            map.fitBounds(bounds, 50);
-        }
-
-        google.maps.event.addListenerOnce(map, 'idle', () => container.classList.remove('skeleton'));
-    } catch (e) {
-        console.error("Map Render Error:", e);
-        container.style.display = 'none';
-    }
-}
-
-export function getPlaceCategory(place, App) {
-    const t = App.translations[App.currentLang].categories;
-    const name = (place.name || "").toLowerCase();
-    const types = place.types || [];
-    for (const [id, keywords] of Object.entries(CUISINE_MAPPING)) {
-        if (keywords.some(k => name.includes(k) || types.some(pt => pt.toLowerCase().includes(k)))) return t[id];
-    }
-    return null;
-}
-
-export function getPriceDisplay(level, t) {
-    if (level === undefined || level === null) return "";
-    let key = level;
-    if (PRICE_VAL_TO_KEY[key]) key = PRICE_VAL_TO_KEY[key];
-    const config = PRICE_LEVEL_MAP[key];
-    return config ? config.label(t) : "";
+    App.UI.showResult(App, randomPlace);
 }
 
 export async function restoreSession(App) {
@@ -415,6 +227,6 @@ export async function restoreSession(App) {
             const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius);
             if (places && places.length > 0) App.Data.candidates = await processCandidates(places, App.Data.userPos, App);
         }
-        displayResult(App, restored);
+        App.UI.showResult(App, restored);
     } catch (e) { console.error("Session restoration failed:", e); App.UI.showScreen('main-flow'); }
 }

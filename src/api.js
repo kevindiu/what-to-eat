@@ -227,6 +227,6 @@ export async function restoreSession(App) {
             const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius);
             if (places && places.length > 0) App.Data.candidates = await processCandidates(places, App.Data.userPos, App);
         }
-        App.UI.showResult(App, restored);
+        App.UI.showResult(App, restored, { fromShare: true });
     } catch (e) { console.error("Session restoration failed:", e); App.UI.showScreen('main-flow'); }
 }

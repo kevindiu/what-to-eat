@@ -116,7 +116,8 @@ export const UI = {
         });
     },
 
-    async showResult(App, place) {
+    async showResult(App, place, options = {}) {
+        const { fromShare = false } = options;
         this.showScreen('result-screen');
         App.Data.lastPickedId = place.place_id;
         if (!App.Data.history) App.Data.history = [];
@@ -148,7 +149,9 @@ export const UI = {
         // Text Content
         el.name.textContent = place.name;
         el.address.textContent = place.vicinity;
-        getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!fromShare) {
+            getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
 
         // Rating
         const hasRating = typeof place.rating === 'number' && place.rating > 0;
@@ -191,7 +194,9 @@ export const UI = {
         // Map logic
         this.renderMap(el.mapCont, place, App);
 
-        this.triggerConfetti();
+        if (!fromShare) {
+            this.triggerConfetti();
+        }
     },
 
     async renderMap(container, place, App) {

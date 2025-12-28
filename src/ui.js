@@ -3,25 +3,7 @@ import { reRoll } from './api.js';
 import { CUISINE_MAPPING, PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
 import confetti from 'canvas-confetti';
 
-function mapPlaceData(p, translations) {
-    const t = translations;
-    return {
-        name: typeof p.displayName === 'string' ? p.displayName : (p.displayName?.text || t.unknownName),
-        rating: p.rating,
-        userRatingCount: p.userRatingCount || 0,
-        vicinity: p.formattedAddress || p.vicinity || t.noAddress,
-        place_id: p.id || p.place_id,
-        types: p.types || [],
-        priceLevel: p.priceLevel,
-        phone: p.nationalPhoneNumber,
-        businessStatus: p.businessStatus,
-        location: p.location,
-        openingHours: p.regularOpeningHours,
-        isOpen: null,
-        durationText: null,
-        durationValue: null
-    };
-}
+
 
 export const UI = {
     showScreen(screenId) {

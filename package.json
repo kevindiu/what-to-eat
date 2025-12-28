@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cp public/icons/icon-192.png dist/favicon.ico",
     "preview": "vite preview",
     "deploy": "npm run build && gh-pages -d dist"
   },

@@ -192,6 +192,7 @@ export const UI = {
             el.photoSection.classList.remove('hidden');
             if (el.photoCont) {
                 el.photoCont.innerHTML = '';
+                const fragment = document.createDocumentFragment();
                 place.photos.forEach(photo => {
                     const img = document.createElement('img');
                     img.src = photo.getURI({ maxHeight: 400 });
@@ -213,8 +214,9 @@ export const UI = {
                         }
                     };
                     img.onclick = () => window.open(img.src, '_blank');
-                    el.photoCont.appendChild(img);
+                    fragment.appendChild(img);
                 });
+                el.photoCont.appendChild(fragment);
             }
         } else {
             el.photoSection.classList.add('hidden');
@@ -239,6 +241,7 @@ export const UI = {
             if (validReviews.length === 0) {
                 el.reviewsCont.classList.add('hidden');
             } else {
+                const fragment = document.createDocumentFragment();
                 validReviews.forEach(review => {
                     const item = document.createElement('div');
                     item.className = 'review-item';
@@ -252,8 +255,9 @@ export const UI = {
                         <div class="review-stars">${stars}</div>
                         <p class="review-text">${review.text?.text || review.text || ""}</p>
                     `;
-                    el.reviewsList.appendChild(item);
+                    fragment.appendChild(item);
                 });
+                el.reviewsList.appendChild(fragment);
             }
         } else {
             el.reviewsCont.classList.add('hidden');

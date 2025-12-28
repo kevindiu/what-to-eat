@@ -13,11 +13,16 @@ export const CUISINE_MAPPING = {
     cafe_light: ['cafe', 'coffee_shop', 'bakery', 'cafe', 'coffee', 'sandwich', 'salad', 'breakfast', 'brunch', '輕食', '咖啡', '沙律', '早餐', '早午餐', '文青']
 };
 
-export const PLACE_FIELDS = [
-    "displayName", "location", "rating", "userRatingCount",
-    "formattedAddress", "id", "types", "regularOpeningHours",
-    "priceLevel", "nationalPhoneNumber", "businessStatus", "photos",
-    "reviews", "googleMapsURI"
+// Basic fields for discovery (Low cost or free SKUs)
+export const BASIC_PLACE_FIELDS = [
+    "id", "displayName", "location", "rating", "userRatingCount",
+    "regularOpeningHours", "priceLevel", "businessStatus", "types"
+];
+
+// Detailed fields for the winner (Expensive SKUs like photos and reviews)
+export const DETAIL_PLACE_FIELDS = [
+    "id", "formattedAddress", "regularOpeningHours", "nationalPhoneNumber",
+    "photos", "reviews", "googleMapsURI"
 ];
 
 export const PRICE_LEVEL_MAP = {

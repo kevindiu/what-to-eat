@@ -1,6 +1,6 @@
 import { getEl } from './utils.js';
 import { reRoll } from './api.js';
-import { CUISINE_MAPPING, PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
+import { CUISINE_MAPPING, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
 import confetti from 'canvas-confetti';
 
 export const UI = {

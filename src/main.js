@@ -1,7 +1,7 @@
 import { translations } from './translations.js';
 import { UI } from './ui.js';
 import { PWA } from './pwa.js';
-import { findRestaurant, reRoll, restoreSession } from './api.js';
+import { findRestaurant, reRoll, restoreSession, cleanExpiredCache } from './api.js';
 import { getEl } from './utils.js';
 import './style.css';
 
@@ -63,6 +63,7 @@ const App = {
     },
 
     init() {
+        cleanExpiredCache();
         this.UI.updateStrings(this);
         this.UI.initFilters(this);
         this.setupEventListeners();

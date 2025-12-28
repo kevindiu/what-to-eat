@@ -1,5 +1,5 @@
 import { getEl, getCurrentPosition } from './utils.js';
-import { CUISINE_MAPPING, PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
+import { CUISINE_MAPPING, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
 
 /**
  * Centalized mapping from Google Place object to internal restaurant model.
@@ -12,6 +12,7 @@ function mapPlaceData(p, translations) {
         userRatingCount: p.userRatingCount || 0,
         vicinity: p.formattedAddress || p.vicinity || t.noAddress,
         place_id: p.id || p.place_id,
+        id: p.id || p.place_id, // Keep both for safety during transition
         types: p.types || [],
         priceLevel: p.priceLevel,
         phone: p.nationalPhoneNumber,
@@ -20,7 +21,6 @@ function mapPlaceData(p, translations) {
         openingHours: p.regularOpeningHours,
         isOpen: null,
         durationText: null,
-        durationValue: null,
         durationValue: null,
         photos: p.photos || [],
         reviews: p.reviews || [],
@@ -63,6 +63,11 @@ export async function findRestaurant(App) {
         }
 
         App.Data.candidates = candidates;
+
+        // Perform initial pick
+        const winner = candidates[Math.floor(Math.random() * candidates.length)];
+        App.Data.currentPlace = await fetchPlaceDetails(Place, winner, App);
+
         App.UI.startSlotAnimation(App);
     } catch (error) {
         console.error("Search Error:", error);
@@ -89,50 +94,68 @@ async function fetchNearby(Place, location, radius) {
 
     const allPlaces = [];
     const seenIds = new Set();
-    const primaryTypes = [
-        "american_restaurant", "asian_restaurant", "bakery", "bar", "bar_and_grill",
-        "barbecue_restaurant", "brazilian_restaurant", "breakfast_restaurant",
-        "brunch_restaurant", "buffet_restaurant", "cafe", "chinese_restaurant",
-        "coffee_shop", "dessert_restaurant", "dessert_shop", "diner", "donut_shop",
-        "fast_food_restaurant", "fine_dining_restaurant", "food_court",
-        "french_restaurant", "greek_restaurant", "hamburger_restaurant",
-        "ice_cream_shop", "indian_restaurant", "indonesian_restaurant",
-        "italian_restaurant", "japanese_restaurant", "korean_restaurant",
-        "lebanese_restaurant", "meal_takeaway", "mediterranean_restaurant",
-        "mexican_restaurant", "middle_eastern_restaurant", "pizza_restaurant",
-        "pub", "ramen_restaurant", "restaurant", "sandwich_shop",
-        "seafood_restaurant", "spanish_restaurant", "steak_house", "sushi_restaurant",
-        "tea_house", "thai_restaurant", "turkish_restaurant", "vegan_restaurant",
-        "vegetarian_restaurant", "vietnamese_restaurant", "wine_bar"
+
+    // Split 60 food types into three balanced groups of ~20 each 
+    // to ensure even representation and variety in search results.
+    const catGroups = [
+        // Group 1: Asian & Oriental Cuisines (15 types)
+        [
+            "asian_restaurant", "chinese_restaurant", "indian_restaurant",
+            "indonesian_restaurant", "japanese_restaurant", "korean_restaurant",
+            "ramen_restaurant", "sushi_restaurant", "thai_restaurant",
+            "vietnamese_restaurant", "lebanese_restaurant", "turkish_restaurant",
+            "middle_eastern_restaurant", "afghani_restaurant", "african_restaurant"
+        ],
+        // Group 2: Western & Global Main Cuisines (18 types)
+        [
+            "american_restaurant", "barbecue_restaurant", "brazilian_restaurant",
+            "french_restaurant", "greek_restaurant", "italian_restaurant",
+            "mediterranean_restaurant", "mexican_restaurant", "pizza_restaurant",
+            "seafood_restaurant", "spanish_restaurant", "steak_house",
+            "buffet_restaurant", "fine_dining_restaurant", "restaurant",
+            "bar_and_grill", "vegan_restaurant", "vegetarian_restaurant"
+        ],
+        // Group 3: Casual, Specialty & Snacks (25 types)
+        [
+            "bakery", "breakfast_restaurant", "brunch_restaurant", "cafe",
+            "cafeteria", "coffee_shop", "dessert_restaurant", "dessert_shop",
+            "diner", "donut_shop", "fast_food_restaurant", "food_court",
+            "hamburger_restaurant", "ice_cream_shop", "juice_shop",
+            "meal_delivery", "meal_takeaway", "sandwich_shop", "tea_house",
+            "bagel_shop", "acai_shop", "confectionery", "chocolate_factory",
+            "chocolate_shop", "candy_store"
+        ]
     ];
 
-    const results = await Promise.all(points.map(async (pos) => {
-        const request = {
-            locationRestriction: { center: pos, radius: radius },
-            includedPrimaryTypes: primaryTypes,
-            fields: PLACE_FIELDS,
-            maxResultCount: 20,
-            rankPreference: 'POPULARITY'
-        };
-        try {
-            const { places } = await Place.searchNearby(request);
-            return places || [];
-        } catch (e) {
-            console.error("Fetch point error:", e);
-            return [];
-        }
-    }));
-
-    results.forEach(group => {
-        group.forEach(p => {
-            if (p && p.id && !seenIds.has(p.id)) {
-                seenIds.add(p.id);
-                allPlaces.push(p);
+    for (const groupTypes of catGroups) {
+        const results = await Promise.all(points.map(async (pos) => {
+            const request = {
+                locationRestriction: { center: pos, radius: radius },
+                includedPrimaryTypes: groupTypes,
+                fields: BASIC_PLACE_FIELDS,
+                maxResultCount: 20,
+                rankPreference: 'POPULARITY'
+            };
+            try {
+                const { places } = await Place.searchNearby(request);
+                return places || [];
+            } catch (e) {
+                console.error("Fetch point error:", e);
+                return [];
             }
-        });
-    });
+        }));
 
-    console.log(`Deep Search found ${allPlaces.length} unique candidates across ${points.length} points.`);
+        results.forEach(group => {
+            group.forEach(p => {
+                if (p && p.id && !seenIds.has(p.id)) {
+                    seenIds.add(p.id);
+                    allPlaces.push(p);
+                }
+            });
+        });
+    }
+
+    console.log(`Deep Search found ${allPlaces.length} unique candidates across ${points.length} points and ${catGroups.length} categories.`);
     return allPlaces;
 }
 
@@ -197,6 +220,94 @@ function checkPeriodAvailability(periods) {
     return false;
 }
 
+/**
+ * Fetches expensive details (photos, reviews, address) only for the winner.
+ * Uses localStorage with 24-hour expiry to save significantly on Google Maps API Quota.
+ */
+export async function fetchPlaceDetails(Place, basicPlace, App) {
+    if (!basicPlace || !basicPlace.place_id) return basicPlace;
+
+    const cacheKey = `place_detail_${basicPlace.place_id}`;
+    const now = Date.now();
+    const TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+    const restorePhotoMethods = (photos) => {
+        if (!photos) return photos;
+        return photos.map(p => ({
+            ...p,
+            getURI: (options) => p.cachedURI || ""
+        }));
+    };
+
+    // Try reading from cache
+    try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const { data, timestamp } = JSON.parse(cached);
+            if (now - timestamp < TTL) {
+                console.log(`Cache Hit for winner: ${basicPlace.name || "Unknown"}`);
+                // Restore photo methods so UI doesn't crash
+                if (data.photos) data.photos = restorePhotoMethods(data.photos);
+
+                // Strip location-dependent fields from cache to ensure we don't show stale distances
+                delete data.durationText;
+                delete data.durationValue;
+                delete data.distanceText;
+                delete data.distanceValue;
+
+                // Preserve duration info which is calculated client-side
+                const { durationText, durationValue } = basicPlace;
+                Object.assign(basicPlace, data);
+                if (durationText) basicPlace.durationText = durationText;
+                if (durationValue) basicPlace.durationValue = durationValue;
+
+                return basicPlace;
+            }
+        }
+    } catch (e) {
+        console.warn("Cache read error:", e);
+    }
+
+    console.log(`Fetching premium details for winner (Cache Miss): ${basicPlace.name || "Unknown"} (ID: ${basicPlace.place_id})`);
+    try {
+        const p = new Place({ id: basicPlace.place_id });
+        // Must fetch BASIC + DETAIL fields to ensure mapPlaceData has everything it needs
+        await p.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
+
+        const mapped = mapPlaceData(p, App.translations[App.currentLang]);
+
+        // Pre-fetch photo URIs because the getURI method is lost after JSON.stringify
+        if (p.photos && p.photos.length > 0) {
+            mapped.photos = p.photos.map(photo => ({
+                cachedURI: photo.getURI({ maxHeight: 1000 }),
+                widthPx: photo.widthPx,
+                heightPx: photo.heightPx,
+                authorAttributions: photo.authorAttributions
+            }));
+        }
+
+        // Merge mapped data back into the basic object
+        // Preserve duration info which is calculated client-side and not available in Place details
+        const { durationText, durationValue } = basicPlace;
+        Object.assign(basicPlace, mapped);
+        if (durationText) basicPlace.durationText = durationText;
+        if (durationValue) basicPlace.durationValue = durationValue;
+
+        // Persist to cache
+        localStorage.setItem(cacheKey, JSON.stringify({
+            data: mapped,
+            timestamp: now
+        }));
+
+        // Restore methods for the current session object
+        if (basicPlace.photos) basicPlace.photos = restorePhotoMethods(basicPlace.photos);
+
+    } catch (e) {
+        console.error("Error fetching place details:", e);
+    }
+    return basicPlace;
+}
+
 function handleError(error, t, App) {
     if (error.message === "GEOLOCATION_NOT_SUPPORTED") alert(t.noGeo);
     else if (error.code === 1) alert(t.geoError);
@@ -259,20 +370,11 @@ export async function reRoll(App) {
         }
     }
 
-    let randomPlace = candidates[Math.floor(Math.random() * candidates.length)];
-    const hasHours = randomPlace.openingHours?.weekdayDescriptions?.length > 0;
-    if ((!randomPlace.vicinity || !hasHours) && randomPlace.place_id) {
-        // App.UI.showScreen('loading-screen'); // Skipped as per user request
-        try {
-            const { Place } = await google.maps.importLibrary("places");
-            const p = new Place({ id: randomPlace.place_id });
-            await p.fetchFields({ fields: PLACE_FIELDS });
-            randomPlace = mapPlaceData(p, App.translations[App.currentLang]);
-            const idx = App.Data.candidates.findIndex(item => item.place_id === randomPlace.place_id);
-            if (idx !== -1) App.Data.candidates[idx] = randomPlace;
-        } catch (e) { console.error("Fetch Details Error:", e); }
-    }
-    App.UI.showResult(App, randomPlace);
+    let winner = candidates[Math.floor(Math.random() * candidates.length)];
+    const { Place } = await google.maps.importLibrary("places");
+    const detailedWinner = await fetchPlaceDetails(Place, winner, App);
+
+    App.UI.showResult(App, detailedWinner);
 }
 
 export async function restoreSession(App) {
@@ -283,15 +385,16 @@ export async function restoreSession(App) {
     try {
         const { Place } = await google.maps.importLibrary("places");
         const p = new Place({ id: resId });
-        await p.fetchFields({ fields: PLACE_FIELDS });
+        // Fetch everything for shared links as it's just one request
+        await p.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
         const lat = App.Data.params.get('lat'), lng = App.Data.params.get('lng');
         if (lat && lng) App.Data.userPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
         const t = App.translations[App.currentLang];
         const restored = mapPlaceData(p, t);
         if (App.Data.userPos && restored.location) {
             const [withDuration] = await calculateDistances(App.Data.userPos, [restored]);
+            restored.durationValue = withDuration.durationValue; // Fixed mapping
             restored.durationText = withDuration.durationText;
-            restored.durationValue = withDuration.durationValue;
         }
         if (App.Data.userPos) {
             const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius);
@@ -299,4 +402,46 @@ export async function restoreSession(App) {
         }
         App.UI.showResult(App, restored, { fromShare: true });
     } catch (e) { console.error("Session restoration failed:", e); App.UI.showScreen('main-flow'); }
+}
+
+/**
+ * Cleanup expired cache entries from localStorage.
+ * Runs asynchronously via requestIdleCallback to avoid blocking startup.
+ */
+export function cleanExpiredCache() {
+    const runCleanup = () => {
+        const now = Date.now();
+        const TTL = 24 * 60 * 60 * 1000;
+        let count = 0;
+
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('place_detail_')) {
+                    try {
+                        const cached = localStorage.getItem(key);
+                        if (cached) {
+                            const { timestamp } = JSON.parse(cached);
+                            if (now - timestamp > TTL) {
+                                localStorage.removeItem(key);
+                                count++;
+                                i--; // Adjust index after removal
+                            }
+                        }
+                    } catch (e) {
+                        localStorage.removeItem(key); // Remove malformed
+                    }
+                }
+            }
+            if (count > 0) console.log(`Garbage Collection (Async): Removed ${count} expired cache entries.`);
+        } catch (e) {
+            console.warn("Garbage collection failed:", e);
+        }
+    };
+
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(runCleanup, { timeout: 5000 });
+    } else {
+        setTimeout(runCleanup, 2000);
+    }
 }

@@ -178,10 +178,14 @@ export const UI = {
             if (place.reviews && place.reviews.length > 0) {
                 reviewsCont.classList.remove('hidden');
                 reviewsList.innerHTML = '';
+                reviewsList.scrollLeft = 0;
                 const validReviews = place.reviews
                     .filter(r => r.text && (r.text.text || r.text).length > 0)
-                    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-                    .slice(0, 5); // Show top 5
+                    .sort((a, b) => {
+                        const timeA = a.publishTime ? new Date(a.publishTime).getTime() : 0;
+                        const timeB = b.publishTime ? new Date(b.publishTime).getTime() : 0;
+                        return timeB - timeA;
+                    });
 
                 if (validReviews.length === 0) {
                     reviewsCont.classList.add('hidden');

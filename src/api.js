@@ -71,24 +71,45 @@ export async function findRestaurant(App) {
 }
 
 async function fetchNearby(Place, location, radius) {
-    const points = [location];
+    const points = [];
     // Offset by ~60% of radius to cover more ground while maintaining overlap
     const offset = radius * 0.6;
     const latOffset = offset / 111320;
     const lngOffset = offset / (111320 * Math.cos(location.lat * Math.PI / 180));
 
-    points.push({ lat: location.lat + latOffset, lng: location.lng });
-    points.push({ lat: location.lat - latOffset, lng: location.lng });
-    points.push({ lat: location.lat, lng: location.lng + lngOffset });
-    points.push({ lat: location.lat, lng: location.lng - lngOffset });
+    // Create a 3x3 grid around the center
+    for (let i = -1; i <= 1; i++) {
+        for (let j = -1; j <= 1; j++) {
+            points.push({
+                lat: location.lat + (i * latOffset),
+                lng: location.lng + (j * lngOffset)
+            });
+        }
+    }
 
     const allPlaces = [];
     const seenIds = new Set();
+    const primaryTypes = [
+        "american_restaurant", "asian_restaurant", "bakery", "bar", "bar_and_grill",
+        "barbecue_restaurant", "brazilian_restaurant", "breakfast_restaurant",
+        "brunch_restaurant", "buffet_restaurant", "cafe", "chinese_restaurant",
+        "coffee_shop", "dessert_restaurant", "dessert_shop", "diner", "donut_shop",
+        "fast_food_restaurant", "fine_dining_restaurant", "food_court",
+        "french_restaurant", "greek_restaurant", "hamburger_restaurant",
+        "ice_cream_shop", "indian_restaurant", "indonesian_restaurant",
+        "italian_restaurant", "japanese_restaurant", "korean_restaurant",
+        "lebanese_restaurant", "meal_takeaway", "mediterranean_restaurant",
+        "mexican_restaurant", "middle_eastern_restaurant", "pizza_restaurant",
+        "pub", "ramen_restaurant", "restaurant", "sandwich_shop",
+        "seafood_restaurant", "spanish_restaurant", "steak_house", "sushi_restaurant",
+        "tea_house", "thai_restaurant", "turkish_restaurant", "vegan_restaurant",
+        "vegetarian_restaurant", "vietnamese_restaurant", "wine_bar"
+    ];
 
     const results = await Promise.all(points.map(async (pos) => {
         const request = {
             locationRestriction: { center: pos, radius: radius },
-            includedPrimaryTypes: ["restaurant"],
+            includedPrimaryTypes: primaryTypes,
             fields: PLACE_FIELDS,
             maxResultCount: 20,
             rankPreference: 'POPULARITY'

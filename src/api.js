@@ -71,15 +71,48 @@ export async function findRestaurant(App) {
 }
 
 async function fetchNearby(Place, location, radius) {
-    const request = {
-        locationRestriction: { center: location, radius: radius },
-        includedPrimaryTypes: ["restaurant"],
-        fields: PLACE_FIELDS,
-        maxResultCount: 20,
-        rankPreference: 'POPULARITY'
-    };
-    const { places } = await Place.searchNearby(request);
-    return places;
+    const points = [location];
+    // Offset by ~60% of radius to cover more ground while maintaining overlap
+    const offset = radius * 0.6;
+    const latOffset = offset / 111320;
+    const lngOffset = offset / (111320 * Math.cos(location.lat * Math.PI / 180));
+
+    points.push({ lat: location.lat + latOffset, lng: location.lng });
+    points.push({ lat: location.lat - latOffset, lng: location.lng });
+    points.push({ lat: location.lat, lng: location.lng + lngOffset });
+    points.push({ lat: location.lat, lng: location.lng - lngOffset });
+
+    const allPlaces = [];
+    const seenIds = new Set();
+
+    const results = await Promise.all(points.map(async (pos) => {
+        const request = {
+            locationRestriction: { center: pos, radius: radius },
+            includedPrimaryTypes: ["restaurant"],
+            fields: PLACE_FIELDS,
+            maxResultCount: 20,
+            rankPreference: 'POPULARITY'
+        };
+        try {
+            const { places } = await Place.searchNearby(request);
+            return places || [];
+        } catch (e) {
+            console.error("Fetch point error:", e);
+            return [];
+        }
+    }));
+
+    results.forEach(group => {
+        group.forEach(p => {
+            if (p && p.id && !seenIds.has(p.id)) {
+                seenIds.add(p.id);
+                allPlaces.push(p);
+            }
+        });
+    });
+
+    console.log(`Deep Search found ${allPlaces.length} unique candidates across ${points.length} points.`);
+    return allPlaces;
 }
 
 async function processCandidates(places, userLoc, App) {
@@ -152,26 +185,38 @@ function handleError(error, t, App) {
 
 export async function calculateDistances(origin, destinations) {
     if (destinations.length === 0) return [];
+
+    const CHUNK_SIZE = 25;
+    const chunks = [];
+    for (let i = 0; i < destinations.length; i += CHUNK_SIZE) {
+        chunks.push(destinations.slice(i, i + CHUNK_SIZE));
+    }
+
     const service = new google.maps.DistanceMatrixService();
-    return new Promise((resolve) => {
-        service.getDistanceMatrix({
-            origins: [origin],
-            destinations: destinations.map(d => d.location),
-            travelMode: google.maps.TravelMode.WALKING,
-            unitSystem: google.maps.UnitSystem.METRIC,
-        }, (response, status) => {
-            if (status !== "OK") {
-                resolve(destinations.map(d => ({ ...d, durationText: null, durationValue: null })));
-                return;
-            }
-            const results = response.rows[0].elements;
-            resolve(destinations.map((d, i) => ({
-                ...d,
-                durationText: results[i].status === "OK" ? results[i].duration.text : null,
-                durationValue: results[i].status === "OK" ? results[i].duration.value : null
-            })));
+
+    const results = await Promise.all(chunks.map(chunk => {
+        return new Promise((resolve) => {
+            service.getDistanceMatrix({
+                origins: [origin],
+                destinations: chunk.map(d => d.location),
+                travelMode: google.maps.TravelMode.WALKING,
+                unitSystem: google.maps.UnitSystem.METRIC,
+            }, (response, status) => {
+                if (status !== "OK") {
+                    resolve(chunk.map(d => ({ ...d, durationText: null, durationValue: null })));
+                    return;
+                }
+                const elements = response.rows[0].elements;
+                resolve(chunk.map((d, i) => ({
+                    ...d,
+                    durationText: elements[i].status === "OK" ? elements[i].duration.text : null,
+                    durationValue: elements[i].status === "OK" ? elements[i].duration.value : null
+                })));
+            });
         });
-    });
+    }));
+
+    return results.flat();
 }
 
 export async function reRoll(App) {

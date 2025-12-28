@@ -66,7 +66,15 @@ export const UI = {
         }
 
         const distTitle = getEl('distance-title');
-        if (distTitle) distTitle.innerHTML = `${t.distanceTitle} (<span id="distance-val">${App.Config.mins}</span> mins)`;
+        if (distTitle) {
+            distTitle.textContent = "";
+            distTitle.appendChild(document.createTextNode(`${t.distanceTitle} (`));
+            const span = document.createElement('span');
+            span.id = 'distance-val';
+            span.textContent = App.Config.mins;
+            distTitle.appendChild(span);
+            distTitle.appendChild(document.createTextNode(' mins)'));
+        }
 
         const includeClosedBtn = getEl('include-closed-btn');
         if (includeClosedBtn) {
@@ -259,14 +267,28 @@ export const UI = {
                     item.className = 'review-item';
                     const stars = '⭐'.repeat(Math.round(review.rating || 0));
                     const timeStr = review.relativePublishTimeDescription || "";
-                    item.innerHTML = `
-                        <div class="review-top">
-                            <span class="review-author">${review.authorAttribution?.displayName || "Anonymous"}</span>
-                            <span class="review-time">${timeStr}</span>
-                        </div>
-                        <div class="review-stars">${stars}</div>
-                        <p class="review-text">${review.text?.text || review.text || ""}</p>
-                    `;
+                    const topDiv = document.createElement('div');
+                    topDiv.className = 'review-top';
+                    const authorSpan = document.createElement('span');
+                    authorSpan.className = 'review-author';
+                    authorSpan.textContent = review.authorAttribution?.displayName || "Anonymous";
+                    const timeSpan = document.createElement('span');
+                    timeSpan.className = 'review-time';
+                    timeSpan.textContent = timeStr;
+                    topDiv.appendChild(authorSpan);
+                    topDiv.appendChild(timeSpan);
+
+                    const starsDiv = document.createElement('div');
+                    starsDiv.className = 'review-stars';
+                    starsDiv.textContent = stars;
+
+                    const textP = document.createElement('p');
+                    textP.className = 'review-text';
+                    textP.textContent = review.text?.text || review.text || "";
+
+                    item.appendChild(topDiv);
+                    item.appendChild(starsDiv);
+                    item.appendChild(textP);
                     fragment.appendChild(item);
                 });
                 el.reviewsList.appendChild(fragment);

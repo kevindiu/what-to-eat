@@ -1,7 +1,7 @@
 import { getEl, getCurrentPosition } from './utils.js';
-import { CUISINE_MAPPING, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
+import { CUISINE_MAPPING, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 
-const METERS_PER_DEGREE_LAT = 111320;
+
 
 /**
  * Centalized mapping from Google Place object to internal restaurant model.
@@ -92,8 +92,8 @@ async function fetchNearby(Place, location, radius, excludedCats) {
     // Offset by ~60% of radius to cover more ground while maintaining overlap
     // Offset by ~60% of radius to cover more ground while maintaining overlap
     const offset = radius * 0.6;
-    const latOffset = offset / METERS_PER_DEGREE_LAT;
-    const lngOffset = offset / (METERS_PER_DEGREE_LAT * Math.cos(location.lat * Math.PI / 180));
+    const latOffset = offset / CONSTANTS.METERS_PER_DEGREE_LAT;
+    const lngOffset = offset / (CONSTANTS.METERS_PER_DEGREE_LAT * Math.cos(location.lat * Math.PI / 180));
 
     // 5-point grid: 0:Center, 1:BL, 2:TL, 3:BR, 4:TR
     const points = [
@@ -145,7 +145,7 @@ async function fetchNearby(Place, location, radius, excludedCats) {
             includedPrimaryTypes: types,
             fields: BASIC_PLACE_FIELDS,
             maxResultCount: 20,
-            rankPreference: 'POPULARITY'
+            rankPreference: 'DISTANCE'
         };
         try {
             const { places } = await Place.searchNearby(request);

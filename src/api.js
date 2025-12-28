@@ -95,14 +95,13 @@ async function fetchNearby(Place, location, radius) {
     const latOffset = offset / METERS_PER_DEGREE_LAT;
     const lngOffset = offset / (METERS_PER_DEGREE_LAT * Math.cos(location.lat * Math.PI / 180));
 
-    // Create a 5-point grid (Center + 4 Corners) to reduce API cost
-    // This reduces calls from 9 points -> 5 points (-45% cost)
+    // 5-point grid: 0:Center, 1:BL, 2:TL, 3:BR, 4:TR
     const points = [
-        { lat: location.lat, lng: location.lng }, // Center
-        { lat: location.lat - latOffset, lng: location.lng - lngOffset }, // Bottom-Left
-        { lat: location.lat + latOffset, lng: location.lng - lngOffset }, // Top-Left
-        { lat: location.lat - latOffset, lng: location.lng + lngOffset }, // Bottom-Right
-        { lat: location.lat + latOffset, lng: location.lng + lngOffset }  // Top-Right
+        { lat: location.lat, lng: location.lng }, // 0: Center
+        { lat: location.lat - latOffset, lng: location.lng - lngOffset }, // 1: Bottom-Left
+        { lat: location.lat + latOffset, lng: location.lng - lngOffset }, // 2: Top-Left
+        { lat: location.lat - latOffset, lng: location.lng + lngOffset }, // 3: Bottom-Right
+        { lat: location.lat + latOffset, lng: location.lng + lngOffset }  // 4: Top-Right
     ];
 
     const allPlaces = [];
@@ -140,32 +139,68 @@ async function fetchNearby(Place, location, radius) {
         ]
     ];
 
-    for (const groupTypes of catGroups) {
-        const results = await Promise.all(points.map(async (pos) => {
-            const request = {
-                locationRestriction: { center: pos, radius: radius },
-                includedPrimaryTypes: groupTypes,
-                fields: BASIC_PLACE_FIELDS,
-                maxResultCount: 20,
-                rankPreference: 'POPULARITY'
-            };
-            try {
-                const { places } = await Place.searchNearby(request);
-                return places || [];
-            } catch (e) {
-                console.error("Fetch point error:", e);
-                return [];
-            }
-        }));
+    const fetchPoint = async (pos, types) => {
+        const request = {
+            locationRestriction: { center: pos, radius: radius },
+            includedPrimaryTypes: types,
+            fields: BASIC_PLACE_FIELDS,
+            maxResultCount: 20,
+            rankPreference: 'POPULARITY'
+        };
+        try {
+            const { places } = await Place.searchNearby(request);
+            return places || [];
+        } catch (e) {
+            console.warn("Fetch error:", e);
+            return [];
+        }
+    };
 
-        results.forEach(group => {
-            group.forEach(p => {
-                if (p && p.id && !seenIds.has(p.id)) {
-                    seenIds.add(p.id);
-                    allPlaces.push(p);
-                }
-            });
+    const processResults = (newPlaces) => {
+        let addedCount = 0;
+        newPlaces.forEach(p => {
+            if (p && p.id && !seenIds.has(p.id)) {
+                seenIds.add(p.id);
+                allPlaces.push(p);
+                addedCount++;
+            }
         });
+        return addedCount;
+    };
+
+    for (const groupTypes of catGroups) {
+        // Phase 1: Search Center
+        const centerResults = await fetchPoint(points[0], groupTypes);
+        processResults(centerResults);
+
+        // Optimization: If center point isn't saturated (returns < 20),
+        // we assume the area is sparse and skip the corners to save API cost.
+        if (centerResults.length < 20) continue;
+
+        // Phase 2: Search 2 Diagonal Corners (Bottom-Left & Top-Right)
+        // Indices 1 and 4
+        const diagonalResults = await Promise.all([
+            fetchPoint(points[1], groupTypes),
+            fetchPoint(points[4], groupTypes)
+        ]);
+
+        let newInPhase2 = 0;
+        diagonalResults.forEach(res => {
+            newInPhase2 += processResults(res);
+        });
+
+        // Optimization: If diagonals didn't yield ANY new unique locations,
+        // assume we've covered the area effectively and skip the last 2 corners.
+        if (newInPhase2 === 0) continue;
+
+        // Phase 3: Search Remaining 2 Corners (Top-Left & Bottom-Right)
+        // Indices 2 and 3
+        const remainingResults = await Promise.all([
+            fetchPoint(points[2], groupTypes),
+            fetchPoint(points[3], groupTypes)
+        ]);
+
+        remainingResults.forEach(res => processResults(res));
     }
 
 

@@ -44,7 +44,9 @@ export const translations = {
         includeClosed: "包含已關門餐廳 🌙",
         excludeClosed: "只選營業中餐廳 ☀️",
         reviews: "食評",
-        viewAllReviews: "查看全部"
+        viewAllReviews: "查看全部",
+        photosTitle: "相片",
+        viewAllPhotos: "查看全部"
     },
     en: {
         title: "What to Eat",
@@ -91,7 +93,9 @@ export const translations = {
         includeClosed: "Includes Closed Restaurants 🌙",
         excludeClosed: "Open Restaurants Only ☀️",
         reviews: "Reviews",
-        viewAllReviews: "View All"
+        viewAllReviews: "View All",
+        photosTitle: "Photos",
+        viewAllPhotos: "View All"
     },
     ja: {
         title: "メシ決",
@@ -138,6 +142,8 @@ export const translations = {
         includeClosed: "営業時間外も含む 🌙",
         excludeClosed: "営業中のみ ☀️",
         reviews: "口コミ",
+        viewAllPhotos: "もっと見る",
+        photosTitle: "写真",
         viewAllReviews: "もっと見る"
     }
 };

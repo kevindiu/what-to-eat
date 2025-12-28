@@ -46,7 +46,9 @@ export const UI = {
             'share-btn': t.shareBtn,
             'install-btn': t.installBtn,
             'reviews-title': t.reviews,
-            'view-all-reviews': t.viewAllReviews
+            'view-all-reviews': t.viewAllReviews,
+            'photos-title': t.photosTitle,
+            'view-all-photos': t.viewAllPhotos
         };
 
         Object.entries(mappings).forEach(([id, text]) => {
@@ -145,6 +147,8 @@ export const UI = {
             distanceCont: getEl('res-distance-container'),
             mapsBtn: getEl('open-maps-btn'),
             photoCont: getEl('res-photo-container'),
+            photoSection: getEl('res-photo-section'),
+            photosViewAll: getEl('view-all-photos'),
             reviewsViewAll: getEl('view-all-reviews')
         };
 
@@ -152,26 +156,30 @@ export const UI = {
         if (el.name) el.name.textContent = place.name;
         if (el.address) el.address.textContent = place.vicinity;
         if (el.reviewsViewAll) el.reviewsViewAll.href = place.googleMapsURI || '#';
+        if (el.photosViewAll) el.photosViewAll.href = place.googleMapsURI || '#';
         if (!fromShare) {
             const screen = getEl('result-screen');
             if (screen) screen.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         // Photos
-        if (el.photoCont) {
-            el.photoCont.innerHTML = '';
+        if (el.photoSection) {
             if (place.photos && place.photos.length > 0) {
-                el.photoCont.classList.remove('hidden');
-                place.photos.forEach(photo => {
-                    const img = document.createElement('img');
-                    img.src = photo.getURI({ maxHeight: 400 });
-                    img.className = 'photo-item';
-                    img.alt = place.name;
-                    img.loading = 'lazy';
-                    el.photoCont.appendChild(img);
-                });
+                el.photoSection.classList.remove('hidden');
+                if (el.photoCont) {
+                    el.photoCont.innerHTML = '';
+                    place.photos.forEach(photo => {
+                        const img = document.createElement('img');
+                        img.src = photo.getURI({ maxHeight: 400 });
+                        img.className = 'photo-item';
+                        img.alt = place.name;
+                        img.loading = 'lazy';
+                        img.onclick = () => window.open(img.src, '_blank');
+                        el.photoCont.appendChild(img);
+                    });
+                }
             } else {
-                el.photoCont.classList.add('hidden');
+                el.photoSection.classList.add('hidden');
             }
         }
 

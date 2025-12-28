@@ -20,7 +20,8 @@ function mapPlaceData(p, translations) {
         openingHours: p.regularOpeningHours,
         isOpen: null,
         durationText: null,
-        durationValue: null
+        durationValue: null,
+        photos: p.photos || []
     };
 }
 

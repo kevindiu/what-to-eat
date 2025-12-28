@@ -143,7 +143,8 @@ export const UI = {
             phone: getEl('res-phone'),
             distance: getEl('res-distance'),
             distanceCont: getEl('res-distance-container'),
-            mapsBtn: getEl('open-maps-btn')
+            mapsBtn: getEl('open-maps-btn'),
+            photoCont: getEl('res-photo-container')
         };
 
         // Text Content
@@ -151,6 +152,23 @@ export const UI = {
         el.address.textContent = place.vicinity;
         if (!fromShare) {
             getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Photos
+        el.photoCont.innerHTML = '';
+        if (place.photos && place.photos.length > 0) {
+            el.photoCont.classList.remove('hidden');
+            const photosToDisplay = place.photos; // Show all
+            photosToDisplay.forEach(photo => {
+                const img = document.createElement('img');
+                img.src = photo.getURI({ maxHeight: 400 });
+                img.className = 'photo-item';
+                img.alt = place.name;
+                img.loading = 'lazy';
+                el.photoCont.appendChild(img);
+            });
+        } else {
+            el.photoCont.classList.add('hidden');
         }
 
         // Rating

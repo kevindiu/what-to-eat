@@ -16,7 +16,7 @@ export const CUISINE_MAPPING = {
 export const PLACE_FIELDS = [
     "displayName", "location", "rating", "userRatingCount",
     "formattedAddress", "id", "types", "regularOpeningHours",
-    "priceLevel", "nationalPhoneNumber", "businessStatus"
+    "priceLevel", "nationalPhoneNumber", "businessStatus", "photos"
 ];
 
 export const PRICE_LEVEL_MAP = {

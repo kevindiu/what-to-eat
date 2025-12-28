@@ -788,3 +788,38 @@ body {
 .full-width {
     width: 100%;
 }
+
+/* Photo Gallery */
+.photo-preview {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    margin-bottom: 1rem;
+    padding-bottom: 8px;
+    /* Space for scrollbar */
+    scroll-snap-type: x mandatory;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+.photo-preview::-webkit-scrollbar {
+    height: 4px;
+}
+
+.photo-preview::-webkit-scrollbar-thumb {
+    background: var(--card-border);
+    border-radius: 4px;
+}
+
+.photo-item {
+    height: 200px;
+    border-radius: 16px;
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    background: var(--item-bg);
+    border: 1px solid var(--card-border);
+    max-width: 80%;
+    /* Ensure slight peek of next image */
+}

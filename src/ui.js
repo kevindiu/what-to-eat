@@ -174,6 +174,29 @@ export const UI = {
                         img.className = 'photo-item';
                         img.alt = place.name;
                         img.loading = 'lazy';
+
+                        // Fix for half-loaded images: Fade in only when fully loaded
+                        img.style.opacity = '0';
+                        img.style.transition = 'opacity 0.3s ease';
+
+                        img.onload = () => {
+                            img.style.opacity = '1';
+                        };
+
+                        img.onerror = function () {
+                            // Simple retry logic with cache buster if load fails
+                            if (!this.getAttribute('data-retried')) {
+                                this.setAttribute('data-retried', 'true');
+                                console.warn('Image failed, retrying:', this.src);
+                                setTimeout(() => {
+                                    const sep = this.src.includes('?') ? '&' : '?';
+                                    this.src = this.src + sep + 'retry=' + Date.now();
+                                }, 1000);
+                            } else {
+                                this.style.display = 'none'; // Hide if retry also fails
+                            }
+                        };
+
                         img.onclick = () => window.open(img.src, '_blank');
                         el.photoCont.appendChild(img);
                     });

@@ -76,21 +76,20 @@ export async function findRestaurant(App) {
 }
 
 async function fetchNearby(Place, location, radius) {
-    const points = [];
     // Offset by ~60% of radius to cover more ground while maintaining overlap
     const offset = radius * 0.6;
     const latOffset = offset / 111320;
     const lngOffset = offset / (111320 * Math.cos(location.lat * Math.PI / 180));
 
-    // Create a 3x3 grid around the center
-    for (let i = -1; i <= 1; i++) {
-        for (let j = -1; j <= 1; j++) {
-            points.push({
-                lat: location.lat + (i * latOffset),
-                lng: location.lng + (j * lngOffset)
-            });
-        }
-    }
+    // Create a 5-point grid (Center + 4 Corners) to reduce API cost
+    // This reduces calls from 9 points -> 5 points (-45% cost)
+    const points = [
+        { lat: location.lat, lng: location.lng }, // Center
+        { lat: location.lat - latOffset, lng: location.lng - lngOffset }, // Bottom-Left
+        { lat: location.lat + latOffset, lng: location.lng - lngOffset }, // Top-Left
+        { lat: location.lat - latOffset, lng: location.lng + lngOffset }, // Bottom-Right
+        { lat: location.lat + latOffset, lng: location.lng + lngOffset }  // Top-Right
+    ];
 
     const allPlaces = [];
     const seenIds = new Set();

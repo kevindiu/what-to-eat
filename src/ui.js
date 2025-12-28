@@ -96,8 +96,14 @@ export const UI = {
             div.className = `filter-item ${App.Config.excluded.has(id) ? 'active' : ''}`;
             div.textContent = cats[id];
             div.onclick = () => {
-                if (isActive) App.Config.excluded.add(id);
-                else App.Config.excluded.delete(id);
+                const currentlyExcluded = App.Config.excluded.has(id);
+                if (currentlyExcluded) {
+                    App.Config.excluded.delete(id);
+                    div.classList.remove('active');
+                } else {
+                    App.Config.excluded.add(id);
+                    div.classList.add('active');
+                }
                 App.saveSettings();
                 this.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
@@ -108,8 +114,14 @@ export const UI = {
             const p = item.dataset.price;
             item.classList.toggle('active', App.Config.prices.has(p));
             item.onclick = () => {
-                if (isActive) App.Config.prices.add(p);
-                else App.Config.prices.delete(p);
+                const currentlySelected = App.Config.prices.has(p);
+                if (currentlySelected) {
+                    App.Config.prices.delete(p);
+                    item.classList.remove('active');
+                } else {
+                    App.Config.prices.add(p);
+                    item.classList.add('active');
+                }
                 App.saveSettings();
                 this.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };

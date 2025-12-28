@@ -322,7 +322,7 @@ export const UI = {
         // Opening Hours
         const todayHours = this.getTodayHours(place, App);
         if (el.hours) el.hours.textContent = todayHours;
-        if (el.hoursCont) el.hoursCont.style.display = todayHours ? 'flex' : 'none';
+        if (el.hoursCont) el.hoursCont.style.display = 'flex'; // Always show if we have a message (including "No info")
 
         // Distance
         if (place.durationText) {
@@ -435,8 +435,9 @@ export const UI = {
     },
 
     getTodayHours(place, App) {
+        const t = App.translations[App.currentLang];
         const descriptions = place.openingHours?.weekdayDescriptions;
-        if (!descriptions || descriptions.length !== 7) return "";
+        if (!descriptions || descriptions.length !== 7) return t.noHoursInfo; // Return translated "No info" instead of empty string
         const today = new Date();
         const mapLangMap = { 'zh': 'zh-HK', 'en': 'en-US', 'ja': 'ja-JP' };
         const appLocale = mapLangMap[App.currentLang] || 'zh-HK';
@@ -449,7 +450,7 @@ export const UI = {
             const parts = match.split(/: |：/);
             return parts[1] ? parts[1].trim() : match;
         }
-        return "";
+        return t.noHoursInfo;
     },
 
     triggerHaptic(duration) {

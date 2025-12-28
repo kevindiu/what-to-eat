@@ -841,17 +841,15 @@ body {
 .reviews-header,
 .photo-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
+    gap: 8px;
     margin-bottom: 12px;
     padding: 0 4px;
 }
 
 .reviews-header h3,
 .photo-header h3 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
     font-size: 1.2rem;
     font-weight: 700;
     margin: 0;
@@ -859,6 +857,7 @@ body {
 }
 
 .view-all-link {
+    margin-left: auto;
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--primary-color);

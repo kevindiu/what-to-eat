@@ -45,7 +45,8 @@ export const UI = {
             'open-maps-btn': t.openMaps,
             'share-btn': t.shareBtn,
             'install-btn': t.installBtn,
-            'reviews-title': t.reviews
+            'reviews-title': t.reviews,
+            'view-all-reviews': t.viewAllReviews
         };
 
         Object.entries(mappings).forEach(([id, text]) => {
@@ -143,12 +144,14 @@ export const UI = {
             distance: getEl('res-distance'),
             distanceCont: getEl('res-distance-container'),
             mapsBtn: getEl('open-maps-btn'),
-            photoCont: getEl('res-photo-container')
+            photoCont: getEl('res-photo-container'),
+            reviewsViewAll: getEl('view-all-reviews')
         };
 
         // Text Content
         if (el.name) el.name.textContent = place.name;
         if (el.address) el.address.textContent = place.vicinity;
+        if (el.reviewsViewAll) el.reviewsViewAll.href = place.googleMapsURI || '#';
         if (!fromShare) {
             const screen = getEl('result-screen');
             if (screen) screen.scrollIntoView({ behavior: 'smooth', block: 'start' });

@@ -23,7 +23,8 @@ function mapPlaceData(p, translations) {
         durationValue: null,
         durationValue: null,
         photos: p.photos || [],
-        reviews: p.reviews || []
+        reviews: p.reviews || [],
+        googleMapsURI: p.googleMapsURI
     };
 }
 

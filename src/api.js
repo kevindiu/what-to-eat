@@ -1,11 +1,12 @@
 import { getEl, getCurrentPosition } from './utils.js';
 import { CUISINE_MAPPING, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
 
+const METERS_PER_DEGREE_LAT = 111320;
+
 /**
  * Centalized mapping from Google Place object to internal restaurant model.
  */
-function mapPlaceData(p, translations) {
-    const t = translations;
+function mapPlaceData(p, t) {
     return {
         name: typeof p.displayName === 'string' ? p.displayName : (p.displayName?.text || t.unknownName),
         rating: p.rating,
@@ -28,6 +29,11 @@ function mapPlaceData(p, translations) {
     };
 }
 
+/**
+ * Main function to find a random restaurant based on user location and preferences.
+ * Orchestrates fetching, filtering, and selecting a winner.
+ * @param {Object} App - The application state object.
+ */
 export async function findRestaurant(App) {
     App.UI.triggerHaptic(50);
     App.UI.showScreen('loading-screen');
@@ -75,11 +81,19 @@ export async function findRestaurant(App) {
     }
 }
 
+/**
+ * Fetches nearby places from Google Places API using a grid search strategy to optimize coverage and cost.
+ * @param {Object} Place - The Google Maps Place class.
+ * @param {Object} location - The center location {lat, lng}.
+ * @param {number} radius - Search radius in meters.
+ * @returns {Promise<Array>} Array of unique place objects.
+ */
 async function fetchNearby(Place, location, radius) {
     // Offset by ~60% of radius to cover more ground while maintaining overlap
+    // Offset by ~60% of radius to cover more ground while maintaining overlap
     const offset = radius * 0.6;
-    const latOffset = offset / 111320;
-    const lngOffset = offset / (111320 * Math.cos(location.lat * Math.PI / 180));
+    const latOffset = offset / METERS_PER_DEGREE_LAT;
+    const lngOffset = offset / (METERS_PER_DEGREE_LAT * Math.cos(location.lat * Math.PI / 180));
 
     // Create a 5-point grid (Center + 4 Corners) to reduce API cost
     // This reduces calls from 9 points -> 5 points (-45% cost)
@@ -154,10 +168,18 @@ async function fetchNearby(Place, location, radius) {
         });
     }
 
-    console.log(`Deep Search found ${allPlaces.length} unique candidates across ${points.length} points and ${catGroups.length} categories.`);
+
+
     return allPlaces;
 }
 
+/**
+ * Filters and validates candidate places based on business status, hours, and user preferences.
+ * @param {Array} places - List of raw place objects.
+ * @param {Object} userLoc - User's current location {lat, lng}.
+ * @param {Object} App - The application state object.
+ * @returns {Promise<Array>} Filtered list of eligible places.
+ */
 async function processCandidates(places, userLoc, App) {
     const t = App.translations[App.currentLang];
     const rawResults = await Promise.all(places.map(async p => {
@@ -222,6 +244,10 @@ function checkPeriodAvailability(periods) {
 /**
  * Fetches expensive details (photos, reviews, address) only for the winner.
  * Uses localStorage with 24-hour expiry to save significantly on Google Maps API Quota.
+ * @param {Object} Place - The Google Maps Place class.
+ * @param {Object} basicPlace - The partial place object to enrich.
+ * @param {Object} App - The application state.
+ * @returns {Promise<Object>} The detailed place object.
  */
 export async function fetchPlaceDetails(Place, basicPlace, App) {
     if (!basicPlace || !basicPlace.place_id) return basicPlace;
@@ -244,7 +270,6 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
         if (cached) {
             const { data, timestamp } = JSON.parse(cached);
             if (now - timestamp < TTL) {
-                console.log(`Cache Hit for winner: ${basicPlace.name || "Unknown"}`);
                 // Restore photo methods so UI doesn't crash
                 if (data.photos) data.photos = restorePhotoMethods(data.photos);
 
@@ -267,7 +292,8 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
         console.warn("Cache read error:", e);
     }
 
-    console.log(`Fetching premium details for winner (Cache Miss): ${basicPlace.name || "Unknown"} (ID: ${basicPlace.place_id})`);
+
+
     try {
         const p = new Place({ id: basicPlace.place_id });
         // Must fetch BASIC + DETAIL fields to ensure mapPlaceData has everything it needs
@@ -314,6 +340,13 @@ function handleError(error, t, App) {
     App.UI.showScreen('main-flow');
 }
 
+/**
+ * Calculates walking duration from origin to multiple destinations using Distance Matrix Service.
+ * Batches requests to handle API limits.
+ * @param {Object} origin - The starting location {lat, lng}.
+ * @param {Array} destinations - Array of target place objects.
+ * @returns {Promise<Array>} Destinations enriched with durationText and durationValue.
+ */
 export async function calculateDistances(origin, destinations) {
     if (destinations.length === 0) return [];
 
@@ -350,6 +383,11 @@ export async function calculateDistances(origin, destinations) {
     return results.flat();
 }
 
+/**
+ * Selects a new winner from the existing candidates.
+ * Tries to avoid recently visited places or the immediate previous winner.
+ * @param {Object} App - The application state.
+ */
 export async function reRoll(App) {
     App.UI.triggerHaptic([50, 30, 50]);
     if (App.Data.candidates.length === 0) return findRestaurant(App);
@@ -376,6 +414,10 @@ export async function reRoll(App) {
     App.UI.showResult(App, detailedWinner);
 }
 
+/**
+ * Restores a specific restaurant session from a URL parameter (e.g., shared link).
+ * @param {Object} App - The application state.
+ */
 export async function restoreSession(App) {
     const resId = App.Data.params.get('resId');
     if (!resId) return;
@@ -432,7 +474,6 @@ export function cleanExpiredCache() {
                     }
                 }
             }
-            if (count > 0) console.log(`Garbage Collection (Async): Removed ${count} expired cache entries.`);
         } catch (e) {
             console.warn("Garbage collection failed:", e);
         }

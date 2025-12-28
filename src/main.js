@@ -2,14 +2,15 @@ import { translations } from './translations.js';
 import { UI } from './ui.js';
 import { PWA } from './pwa.js';
 import { findRestaurant, reRoll, restoreSession, cleanExpiredCache } from './api.js';
+import { CONSTANTS } from './constants.js';
 import { getEl } from './utils.js';
 import './style.css';
 
 const App = {
     Config: {
-        mins: parseInt(localStorage.getItem('currentMins') || '5'),
+        mins: parseInt(localStorage.getItem('currentMins') || CONSTANTS.DEFAULT_MINS.toString()),
         includeClosed: localStorage.getItem('includeClosed') === 'true',
-        get radius() { return this.mins * 80; },
+        get radius() { return this.mins * CONSTANTS.DEFAULT_SEARCH_RADIUS_MULTIPLIER; },
         excluded: new Set(JSON.parse(localStorage.getItem('excludedTypes') || '[]')),
         prices: new Set(JSON.parse(localStorage.getItem('selectedPrices') || '["1","2","3","4"]')),
         lang: (function () {
@@ -42,6 +43,9 @@ const App = {
     translations: translations,
     get currentLang() { return this.Config.lang; },
 
+    /**
+     * Persist current settings to localStorage.
+     */
     saveSettings() {
         localStorage.setItem('currentMins', this.Config.mins.toString());
         localStorage.setItem('includeClosed', this.Config.includeClosed);
@@ -49,6 +53,10 @@ const App = {
         localStorage.setItem('excludedTypes', JSON.stringify(Array.from(this.Config.excluded)));
     },
 
+    /**
+     * Change application language and reload.
+     * @param {string} lang - The target language code (en, zh, ja).
+     */
     setLanguage(lang) {
         if (this.currentLang === lang) return;
         localStorage.setItem('preferredLang', lang);
@@ -62,6 +70,9 @@ const App = {
         window.location.href = url;
     },
 
+    /**
+     * Initialize the application.
+     */
     init() {
         cleanExpiredCache();
         this.UI.updateStrings(this);
@@ -133,7 +144,8 @@ const App = {
                 this.UI.triggerHaptic(50);
             });
         } catch (e) {
-            console.error("Autocomplete init failed:", e);
+            // Autocomplete init failed, likely due to script load error or API key issue.
+            // Silent failure is acceptable as we fallback to "Use Current Location" logic.
         }
     },
 
@@ -175,7 +187,7 @@ const App = {
                 App.Config.includeClosed = !App.Config.includeClosed;
                 App.saveSettings();
                 App.UI.updateStrings(App); // Re-render to update class and text
-                App.UI.triggerHaptic(30);
+                App.UI.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
         }
     }

@@ -1,6 +1,6 @@
 import { getEl } from './utils.js';
 import { reRoll } from './api.js';
-import { CUISINE_MAPPING, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
+import { CUISINE_MAPPING, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import confetti from 'canvas-confetti';
 
 export const UI = {
@@ -96,11 +96,10 @@ export const UI = {
             div.className = `filter-item ${App.Config.excluded.has(id) ? 'active' : ''}`;
             div.textContent = cats[id];
             div.onclick = () => {
-                const isActive = div.classList.toggle('active');
                 if (isActive) App.Config.excluded.add(id);
                 else App.Config.excluded.delete(id);
                 App.saveSettings();
-                this.triggerHaptic(30);
+                this.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
             list.appendChild(div);
         });
@@ -109,11 +108,10 @@ export const UI = {
             const p = item.dataset.price;
             item.classList.toggle('active', App.Config.prices.has(p));
             item.onclick = () => {
-                const isActive = item.classList.toggle('active');
                 if (isActive) App.Config.prices.add(p);
                 else App.Config.prices.delete(p);
                 App.saveSettings();
-                this.triggerHaptic(30);
+                this.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
         });
     },
@@ -121,15 +119,35 @@ export const UI = {
     async showResult(App, place, options = {}) {
         const { fromShare = false } = options;
         this.showScreen('result-screen');
+
+        this.updateHistory(App, place);
+        App.Data.currentPlace = place;
+
+        const el = this.getElements();
+
+        this.renderHeader(el, place, fromShare);
+        this.renderPhotos(el, place);
+        this.renderReviews(el, place);
+        this.renderDetails(el, place, App);
+
+        // Map logic
+        this.renderMap(el.mapCont, place, App);
+
+        if (!fromShare) {
+            this.triggerConfetti();
+        }
+    },
+
+    updateHistory(App, place) {
         App.Data.lastPickedId = place.place_id;
         if (!App.Data.history) App.Data.history = [];
         if (!App.Data.history.includes(place.place_id)) {
             App.Data.history.push(place.place_id);
         }
-        App.Data.currentPlace = place;
+    },
 
-        const t = App.translations[App.currentLang];
-        const el = {
+    getElements() {
+        return {
             name: getEl('res-name'),
             rating: getEl('res-rating'),
             ratingCont: getEl('res-rating-container'),
@@ -149,102 +167,101 @@ export const UI = {
             photoCont: getEl('res-photo-container'),
             photoSection: getEl('res-photo-section'),
             photosViewAll: getEl('view-all-photos'),
-            reviewsViewAll: getEl('view-all-reviews')
+            reviewsViewAll: getEl('view-all-reviews'),
+            reviewsCont: getEl('res-reviews-container'),
+            reviewsList: getEl('reviews-list')
         };
+    },
 
-        // Text Content
+    renderHeader(el, place, fromShare) {
         if (el.name) el.name.textContent = place.name;
         if (el.address) el.address.textContent = place.vicinity;
         if (el.reviewsViewAll) el.reviewsViewAll.href = place.googleMapsURI || '#';
         if (el.photosViewAll) el.photosViewAll.href = place.googleMapsURI || '#';
+
         if (!fromShare) {
             const screen = getEl('result-screen');
             if (screen) screen.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+    },
 
-        // Photos
-        if (el.photoSection) {
-            if (place.photos && place.photos.length > 0) {
-                el.photoSection.classList.remove('hidden');
-                if (el.photoCont) {
-                    el.photoCont.innerHTML = '';
-                    place.photos.forEach(photo => {
-                        const img = document.createElement('img');
-                        img.src = photo.getURI({ maxHeight: 400 });
-                        img.className = 'photo-item';
-                        img.alt = place.name;
-                        img.loading = 'lazy';
+    renderPhotos(el, place) {
+        if (!el.photoSection) return;
 
-                        // Fix for half-loaded images: Fade in only when fully loaded
-                        img.style.opacity = '0';
-                        img.style.transition = 'opacity 0.3s ease';
-
-                        img.onload = () => {
-                            img.style.opacity = '1';
-                        };
-
-                        img.onerror = function () {
-                            // Simple retry logic with cache buster if load fails
-                            if (!this.getAttribute('data-retried')) {
-                                this.setAttribute('data-retried', 'true');
-                                console.warn('Image failed, retrying:', this.src);
-                                setTimeout(() => {
-                                    const sep = this.src.includes('?') ? '&' : '?';
-                                    this.src = this.src + sep + 'retry=' + Date.now();
-                                }, 1000);
-                            } else {
-                                this.style.display = 'none'; // Hide if retry also fails
-                            }
-                        };
-
-                        img.onclick = () => window.open(img.src, '_blank');
-                        el.photoCont.appendChild(img);
-                    });
-                }
-            } else {
-                el.photoSection.classList.add('hidden');
+        if (place.photos && place.photos.length > 0) {
+            el.photoSection.classList.remove('hidden');
+            if (el.photoCont) {
+                el.photoCont.innerHTML = '';
+                place.photos.forEach(photo => {
+                    const img = document.createElement('img');
+                    img.src = photo.getURI({ maxHeight: 400 });
+                    img.className = 'photo-item';
+                    img.alt = place.name;
+                    img.loading = 'lazy';
+                    img.style.opacity = '0';
+                    img.style.transition = 'opacity 0.3s ease';
+                    img.onload = () => { img.style.opacity = '1'; };
+                    img.onerror = function () {
+                        if (!this.getAttribute('data-retried')) {
+                            this.setAttribute('data-retried', 'true');
+                            setTimeout(() => {
+                                const sep = this.src.includes('?') ? '&' : '?';
+                                this.src = this.src + sep + 'retry=' + Date.now();
+                            }, 1000);
+                        } else {
+                            this.style.display = 'none';
+                        }
+                    };
+                    img.onclick = () => window.open(img.src, '_blank');
+                    el.photoCont.appendChild(img);
+                });
             }
+        } else {
+            el.photoSection.classList.add('hidden');
         }
+    },
 
-        // Reviews
-        const reviewsCont = getEl('res-reviews-container');
-        const reviewsList = getEl('reviews-list');
-        if (reviewsCont && reviewsList) {
-            if (place.reviews && place.reviews.length > 0) {
-                reviewsCont.classList.remove('hidden');
-                reviewsList.innerHTML = '';
-                reviewsList.scrollLeft = 0;
-                const validReviews = place.reviews
-                    .filter(r => r.text && (r.text.text || r.text).length > 0)
-                    .sort((a, b) => {
-                        const timeA = a.publishTime ? new Date(a.publishTime).getTime() : 0;
-                        const timeB = b.publishTime ? new Date(b.publishTime).getTime() : 0;
-                        return timeB - timeA;
-                    });
+    renderReviews(el, place) {
+        if (!el.reviewsCont || !el.reviewsList) return;
 
-                if (validReviews.length === 0) {
-                    reviewsCont.classList.add('hidden');
-                } else {
-                    validReviews.forEach(review => {
-                        const item = document.createElement('div');
-                        item.className = 'review-item';
-                        const stars = '⭐'.repeat(Math.round(review.rating || 0));
-                        const timeStr = review.relativePublishTimeDescription || "";
-                        item.innerHTML = `
-                            <div class="review-top">
-                                <span class="review-author">${review.authorAttribution?.displayName || "Anonymous"}</span>
-                                <span class="review-time">${timeStr}</span>
-                            </div>
-                            <div class="review-stars">${stars}</div>
-                            <p class="review-text">${review.text?.text || review.text || ""}</p>
-                        `;
-                        reviewsList.appendChild(item);
-                    });
-                }
+        if (place.reviews && place.reviews.length > 0) {
+            el.reviewsCont.classList.remove('hidden');
+            el.reviewsList.innerHTML = '';
+            el.reviewsList.scrollLeft = 0;
+            const validReviews = place.reviews
+                .filter(r => r.text && (r.text.text || r.text).length > 0)
+                .sort((a, b) => {
+                    const timeA = a.publishTime ? new Date(a.publishTime).getTime() : 0;
+                    const timeB = b.publishTime ? new Date(b.publishTime).getTime() : 0;
+                    return timeB - timeA;
+                });
+
+            if (validReviews.length === 0) {
+                el.reviewsCont.classList.add('hidden');
             } else {
-                reviewsCont.classList.add('hidden');
+                validReviews.forEach(review => {
+                    const item = document.createElement('div');
+                    item.className = 'review-item';
+                    const stars = '⭐'.repeat(Math.round(review.rating || 0));
+                    const timeStr = review.relativePublishTimeDescription || "";
+                    item.innerHTML = `
+                        <div class="review-top">
+                            <span class="review-author">${review.authorAttribution?.displayName || "Anonymous"}</span>
+                            <span class="review-time">${timeStr}</span>
+                        </div>
+                        <div class="review-stars">${stars}</div>
+                        <p class="review-text">${review.text?.text || review.text || ""}</p>
+                    `;
+                    el.reviewsList.appendChild(item);
+                });
             }
+        } else {
+            el.reviewsCont.classList.add('hidden');
         }
+    },
+
+    renderDetails(el, place, App) {
+        const t = App.translations[App.currentLang];
 
         // Rating
         const hasRating = typeof place.rating === 'number' && place.rating > 0;
@@ -285,13 +302,6 @@ export const UI = {
         } else if (el.phone) el.phone.style.display = 'none';
 
         if (el.mapsBtn) el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
-
-        // Map logic
-        this.renderMap(el.mapCont, place, App);
-
-        if (!fromShare) {
-            this.triggerConfetti();
-        }
     },
 
     async renderMap(container, place, App) {
@@ -405,7 +415,7 @@ export const UI = {
     },
 
     triggerHaptic(duration) {
-        if (navigator.vibrate) navigator.vibrate(duration || 30);
+        if (navigator.vibrate) navigator.vibrate(duration || CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
     },
 
     triggerConfetti() {

@@ -1,3 +1,8 @@
+/**
+ * Helper to get element by ID
+ * @param {string} id - The DOM element ID
+ * @returns {HTMLElement | null} The element
+ */
 export const getEl = id => document.getElementById(id);
 
 /**
@@ -20,5 +25,7 @@ export function getCurrentPosition(options = {}) {
 
 /**
  * Delay helper
+ * @param {number} ms - Milliseconds to sleep
+ * @returns {Promise<void>}
  */
 export const sleep = ms => new Promise(r => setTimeout(r, ms));

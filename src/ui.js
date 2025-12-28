@@ -44,7 +44,8 @@ export const UI = {
             'loading-text': t.loading,
             'open-maps-btn': t.openMaps,
             'share-btn': t.shareBtn,
-            'install-btn': t.installBtn
+            'install-btn': t.installBtn,
+            'reviews-title': t.reviews
         };
 
         Object.entries(mappings).forEach(([id, text]) => {

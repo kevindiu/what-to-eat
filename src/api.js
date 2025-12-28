@@ -21,7 +21,9 @@ function mapPlaceData(p, translations) {
         isOpen: null,
         durationText: null,
         durationValue: null,
-        photos: p.photos || []
+        durationValue: null,
+        photos: p.photos || [],
+        reviews: p.reviews || []
     };
 }
 

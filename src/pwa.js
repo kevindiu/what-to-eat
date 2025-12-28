@@ -7,7 +7,10 @@ export const PWA = {
         if ('serviceWorker' in navigator) {
             registerSW({
                 immediate: true,
-                onNeedRefresh() { console.log("New content available, reload to update."); },
+                onNeedRefresh() {
+                    console.log("New content available, reloading...");
+                    window.location.reload();
+                },
                 onOfflineReady() { console.log("App ready to work offline"); }
             });
         }

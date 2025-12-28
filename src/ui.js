@@ -3,8 +3,6 @@ import { reRoll } from './api.js';
 import { CUISINE_MAPPING, PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY } from './constants.js';
 import confetti from 'canvas-confetti';
 
-
-
 export const UI = {
     showScreen(screenId) {
         const screens = ['main-flow', 'result-screen', 'loading-screen'];
@@ -148,66 +146,106 @@ export const UI = {
         };
 
         // Text Content
-        el.name.textContent = place.name;
-        el.address.textContent = place.vicinity;
+        if (el.name) el.name.textContent = place.name;
+        if (el.address) el.address.textContent = place.vicinity;
         if (!fromShare) {
-            getEl('result-screen').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const screen = getEl('result-screen');
+            if (screen) screen.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         // Photos
-        el.photoCont.innerHTML = '';
-        if (place.photos && place.photos.length > 0) {
-            el.photoCont.classList.remove('hidden');
-            const photosToDisplay = place.photos; // Show all
-            photosToDisplay.forEach(photo => {
-                const img = document.createElement('img');
-                img.src = photo.getURI({ maxHeight: 400 });
-                img.className = 'photo-item';
-                img.alt = place.name;
-                img.loading = 'lazy';
-                el.photoCont.appendChild(img);
-            });
-        } else {
-            el.photoCont.classList.add('hidden');
+        if (el.photoCont) {
+            el.photoCont.innerHTML = '';
+            if (place.photos && place.photos.length > 0) {
+                el.photoCont.classList.remove('hidden');
+                place.photos.forEach(photo => {
+                    const img = document.createElement('img');
+                    img.src = photo.getURI({ maxHeight: 400 });
+                    img.className = 'photo-item';
+                    img.alt = place.name;
+                    img.loading = 'lazy';
+                    el.photoCont.appendChild(img);
+                });
+            } else {
+                el.photoCont.classList.add('hidden');
+            }
+        }
+
+        // Reviews
+        const reviewsCont = getEl('res-reviews-container');
+        const reviewsList = getEl('reviews-list');
+        if (reviewsCont && reviewsList) {
+            if (place.reviews && place.reviews.length > 0) {
+                reviewsCont.classList.remove('hidden');
+                reviewsList.innerHTML = '';
+                const validReviews = place.reviews
+                    .filter(r => r.text && (r.text.text || r.text).length > 0)
+                    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+                    .slice(0, 5); // Show top 5
+
+                if (validReviews.length === 0) {
+                    reviewsCont.classList.add('hidden');
+                } else {
+                    validReviews.forEach(review => {
+                        const item = document.createElement('div');
+                        item.className = 'review-item';
+                        const stars = '⭐'.repeat(Math.round(review.rating || 0));
+                        const timeStr = review.relativePublishTimeDescription || "";
+                        item.innerHTML = `
+                            <div class="review-top">
+                                <span class="review-author">${review.authorAttribution?.displayName || "Anonymous"}</span>
+                                <span class="review-time">${timeStr}</span>
+                            </div>
+                            <div class="review-stars">${stars}</div>
+                            <p class="review-text">${review.text?.text || review.text || ""}</p>
+                        `;
+                        reviewsList.appendChild(item);
+                    });
+                }
+            } else {
+                reviewsCont.classList.add('hidden');
+            }
         }
 
         // Rating
         const hasRating = typeof place.rating === 'number' && place.rating > 0;
-        el.rating.textContent = hasRating ? place.rating : (t.ratingNew.replace(/⭐\s*/, ''));
+        if (el.rating) el.rating.textContent = hasRating ? place.rating : (t.ratingNew.replace(/⭐\s*/, ''));
 
         // Price
         const priceText = this.getPriceDisplay(place.priceLevel, t);
-        el.price.textContent = priceText;
-        el.priceCont.style.display = priceText ? 'flex' : 'none';
+        if (el.price) el.price.textContent = priceText;
+        if (el.priceCont) el.priceCont.style.display = priceText ? 'flex' : 'none';
 
         // Category
         const catFull = this.getPlaceCategory(place, App);
         if (catFull) {
             const emojiMatch = catFull.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*(.*)$/u);
-            el.catIcon.textContent = emojiMatch ? emojiMatch[1] : "🍴";
-            el.cat.textContent = emojiMatch ? emojiMatch[2] : catFull;
-            el.catCont.style.display = 'flex';
-        } else el.catCont.style.display = 'none';
+            if (el.catIcon) el.catIcon.textContent = emojiMatch ? emojiMatch[1] : "🍴";
+            if (el.cat) el.cat.textContent = emojiMatch ? emojiMatch[2] : catFull;
+            if (el.catCont) el.catCont.style.display = 'flex';
+        } else if (el.catCont) el.catCont.style.display = 'none';
 
         // Opening Hours
         const todayHours = this.getTodayHours(place, App);
-        el.hours.textContent = todayHours;
-        el.hoursCont.style.display = todayHours ? 'flex' : 'none';
+        if (el.hours) el.hours.textContent = todayHours;
+        if (el.hoursCont) el.hoursCont.style.display = todayHours ? 'flex' : 'none';
 
         // Distance
         if (place.durationText) {
-            el.distance.textContent = place.durationText;
-            el.distanceCont.style.display = 'flex';
-        } else el.distanceCont.style.display = 'none';
+            if (el.distance) el.distance.textContent = place.durationText;
+            if (el.distanceCont) el.distanceCont.style.display = 'flex';
+        } else if (el.distanceCont) el.distanceCont.style.display = 'none';
 
         // Phone
         if (place.phone) {
-            el.phone.textContent = `📞 ${place.phone}`;
-            el.phone.href = `tel:${place.phone.replace(/\s+/g, '')}`;
-            el.phone.style.display = ''; // Let CSS (.secondary-btn) handle display: flex
-        } else el.phone.style.display = 'none';
+            if (el.phone) {
+                el.phone.textContent = `📞 ${place.phone}`;
+                el.phone.href = `tel:${place.phone.replace(/\s+/g, '')}`;
+                el.phone.style.display = '';
+            }
+        } else if (el.phone) el.phone.style.display = 'none';
 
-        el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
+        if (el.mapsBtn) el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
 
         // Map logic
         this.renderMap(el.mapCont, place, App);
@@ -218,6 +256,7 @@ export const UI = {
     },
 
     async renderMap(container, place, App) {
+        if (!container) return;
         if (!place.location) {
             container.style.display = 'none';
             return;
@@ -225,7 +264,7 @@ export const UI = {
         container.classList.add('skeleton');
         container.style.display = 'block';
         try {
-            const [{ Map }, { AdvancedMarkerElement, PinElement }] = await Promise.all([
+            const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
                 google.maps.importLibrary("maps"),
                 google.maps.importLibrary("marker")
             ]);
@@ -233,7 +272,7 @@ export const UI = {
             const map = new Map(container, {
                 center: place.location,
                 zoom: 16,
-                mapId: "DEMO_MAP_ID", // Required for AdvancedMarkerElement
+                mapId: "DEMO_MAP_ID",
                 disableDefaultUI: false,
                 mapTypeControl: false,
                 streetViewControl: false,
@@ -241,14 +280,12 @@ export const UI = {
                 colorScheme: 'FOLLOW_SYSTEM'
             });
 
-            // Restaurant Marker (Default Red Pin)
-            const resMarker = new AdvancedMarkerElement({
+            new AdvancedMarkerElement({
                 map,
                 position: place.location,
                 title: place.name
             });
 
-            // User Location Marker (Custom Blue Dot)
             if (App.Data.userPos) {
                 const userDot = document.createElement('div');
                 userDot.style.width = '16px';
@@ -280,6 +317,7 @@ export const UI = {
 
     startSlotAnimation(App) {
         const slotName = getEl('slot-name');
+        if (!slotName) return;
         let count = 0;
         const interval = setInterval(() => {
             const temp = App.Data.candidates[Math.floor(Math.random() * App.Data.candidates.length)];
@@ -332,7 +370,8 @@ export const UI = {
     },
 
     triggerConfetti() {
-        confetti({
+        const confettiInstance = confetti.create ? confetti.create() : confetti;
+        confettiInstance({
             particleCount: 150,
             spread: 70,
             origin: { y: 0.6 },

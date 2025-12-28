@@ -112,7 +112,6 @@ body {
 
 #app {
     width: 100%;
-    max-width: 480px;
     padding: 1rem;
     display: flex;
     flex-direction: column;
@@ -458,7 +457,7 @@ header p {
     background: var(--card-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    padding: 3rem 2rem;
+    padding: 3rem 1.5rem;
     border-radius: 45px;
     box-shadow: var(--glass-shadow);
     text-align: center;
@@ -467,6 +466,11 @@ header p {
     gap: 1.2rem;
     animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     border: 1px solid var(--card-border);
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    margin: 0 auto;
 }
 
 @keyframes bounceIn {
@@ -811,6 +815,8 @@ body {
     border-radius: 4px;
 }
 
+
+
 .photo-item {
     height: 200px;
     border-radius: 16px;
@@ -822,4 +828,94 @@ body {
     border: 1px solid var(--card-border);
     max-width: 80%;
     /* Ensure slight peek of next image */
+}
+
+/* Reviews Section */
+.reviews-section {
+    width: 100%;
+    margin-top: 1rem;
+    text-align: left;
+    overflow: hidden;
+}
+
+.reviews-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-left: 4px;
+}
+
+.reviews-header h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-main);
+}
+
+.reviews-list {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: 8px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.reviews-list::-webkit-scrollbar {
+    display: none;
+    /* Hide scrollbar for cleaner look, or make it subtle */
+}
+
+.reviews-list::-webkit-scrollbar-thumb {
+    background: var(--card-border);
+    border-radius: 4px;
+}
+
+.review-item {
+    background: var(--address-bg);
+    border: 1px solid var(--address-border);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    width: 280px;
+    max-width: 85vw;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    box-sizing: border-box;
+}
+
+.review-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.review-author {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+.review-time {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.review-stars {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    color: var(--pill-rating-text);
+}
+
+.review-text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-main);
+    margin: 0;
 }

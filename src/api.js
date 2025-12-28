@@ -52,7 +52,7 @@ export async function findRestaurant(App) {
         App.Data.userPos = { lat: latitude, lng: longitude };
 
         const { Place } = await google.maps.importLibrary("places");
-        const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius);
+        const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius, App.Config.excluded);
 
         if (!places || places.length === 0) {
             alert(t.noResults);
@@ -88,7 +88,7 @@ export async function findRestaurant(App) {
  * @param {number} radius - Search radius in meters.
  * @returns {Promise<Array>} Array of unique place objects.
  */
-async function fetchNearby(Place, location, radius) {
+async function fetchNearby(Place, location, radius, excludedCats) {
     // Offset by ~60% of radius to cover more ground while maintaining overlap
     // Offset by ~60% of radius to cover more ground while maintaining overlap
     const offset = radius * 0.6;
@@ -168,9 +168,29 @@ async function fetchNearby(Place, location, radius) {
         return addedCount;
     };
 
+    // Build a set of excluded Google Place types based on App.Config.excluded keys using CUISINE_MAPPING
+    const excludedTypes = new Set();
+    if (excludedCats) {
+        excludedCats.forEach(catKey => {
+            const mapping = CUISINE_MAPPING[catKey];
+            if (mapping) {
+                getAllTypesFromMapping(mapping).forEach(t => excludedTypes.add(t));
+            }
+        });
+    }
+
+    // Helper to extract just the snake_case types from the mapping (which mixes types and keywords)
+    function getAllTypesFromMapping(arr) {
+        return arr.filter(item => item.includes('_') || /^[a-z]+$/.test(item));
+    }
+
     for (const groupTypes of catGroups) {
-        // Phase 1: Search Center
-        const centerResults = await fetchPoint(points[0], groupTypes);
+        // Filter out types that the user has explicitly excluded
+        const activeTypes = groupTypes.filter(t => !excludedTypes.has(t));
+        if (activeTypes.length === 0) continue;
+
+        // Phase 1: Search Center using ONLY active types
+        const centerResults = await fetchPoint(points[0], activeTypes);
         processResults(centerResults);
 
         // Optimization: If center point isn't saturated (returns < 20),
@@ -180,8 +200,8 @@ async function fetchNearby(Place, location, radius) {
         // Phase 2: Search 2 Diagonal Corners (Bottom-Left & Top-Right)
         // Indices 1 and 4
         const diagonalResults = await Promise.all([
-            fetchPoint(points[1], groupTypes),
-            fetchPoint(points[4], groupTypes)
+            fetchPoint(points[1], activeTypes),
+            fetchPoint(points[4], activeTypes)
         ]);
 
         let newInPhase2 = 0;
@@ -196,8 +216,8 @@ async function fetchNearby(Place, location, radius) {
         // Phase 3: Search Remaining 2 Corners (Top-Left & Bottom-Right)
         // Indices 2 and 3
         const remainingResults = await Promise.all([
-            fetchPoint(points[2], groupTypes),
-            fetchPoint(points[3], groupTypes)
+            fetchPoint(points[2], activeTypes),
+            fetchPoint(points[3], activeTypes)
         ]);
 
         remainingResults.forEach(res => processResults(res));

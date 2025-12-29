@@ -9,13 +9,15 @@ export const CUISINE_MAPPING = {
     hotpot_bbq: ['barbecue_restaurant', 'steak_house', 'hot pot', 'hotpot', 'bbq', 'barbecue', 'grill', 'yakiniku', '火鍋', '雞煲', '燒肉', '韓燒', '燒烤', '串燒', '打邊爐', '肉', '扒', 'bbq'],
     dim_sum: ['chinese_restaurant', 'dim sum', 'yum cha', 'dumpling', '點心', '飲茶', '餃子', '盅飯', '包點'],
     dessert: ['bakery', 'ice_cream_shop', 'dessert_restaurant', 'dessert_shop', 'confectionery', 'chocolate_factory', 'chocolate_shop', 'candy_store', 'donut_shop', 'dessert', 'sugar', 'sweet', 'bakery', 'cake', 'ice cream', '糖水', '甜', '雪糕', '冰', '蛋糕', '餅', '班戟'],
-    fast_food: ['fast_food_restaurant', 'hamburger_restaurant', 'sandwich_shop', 'fast food', 'food_court', 'mcdonald', 'kfc', 'burger', 'sandwich', '快餐', '小食', '漢堡', '三文治', '炸雞', '熱狗'],
-    cafe_light: ['cafe', 'coffee_shop', 'bakery', 'breakfast_restaurant', 'brunch_restaurant', 'cafeteria', 'diner', 'juice_shop', 'meal_delivery', 'meal_takeaway', 'tea_house', 'bagel_shop', 'acai_shop', 'cafe', 'coffee', 'sandwich', 'salad', 'breakfast', 'brunch', '輕食', '咖啡', '沙律', '早餐', '早午餐', '文青', '下午茶'],
+    fast_food: ['fast_food_restaurant', 'hamburger_restaurant', 'sandwich_shop', 'fast food', 'food_court', 'mcdonald', 'kfc', 'burger', 'sandwich', '快餐', '小食', '漢堡', '三文治', '炸雞', '熱狗', 'deli'],
     indian_middle_east: ['indian_restaurant', 'lebanese_restaurant', 'turkish_restaurant', 'middle_eastern_restaurant', 'afghani_restaurant', 'indian', 'curry', 'middle eastern', 'kebab', '印度', '咖哩', '中東', '土耳其'],
     healthy_vege: ['vegan_restaurant', 'vegetarian_restaurant', 'acai_shop', 'juice_shop', 'vegan', 'vegetarian', 'healthy', 'organic', 'salad', '素食', '健康', '沙律', '有機'],
     sushi_sashimi: ['sushi_restaurant', 'japanese_restaurant', 'sushi', 'sashimi', '壽司', '刺身', '日本', 'omakase'],
     burger_pizza: ['hamburger_restaurant', 'pizza_restaurant', 'burger', 'pizza', '漢堡', '薄餅', '漢堡包', '意粉'],
-    rice_bento: ['restaurant', 'bento', 'rice', 'donburi', '飯', '定食', '便當', '丼', '盅飯', '煲仔飯']
+    rice_bento: ['restaurant', 'bento', 'rice', 'donburi', '飯', '定食', '便當', '丼', '盅飯', '煲仔飯'],
+    fine_dining_buffet: ['fine_dining_restaurant', 'buffet_restaurant', 'steak_house', 'french_restaurant', '高級', '慶祝', '自助餐', '放題', 'omakase', 'fine dining', 'buffet'],
+    all_day_brunch: ['breakfast_restaurant', 'brunch_restaurant', 'cafe', 'tea_house', 'brunch', 'breakfast', 'pancake', '全日早餐', '早午餐', '班戟', '舒芙蕾', '鬆餅', 'cat_cafe', 'dog_cafe'],
+    bar_izakaya: ['bar', 'bar_and_grill', 'izakaya', 'pub', '酒', '居酒屋', '酒吧', '串燒', 'yakitori', 'kebab', 'bar', 'wine_bar']
 };
 
 export const GOOGLE_PLACE_TYPES = [
@@ -29,14 +31,21 @@ export const GOOGLE_PLACE_TYPES = [
     "mediterranean_restaurant", "mexican_restaurant", "pizza_restaurant",
     "seafood_restaurant", "spanish_restaurant", "steak_house",
     "buffet_restaurant", "fine_dining_restaurant", "restaurant",
-    "bar_and_grill", "vegan_restaurant", "vegetarian_restaurant",
-    "bakery", "breakfast_restaurant", "brunch_restaurant", "cafe",
-    "cafeteria", "coffee_shop", "dessert_restaurant", "dessert_shop",
-    "diner", "donut_shop", "fast_food_restaurant", "food_court",
-    "hamburger_restaurant", "ice_cream_shop", "juice_shop",
-    "meal_delivery", "meal_takeaway", "sandwich_shop", "tea_house",
-    "bagel_shop", "acai_shop", "confectionery", "chocolate_factory",
-    "chocolate_shop", "candy_store"
+    "bar_and_grill", "bar", "vegan_restaurant", "vegetarian_restaurant",
+    "cat_cafe", "chinese_restaurant", "chocolate_factory", "chocolate_shop",
+    "coffee_shop", "confectionery", "deli", "dessert_restaurant", "dessert_shop",
+    "diner", "dog_cafe", "donut_shop", "fast_food_restaurant",
+    "fine_dining_restaurant", "food_court", "french_restaurant",
+    "greek_restaurant", "hamburger_restaurant", "ice_cream_shop",
+    "indian_restaurant", "indonesian_restaurant", "italian_restaurant",
+    "japanese_restaurant", "juice_shop", "korean_restaurant",
+    "lebanese_restaurant", "meal_delivery", "meal_takeaway",
+    "mediterranean_restaurant", "mexican_restaurant",
+    "middle_eastern_restaurant", "pizza_restaurant", "pub", "ramen_restaurant",
+    "restaurant", "sandwich_shop", "seafood_restaurant", "spanish_restaurant",
+    "steak_house", "sushi_restaurant", "tea_house", "thai_restaurant",
+    "turkish_restaurant", "vegan_restaurant", "vegetarian_restaurant",
+    "vietnamese_restaurant", "wine_bar"
 ];
 
 export const BASIC_PLACE_FIELDS = [

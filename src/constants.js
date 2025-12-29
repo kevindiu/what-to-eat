@@ -13,7 +13,27 @@ export const CUISINE_MAPPING = {
     cafe_light: ['cafe', 'coffee_shop', 'bakery', 'breakfast_restaurant', 'brunch_restaurant', 'cafeteria', 'diner', 'juice_shop', 'meal_delivery', 'meal_takeaway', 'tea_house', 'bagel_shop', 'acai_shop', 'cafe', 'coffee', 'sandwich', 'salad', 'breakfast', 'brunch', '輕食', '咖啡', '沙律', '早餐', '早午餐', '文青']
 };
 
-// Basic fields for discovery (Low cost or free SKUs)
+export const GOOGLE_PLACE_TYPES = [
+    "asian_restaurant", "chinese_restaurant", "indian_restaurant",
+    "indonesian_restaurant", "japanese_restaurant", "korean_restaurant",
+    "ramen_restaurant", "sushi_restaurant", "thai_restaurant",
+    "vietnamese_restaurant", "lebanese_restaurant", "turkish_restaurant",
+    "middle_eastern_restaurant", "afghani_restaurant", "african_restaurant",
+    "american_restaurant", "barbecue_restaurant", "brazilian_restaurant",
+    "french_restaurant", "greek_restaurant", "italian_restaurant",
+    "mediterranean_restaurant", "mexican_restaurant", "pizza_restaurant",
+    "seafood_restaurant", "spanish_restaurant", "steak_house",
+    "buffet_restaurant", "fine_dining_restaurant", "restaurant",
+    "bar_and_grill", "vegan_restaurant", "vegetarian_restaurant",
+    "bakery", "breakfast_restaurant", "brunch_restaurant", "cafe",
+    "cafeteria", "coffee_shop", "dessert_restaurant", "dessert_shop",
+    "diner", "donut_shop", "fast_food_restaurant", "food_court",
+    "hamburger_restaurant", "ice_cream_shop", "juice_shop",
+    "meal_delivery", "meal_takeaway", "sandwich_shop", "tea_house",
+    "bagel_shop", "acai_shop", "confectionery", "chocolate_factory",
+    "chocolate_shop", "candy_store"
+];
+
 export const BASIC_PLACE_FIELDS = [
     "id", "displayName", "location", "rating", "userRatingCount",
     "regularOpeningHours", "priceLevel", "businessStatus", "types",

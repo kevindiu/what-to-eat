@@ -29,3 +29,19 @@ export function getCurrentPosition(options = {}) {
  * @returns {Promise<void>}
  */
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/**
+ * Checks if a place matches a specific cuisine/category based on keywords and Google types.
+ * @param {Object} place - Internal place object.
+ * @param {Array} keywords - List of keywords/types from CUISINE_MAPPING.
+ * @returns {boolean} True if matches.
+ */
+export function isPlaceMatch(place, keywords) {
+    if (!keywords || keywords.length === 0) return false;
+    const name = (place.name || "").toLowerCase();
+    const types = place.types || [];
+    return keywords.some(k =>
+        name.includes(k.toLowerCase()) ||
+        types.some(pt => pt.toLowerCase().includes(k.toLowerCase()))
+    );
+}

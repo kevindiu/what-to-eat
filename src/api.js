@@ -1,5 +1,5 @@
-import { getEl, getCurrentPosition } from './utils.js';
-import { CUISINE_MAPPING, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
+import { getEl, getCurrentPosition, isPlaceMatch } from './utils.js';
+import { CUISINE_MAPPING, GOOGLE_PLACE_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 
 
 
@@ -8,12 +8,11 @@ import { CUISINE_MAPPING, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_M
  */
 function mapPlaceData(p, t) {
     return {
+        id: p.id || p.place_id,
         name: typeof p.displayName === 'string' ? p.displayName : (p.displayName?.text || t.unknownName),
         rating: p.rating,
         userRatingCount: p.userRatingCount || 0,
         vicinity: p.formattedAddress || p.vicinity || t.noAddress,
-        place_id: p.id || p.place_id,
-        id: p.id || p.place_id, // Keep both for safety during transition
         types: p.types || [],
         priceLevel: p.priceLevel,
         phone: p.nationalPhoneNumber,
@@ -82,21 +81,12 @@ export async function findRestaurant(App) {
     }
 }
 
-/**
- * Fetches nearby places from Google Places API using a grid search strategy to optimize coverage and cost.
- * @param {Object} Place - The Google Maps Place class.
- * @param {Object} location - The center location {lat, lng}.
- * @param {number} radius - Search radius in meters.
- * @returns {Promise<Array>} Array of unique place objects.
- */
 async function fetchNearby(Place, location, radius, App) {
-    // Offset by ~60% of radius to cover more ground while maintaining overlap
-    // Offset by ~60% of radius to cover more ground while maintaining overlap
     const offset = radius * 0.6;
     const latOffset = offset / CONSTANTS.METERS_PER_DEGREE_LAT;
     const lngOffset = offset / (CONSTANTS.METERS_PER_DEGREE_LAT * Math.cos(location.lat * Math.PI / 180));
 
-    // 5-point grid: 0:Center, 1:BL, 2:TL, 3:BR, 4:TR
+    // 5-point grid search to maximize coverage around user location
     const points = [
         { lat: location.lat, lng: location.lng }, // 0: Center
         { lat: location.lat - latOffset, lng: location.lng - lngOffset }, // 1: Bottom-Left
@@ -107,30 +97,8 @@ async function fetchNearby(Place, location, radius, App) {
 
     const allPlaces = [];
     const seenIds = new Set();
-
-    // List of official Google Place types we support for searching
-    const allTypes = [
-        "asian_restaurant", "chinese_restaurant", "indian_restaurant",
-        "indonesian_restaurant", "japanese_restaurant", "korean_restaurant",
-        "ramen_restaurant", "sushi_restaurant", "thai_restaurant",
-        "vietnamese_restaurant", "lebanese_restaurant", "turkish_restaurant",
-        "middle_eastern_restaurant", "afghani_restaurant", "african_restaurant",
-        "american_restaurant", "barbecue_restaurant", "brazilian_restaurant",
-        "french_restaurant", "greek_restaurant", "italian_restaurant",
-        "mediterranean_restaurant", "mexican_restaurant", "pizza_restaurant",
-        "seafood_restaurant", "spanish_restaurant", "steak_house",
-        "buffet_restaurant", "fine_dining_restaurant", "restaurant",
-        "bar_and_grill", "vegan_restaurant", "vegetarian_restaurant",
-        "bakery", "breakfast_restaurant", "brunch_restaurant", "cafe",
-        "cafeteria", "coffee_shop", "dessert_restaurant", "dessert_shop",
-        "diner", "donut_shop", "fast_food_restaurant", "food_court",
-        "hamburger_restaurant", "ice_cream_shop", "juice_shop",
-        "meal_delivery", "meal_takeaway", "sandwich_shop", "tea_house",
-        "bagel_shop", "acai_shop", "confectionery", "chocolate_factory",
-        "chocolate_shop", "candy_store"
-    ];
-
-    let searchGroups = [];
+    const searchGroups = [];
+    const allTypes = GOOGLE_PLACE_TYPES;
 
     // Mode 1: Whitelist Optimization
     if (App.Config.filterMode === 'whitelist' && App.Config.excluded.size > 0) {
@@ -255,48 +223,33 @@ async function fetchNearby(Place, location, radius, App) {
  */
 async function processCandidates(places, userLoc, App) {
     const t = App.translations[App.currentLang];
-    const rawResults = await Promise.all(places.map(async p => {
-        const item = mapPlaceData(p, t);
-        try {
-            item.isOpen = await p.isOpen();
-        } catch (e) {
-            console.warn(`isOpen check failed for ${item.name}`, e);
-            item.isOpen = null;
-        }
 
-        // Unified Fallback: If API returned null OR threw error (resulting in null)
+    // 1. Map to internal model and resolve opening status
+    const placesWithStatus = await Promise.all(places.map(async p => {
+        const item = mapPlaceData(p, t);
+        try { item.isOpen = await p.isOpen(); } catch (e) { item.isOpen = null; }
+
         if (item.isOpen === null) {
-            if (item.openingHours?.periods) {
-                // Try manual check using raw periods
-                item.isOpen = checkPeriodAvailability(item.openingHours.periods);
-            }
-            // Final fallback to simple openNow flag if manual check also failed/not possible
-            if (item.isOpen === null) {
-                item.isOpen = item.openingHours?.openNow;
-            }
+            item.isOpen = item.openingHours?.periods ? checkPeriodAvailability(item.openingHours.periods) : item.openingHours?.openNow;
         }
         return item;
     }));
 
-    let filtered = rawResults.filter(p => {
+    // 2. Initial filter by business status and open status
+    const operational = placesWithStatus.filter(p => {
         if (p.businessStatus !== 'OPERATIONAL' && p.businessStatus) return false;
-        if (App.Config.includeClosed) return true; // Keep all operational places if includeClosed is true
-        return p.isOpen !== false; // Otherwise filter out closed
+        return App.Config.includeClosed || p.isOpen !== false;
     });
-    const withDurations = await calculateDistances(userLoc, filtered);
 
-    let byTime = withDurations.filter(p => p.durationValue === null || (p.durationValue / 60) <= App.Config.mins);
-    if (byTime.length === 0) byTime = withDurations.sort((a, b) => (a.durationValue || 9999) - (b.durationValue || 9999)).slice(0, 3);
+    // 3. Distance calculation and filtering
+    const withDurations = await calculateDistances(userLoc, operational);
+    let withinRange = withDurations.filter(p => !p.durationValue || (p.durationValue / 60) <= App.Config.mins);
+    if (withinRange.length === 0) withinRange = withDurations.sort((a, b) => (a.durationValue || 9999) - (b.durationValue || 9999)).slice(0, 3);
 
-    return byTime.filter(p => {
-        const nameNode = (p.name || "").toLowerCase();
-        const types = p.types || [];
+    // 4. Final filter by category and price
+    return withinRange.filter(p => {
         const selectedCategories = Array.from(App.Config.excluded);
-
-        const isSelected = selectedCategories.some(id => {
-            const keywords = CUISINE_MAPPING[id] || [];
-            return keywords.some(k => nameNode.includes(k) || types.some(pt => pt.toLowerCase().includes(k)));
-        });
+        const isSelected = selectedCategories.some(id => isPlaceMatch(p, CUISINE_MAPPING[id]));
 
         if (App.Config.filterMode === 'whitelist') {
             if (selectedCategories.length > 0 && !isSelected) return false;
@@ -305,8 +258,7 @@ async function processCandidates(places, userLoc, App) {
         }
 
         if (p.priceLevel !== undefined && p.priceLevel !== null) {
-            let key = p.priceLevel;
-            if (PRICE_VAL_TO_KEY[key]) key = PRICE_VAL_TO_KEY[key];
+            const key = PRICE_VAL_TO_KEY[p.priceLevel] || p.priceLevel;
             const config = PRICE_LEVEL_MAP[key];
             if (config && App.Config.prices.size > 0 && !App.Config.prices.has(config.val)) return false;
         }
@@ -341,9 +293,9 @@ function checkPeriodAvailability(periods) {
  * @returns {Promise<Object>} The detailed place object.
  */
 export async function fetchPlaceDetails(Place, basicPlace, App) {
-    if (!basicPlace || !basicPlace.place_id) return basicPlace;
+    if (!basicPlace || !basicPlace.id) return basicPlace;
 
-    const cacheKey = `place_detail_${basicPlace.place_id}`;
+    const cacheKey = `place_detail_${basicPlace.id}`;
     const now = Date.now();
     const TTL = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -386,7 +338,7 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
 
 
     try {
-        const p = new Place({ id: basicPlace.place_id });
+        const p = new Place({ id: basicPlace.id });
         // Must fetch BASIC + DETAIL fields to ensure mapPlaceData has everything it needs
         await p.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
 
@@ -487,13 +439,13 @@ export async function reRoll(App) {
     if (candidates.length > 1) {
         // Exclude everything in history if possible
         const historyIds = new Set(App.Data.history || []);
-        const others = candidates.filter(p => !historyIds.has(p.place_id));
+        const others = candidates.filter(p => !historyIds.has(p.id));
 
         if (others.length > 0) {
             candidates = others;
         } else if (App.Data.lastPickedId) {
             // If everything has been seen, at least avoid the immediate last one
-            const avoidLast = candidates.filter(p => p.place_id !== App.Data.lastPickedId);
+            const avoidLast = candidates.filter(p => p.id !== App.Data.lastPickedId);
             if (avoidLast.length > 0) candidates = avoidLast;
         }
     }
@@ -512,28 +464,42 @@ export async function reRoll(App) {
 export async function restoreSession(App) {
     const resId = App.Data.params.get('resId');
     if (!resId) return;
+
+    // Clear URL parameters immediately for a cleaner UX
     window.history.replaceState({}, document.title, window.location.pathname);
     App.UI.showScreen('loading-screen');
+
     try {
         const { Place } = await google.maps.importLibrary("places");
         const p = new Place({ id: resId });
-        // Fetch everything for shared links as it's just one request
+
+        // Fetch exhaustive fields for shared links (single request)
         await p.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
-        const lat = App.Data.params.get('lat'), lng = App.Data.params.get('lng');
+
+        const lat = App.Data.params.get('lat');
+        const lng = App.Data.params.get('lng');
         if (lat && lng) App.Data.userPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
+
         const t = App.translations[App.currentLang];
         const restored = mapPlaceData(p, t);
+
         if (App.Data.userPos && restored.location) {
             const [withDuration] = await calculateDistances(App.Data.userPos, [restored]);
-            restored.durationValue = withDuration.durationValue; // Fixed mapping
+            restored.durationValue = withDuration.durationValue;
             restored.durationText = withDuration.durationText;
         }
+
+        // Pre-fetch candidates in background if we have location
         if (App.Data.userPos) {
             const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius, App);
             if (places && places.length > 0) App.Data.candidates = await processCandidates(places, App.Data.userPos, App);
         }
+
         App.UI.showResult(App, restored, { fromShare: true });
-    } catch (e) { console.error("Session restoration failed:", e); App.UI.showScreen('main-flow'); }
+    } catch (e) {
+        console.error("Session restoration failed:", e);
+        App.UI.showScreen('main-flow');
+    }
 }
 
 /**

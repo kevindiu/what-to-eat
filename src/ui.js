@@ -1,4 +1,4 @@
-import { getEl } from './utils.js';
+import { getEl, isPlaceMatch } from './utils.js';
 import { reRoll } from './api.js';
 import { CUISINE_MAPPING, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import confetti from 'canvas-confetti';
@@ -145,29 +145,30 @@ export const UI = {
         const { fromShare = false } = options;
         this.showScreen('result-screen');
 
-        this.updateHistory(App, place);
         App.Data.currentPlace = place;
+        this.updateHistory(App, place);
 
         const el = this.getElements();
 
+        // Sequential rendering for clarity and stability
         this.renderHeader(el, place, fromShare);
         this.renderPhotos(el, place);
         this.renderReviews(el, place);
         this.renderDetails(el, place, App);
-
-        // Map logic
         this.renderMap(el.mapCont, place, App);
 
         if (!fromShare) {
             this.triggerConfetti();
+            const screen = getEl('result-screen');
+            if (screen) screen.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     },
 
     updateHistory(App, place) {
-        App.Data.lastPickedId = place.place_id;
+        App.Data.lastPickedId = place.id;
         if (!App.Data.history) App.Data.history = [];
-        if (!App.Data.history.includes(place.place_id)) {
-            App.Data.history.push(place.place_id);
+        if (!App.Data.history.includes(place.id)) {
+            App.Data.history.push(place.id);
         }
     },
 
@@ -203,11 +204,6 @@ export const UI = {
         if (el.address) el.address.textContent = place.vicinity;
         if (el.reviewsViewAll) el.reviewsViewAll.href = place.googleMapsURI || '#';
         if (el.photosViewAll) el.photosViewAll.href = place.googleMapsURI || '#';
-
-        if (!fromShare) {
-            const screen = getEl('result-screen');
-            if (screen) screen.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
     },
 
     renderPhotos(el, place) {
@@ -344,7 +340,7 @@ export const UI = {
             }
         } else if (el.phone) el.phone.style.display = 'none';
 
-        if (el.mapsBtn) el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.place_id}`;
+        if (el.mapsBtn) el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`;
     },
 
     async renderMap(container, place, App) {
@@ -423,10 +419,8 @@ export const UI = {
 
     getPlaceCategory(place, App) {
         const t = App.translations[App.currentLang].categories;
-        const name = (place.name || "").toLowerCase();
-        const types = place.types || [];
         for (const [id, keywords] of Object.entries(CUISINE_MAPPING)) {
-            if (keywords.some(k => name.includes(k) || types.some(pt => pt.toLowerCase().includes(k)))) return t[id];
+            if (isPlaceMatch(place, keywords)) return t[id];
         }
         return null;
     },
@@ -442,15 +436,16 @@ export const UI = {
     getTodayHours(place, App) {
         const t = App.translations[App.currentLang];
         const descriptions = place.openingHours?.weekdayDescriptions;
-        if (!descriptions || descriptions.length !== 7) return t.noHoursInfo; // Return translated "No info" instead of empty string
+        if (!descriptions || descriptions.length !== 7) return t.noHoursInfo;
+
         const today = new Date();
-        const mapLangMap = { 'zh': 'zh-HK', 'en': 'en-US', 'ja': 'ja-JP' };
-        const appLocale = mapLangMap[App.currentLang] || 'zh-HK';
-        const localeDayName = today.toLocaleDateString(appLocale, { weekday: 'long' });
+        // Google weekdayDescriptions usually start with Monday (index 0) or Sunday depending on locale, 
+        // but we can reliably find it by matching the day name.
+        const dayName = today.toLocaleDateString(App.currentLang === 'en' ? 'en-US' : (App.currentLang === 'ja' ? 'ja-JP' : 'zh-HK'), { weekday: 'long' });
         const enDayName = today.toLocaleDateString('en-US', { weekday: 'long' });
 
-        let match = descriptions.find(d => d.includes(localeDayName) || d.includes(enDayName));
-        if (!match) match = descriptions[today.getDay()];
+        const match = descriptions.find(d => d.includes(dayName) || d.includes(enDayName)) || descriptions[(today.getDay() + 6) % 7];
+
         if (match) {
             const parts = match.split(/: |：/);
             return parts[1] ? parts[1].trim() : match;
@@ -476,7 +471,7 @@ export const UI = {
         const place = App.Data.currentPlace;
         if (!place) return;
         const t = App.translations[App.currentLang];
-        const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.place_id}${App.Data.userPos ? `&lat=${App.Data.userPos.lat}&lng=${App.Data.userPos.lng}` : ''}`;
+        const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.id}${App.Data.userPos ? `&lat=${App.Data.userPos.lat}&lng=${App.Data.userPos.lng}` : ''}`;
         const shareText = t.shareText.replace('${name}', place.name);
 
         if (navigator.share) {
@@ -486,8 +481,7 @@ export const UI = {
         } else {
             try {
                 await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-                const msg = App.currentLang === 'zh' ? "已複製連結到剪貼簿！📋" : App.currentLang === 'ja' ? "クリップボードにコピーしました！📋" : "Link copied to clipboard! 📋";
-                alert(msg);
+                alert(t.linkCopied);
             } catch (e) { alert(shareUrl); }
         }
     }

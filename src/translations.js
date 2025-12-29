@@ -26,6 +26,7 @@ export const translations = {
         installBtn: "安裝 App 📲",
         iosInstallText: "點擊查看「安裝 App」教學 📲",
         iosInstallAlert: "想好似 App 咁用「食乜好」？\n\n1. 撳瀏覽器底部分享選單 (正方形向上箭頭)\n2. 向上掃並點選「加入主畫面」(Add to Home Screen)\n\n搞掂！✨",
+        linkCopied: "已複製連結到剪貼簿！📋",
         categories: {
             chinese: '🍚 中餐',
             japanese: '🍣 日本菜',
@@ -82,6 +83,7 @@ export const translations = {
         installBtn: "Install App 📲",
         iosInstallText: "How to Install App 📲",
         iosInstallAlert: "Want to use 'What to Eat' like an App?\n\n1. Tap the Share button in Safari (square with up arrow)\n2. Scroll down and tap 'Add to Home Screen'\n\nAll set! ✨",
+        linkCopied: "Link copied to clipboard! 📋",
         categories: {
             chinese: '🍚 Chinese',
             japanese: '🍣 Japanese',
@@ -138,6 +140,7 @@ export const translations = {
         installBtn: "アプリをインストール 📲",
         iosInstallText: "アプリのインストール方法 📲",
         iosInstallAlert: "「何食べる？」をアプリのように使う方法：\n\n1. Safari の共有アイコン（四角に上矢印）をタップ\n2. 下にスクロールして「ホーム画面に追加」をタップ\n\n完了です！✨",
+        linkCopied: "クリップボードにコピーしました！📋",
         categories: {
             chinese: '🍚 中華料理',
             japanese: '🍣 日本料理',

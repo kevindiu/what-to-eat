@@ -240,12 +240,20 @@ async function processCandidates(places, userLoc, App) {
     const rawResults = await Promise.all(places.map(async p => {
         const item = mapPlaceData(p, t);
         try {
-            if (item.openingHours?.periods) {
+            item.isOpen = await p.isOpen();
+            if (item.isOpen === null && item.openingHours?.periods) {
                 item.isOpen = checkPeriodAvailability(item.openingHours.periods);
             }
-            if (item.isOpen === null) item.isOpen = await p.isOpen();
+
             if (item.isOpen === null) item.isOpen = item.openingHours?.openNow;
-        } catch (e) { item.isOpen = null; }
+        } catch (e) {
+            console.warn(`isOpen check failed for ${item.name}`, e);
+            if (item.openingHours?.periods) {
+                item.isOpen = checkPeriodAvailability(item.openingHours.periods);
+            } else {
+                item.isOpen = null;
+            }
+        }
         return item;
     }));
 

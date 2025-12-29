@@ -52,7 +52,7 @@ export async function findRestaurant(App) {
         App.Data.userPos = { lat: latitude, lng: longitude };
 
         const { Place } = await google.maps.importLibrary("places");
-        const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius, App.Config.excluded);
+        const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius, App);
 
         if (!places || places.length === 0) {
             alert(t.noResults);
@@ -63,7 +63,8 @@ export async function findRestaurant(App) {
         const candidates = await processCandidates(places, App.Data.userPos, App);
 
         if (candidates.length === 0) {
-            alert(t.noFilteredResults);
+            const errorMsg = App.Config.filterMode === 'whitelist' ? t.noFilteredResultsWhitelist : t.noFilteredResultsBlacklist;
+            alert(errorMsg);
             App.UI.showScreen('main-flow');
             return;
         }
@@ -88,7 +89,7 @@ export async function findRestaurant(App) {
  * @param {number} radius - Search radius in meters.
  * @returns {Promise<Array>} Array of unique place objects.
  */
-async function fetchNearby(Place, location, radius, excludedCats) {
+async function fetchNearby(Place, location, radius, App) {
     // Offset by ~60% of radius to cover more ground while maintaining overlap
     // Offset by ~60% of radius to cover more ground while maintaining overlap
     const offset = radius * 0.6;
@@ -107,37 +108,75 @@ async function fetchNearby(Place, location, radius, excludedCats) {
     const allPlaces = [];
     const seenIds = new Set();
 
-    // Split 60 food types into three balanced groups of ~20 each 
-    // to ensure even representation and variety in search results.
-    const catGroups = [
-        // Group 1: Asian & Oriental Cuisines (15 types)
-        [
-            "asian_restaurant", "chinese_restaurant", "indian_restaurant",
-            "indonesian_restaurant", "japanese_restaurant", "korean_restaurant",
-            "ramen_restaurant", "sushi_restaurant", "thai_restaurant",
-            "vietnamese_restaurant", "lebanese_restaurant", "turkish_restaurant",
-            "middle_eastern_restaurant", "afghani_restaurant", "african_restaurant"
-        ],
-        // Group 2: Western & Global Main Cuisines (18 types)
-        [
-            "american_restaurant", "barbecue_restaurant", "brazilian_restaurant",
-            "french_restaurant", "greek_restaurant", "italian_restaurant",
-            "mediterranean_restaurant", "mexican_restaurant", "pizza_restaurant",
-            "seafood_restaurant", "spanish_restaurant", "steak_house",
-            "buffet_restaurant", "fine_dining_restaurant", "restaurant",
-            "bar_and_grill", "vegan_restaurant", "vegetarian_restaurant"
-        ],
-        // Group 3: Casual, Specialty & Snacks (25 types)
-        [
-            "bakery", "breakfast_restaurant", "brunch_restaurant", "cafe",
-            "cafeteria", "coffee_shop", "dessert_restaurant", "dessert_shop",
-            "diner", "donut_shop", "fast_food_restaurant", "food_court",
-            "hamburger_restaurant", "ice_cream_shop", "juice_shop",
-            "meal_delivery", "meal_takeaway", "sandwich_shop", "tea_house",
-            "bagel_shop", "acai_shop", "confectionery", "chocolate_factory",
-            "chocolate_shop", "candy_store"
-        ]
+    // List of official Google Place types we support for searching
+    const allTypes = [
+        "asian_restaurant", "chinese_restaurant", "indian_restaurant",
+        "indonesian_restaurant", "japanese_restaurant", "korean_restaurant",
+        "ramen_restaurant", "sushi_restaurant", "thai_restaurant",
+        "vietnamese_restaurant", "lebanese_restaurant", "turkish_restaurant",
+        "middle_eastern_restaurant", "afghani_restaurant", "african_restaurant",
+        "american_restaurant", "barbecue_restaurant", "brazilian_restaurant",
+        "french_restaurant", "greek_restaurant", "italian_restaurant",
+        "mediterranean_restaurant", "mexican_restaurant", "pizza_restaurant",
+        "seafood_restaurant", "spanish_restaurant", "steak_house",
+        "buffet_restaurant", "fine_dining_restaurant", "restaurant",
+        "bar_and_grill", "vegan_restaurant", "vegetarian_restaurant",
+        "bakery", "breakfast_restaurant", "brunch_restaurant", "cafe",
+        "cafeteria", "coffee_shop", "dessert_restaurant", "dessert_shop",
+        "diner", "donut_shop", "fast_food_restaurant", "food_court",
+        "hamburger_restaurant", "ice_cream_shop", "juice_shop",
+        "meal_delivery", "meal_takeaway", "sandwich_shop", "tea_house",
+        "bagel_shop", "acai_shop", "confectionery", "chocolate_factory",
+        "chocolate_shop", "candy_store"
     ];
+
+    let searchGroups = [];
+
+    // Mode 1: Whitelist Optimization
+    if (App.Config.filterMode === 'whitelist' && App.Config.excluded.size > 0) {
+        const typeSet = new Set(allTypes);
+        const selectedTypes = new Set();
+
+        App.Config.excluded.forEach(id => {
+            const mappings = CUISINE_MAPPING[id] || [];
+            mappings.forEach(m => {
+                if (typeSet.has(m)) selectedTypes.add(m);
+            });
+        });
+
+        const typesArray = Array.from(selectedTypes);
+        if (typesArray.length > 0) {
+            for (let i = 0; i < typesArray.length; i += 20) {
+                searchGroups.push(typesArray.slice(i, i + 20));
+            }
+        }
+    }
+    // Mode 2: Blacklist Optimization (Filter out excluded types from global list)
+    else if (App.Config.filterMode === 'blacklist' && App.Config.excluded.size > 0) {
+        const blacklist = new Set();
+        App.Config.excluded.forEach(id => {
+            const mappings = CUISINE_MAPPING[id] || [];
+            mappings.forEach(m => {
+                if (m.includes('_') || /^[a-z]+$/.test(m)) blacklist.add(m);
+            });
+        });
+
+        const activeTypes = allTypes.filter(t => !blacklist.has(t));
+        if (activeTypes.length > 0) {
+            for (let i = 0; i < activeTypes.length; i += 20) {
+                searchGroups.push(activeTypes.slice(i, i + 20));
+            }
+        }
+    }
+
+    // Default Fallback: split all supported types into 3 groups
+    if (searchGroups.length === 0) {
+        searchGroups = [
+            allTypes.slice(0, 20),
+            allTypes.slice(20, 40),
+            allTypes.slice(40)
+        ];
+    }
 
     const fetchPoint = async (pos, types) => {
         const request = {
@@ -168,40 +207,22 @@ async function fetchNearby(Place, location, radius, excludedCats) {
         return addedCount;
     };
 
-    // Build a set of excluded Google Place types based on App.Config.excluded keys using CUISINE_MAPPING
-    const excludedTypes = new Set();
-    if (excludedCats) {
-        excludedCats.forEach(catKey => {
-            const mapping = CUISINE_MAPPING[catKey];
-            if (mapping) {
-                getAllTypesFromMapping(mapping).forEach(t => excludedTypes.add(t));
-            }
-        });
-    }
+    // Perform search across grid points and type groups with early-exit optimization
+    for (const groups of searchGroups) {
+        if (!groups || groups.length === 0) continue;
 
-    // Helper to extract just the snake_case types from the mapping (which mixes types and keywords)
-    function getAllTypesFromMapping(arr) {
-        return arr.filter(item => item.includes('_') || /^[a-z]+$/.test(item));
-    }
-
-    for (const groupTypes of catGroups) {
-        // Filter out types that the user has explicitly excluded
-        const activeTypes = groupTypes.filter(t => !excludedTypes.has(t));
-        if (activeTypes.length === 0) continue;
-
-        // Phase 1: Search Center using ONLY active types
-        const centerResults = await fetchPoint(points[0], activeTypes);
+        // Phase 1: Search Center using ONLY active groups of types
+        const centerResults = await fetchPoint(points[0], groups);
         processResults(centerResults);
 
-        // Optimization: If center point isn't saturated (returns < 20),
+        // If center point isn't saturated (returns < 20),
         // we assume the area is sparse and skip the corners to save API cost.
         if (centerResults.length < 20) continue;
 
         // Phase 2: Search 2 Diagonal Corners (Bottom-Left & Top-Right)
-        // Indices 1 and 4
         const diagonalResults = await Promise.all([
-            fetchPoint(points[1], activeTypes),
-            fetchPoint(points[4], activeTypes)
+            fetchPoint(points[1], groups),
+            fetchPoint(points[4], groups)
         ]);
 
         let newInPhase2 = 0;
@@ -209,21 +230,18 @@ async function fetchNearby(Place, location, radius, excludedCats) {
             newInPhase2 += processResults(res);
         });
 
-        // Optimization: If diagonals didn't yield ANY new unique locations,
+        // If diagonals didn't yield ANY new unique locations,
         // assume we've covered the area effectively and skip the last 2 corners.
         if (newInPhase2 === 0) continue;
 
         // Phase 3: Search Remaining 2 Corners (Top-Left & Bottom-Right)
-        // Indices 2 and 3
         const remainingResults = await Promise.all([
-            fetchPoint(points[2], activeTypes),
-            fetchPoint(points[3], activeTypes)
+            fetchPoint(points[2], groups),
+            fetchPoint(points[3], groups)
         ]);
 
         remainingResults.forEach(res => processResults(res));
     }
-
-
 
     return allPlaces;
 }
@@ -273,11 +291,18 @@ async function processCandidates(places, userLoc, App) {
     return byTime.filter(p => {
         const nameNode = (p.name || "").toLowerCase();
         const types = p.types || [];
-        const isExcluded = Array.from(App.Config.excluded).some(id => {
+        const selectedCategories = Array.from(App.Config.excluded);
+
+        const isSelected = selectedCategories.some(id => {
             const keywords = CUISINE_MAPPING[id] || [];
             return keywords.some(k => nameNode.includes(k) || types.some(pt => pt.toLowerCase().includes(k)));
         });
-        if (isExcluded) return false;
+
+        if (App.Config.filterMode === 'whitelist') {
+            if (selectedCategories.length > 0 && !isSelected) return false;
+        } else {
+            if (isSelected) return false;
+        }
 
         if (p.priceLevel !== undefined && p.priceLevel !== null) {
             let key = p.priceLevel;
@@ -504,7 +529,7 @@ export async function restoreSession(App) {
             restored.durationText = withDuration.durationText;
         }
         if (App.Data.userPos) {
-            const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius);
+            const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius, App);
             if (places && places.length > 0) App.Data.candidates = await processCandidates(places, App.Data.userPos, App);
         }
         App.UI.showResult(App, restored, { fromShare: true });

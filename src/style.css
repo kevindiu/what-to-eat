@@ -172,10 +172,41 @@ header p {
 }
 
 .filter-section h3 {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0;
     font-size: 1.2rem;
     font-weight: 600;
     color: var(--text-main);
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.mode-toggle-btn {
+    background: var(--item-bg);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 8px 12px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.mode-toggle-btn:hover {
+    background: var(--btn-secondary-bg);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.mode-toggle-btn:active {
+    transform: scale(0.95);
 }
 
 .filter-grid,

@@ -37,7 +37,7 @@ export const UI = {
             'app-title': t.title,
             'app-subtitle': t.subtitle,
             'price-title': t.priceTitle,
-            'filter-title': t.filterTitle,
+            'filter-title': App.Config.filterMode === 'whitelist' ? t.filterModeWhitelist : t.filterModeBlacklist,
             'find-btn': t.findBtn,
             'retry-btn': t.retry,
             'back-btn': t.backBtn,
@@ -85,6 +85,11 @@ export const UI = {
             if (label) {
                 label.textContent = isActive ? t.includeClosed : t.excludeClosed;
             }
+        }
+
+        const filterModeLabel = getEl('filter-mode-label');
+        if (filterModeLabel) {
+            filterModeLabel.textContent = App.Config.filterMode === 'whitelist' ? t.filterToggleBlacklist : t.filterToggleWhitelist;
         }
 
         document.querySelectorAll('.lang-selector span').forEach(span => {

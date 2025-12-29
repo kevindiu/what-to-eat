@@ -12,6 +12,7 @@ const App = {
         includeClosed: localStorage.getItem('includeClosed') === 'true',
         get radius() { return this.mins * CONSTANTS.DEFAULT_SEARCH_RADIUS_MULTIPLIER; },
         excluded: new Set(JSON.parse(localStorage.getItem('excludedTypes') || '[]')),
+        filterMode: localStorage.getItem('filterMode') || 'blacklist', // 'blacklist' or 'whitelist'
         prices: new Set(JSON.parse(localStorage.getItem('selectedPrices') || '["1","2","3","4"]')),
         lang: (function () {
             const params = new URLSearchParams(window.location.search);
@@ -51,6 +52,7 @@ const App = {
         localStorage.setItem('includeClosed', this.Config.includeClosed);
         localStorage.setItem('selectedPrices', JSON.stringify(Array.from(this.Config.prices)));
         localStorage.setItem('excludedTypes', JSON.stringify(Array.from(this.Config.excluded)));
+        localStorage.setItem('filterMode', this.Config.filterMode);
     },
 
     /**
@@ -187,6 +189,17 @@ const App = {
                 App.Config.includeClosed = !App.Config.includeClosed;
                 App.saveSettings();
                 App.UI.updateStrings(App); // Re-render to update class and text
+                App.UI.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
+            };
+        }
+
+        const filterModeToggle = getEl('filter-mode-toggle');
+        if (filterModeToggle) {
+            filterModeToggle.onclick = () => {
+                App.Config.filterMode = App.Config.filterMode === 'blacklist' ? 'whitelist' : 'blacklist';
+                App.saveSettings();
+                App.UI.updateStrings(App);
+                App.UI.initFilters(App);
                 App.UI.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
         }

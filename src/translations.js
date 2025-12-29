@@ -39,7 +39,12 @@ export const translations = {
             dim_sum: '🥟 點心/飲茶',
             dessert: '🍧 甜品/糖水',
             fast_food: '🍔 快餐/小食',
-            cafe_light: '☕ 咖啡/輕食'
+            cafe_light: '☕ 咖啡/輕食',
+            indian_middle_east: '🕌 印度/中東',
+            healthy_vege: '🥦 素食/健康',
+            sushi_sashimi: '🍣 壽司/刺身',
+            burger_pizza: '🍕 漢堡/薄餅',
+            rice_bento: '🍱 飯/定食/便當'
         },
         unknownName: "名稱不詳",
         noAddress: "地址不詳",
@@ -96,7 +101,12 @@ export const translations = {
             dim_sum: '🥟 Dim Sum',
             dessert: '🍧 Dessert',
             fast_food: '🍔 Fast Food',
-            cafe_light: '☕ Cafe/Light'
+            cafe_light: '☕ Cafe/Light',
+            indian_middle_east: '🕌 Indian/Middle East',
+            healthy_vege: '🥦 Healthy/Vege',
+            sushi_sashimi: '🍣 Sushi/Sashimi',
+            burger_pizza: '🍕 Burger/Pizza',
+            rice_bento: '🍱 Rice/Bento'
         },
         unknownName: "Unknown",
         noAddress: "Address Unknown",
@@ -153,7 +163,12 @@ export const translations = {
             dim_sum: '🥟 点心',
             dessert: '🍧 デザート',
             fast_food: '🍔 ファストフード',
-            cafe_light: '☕ カフェ/軽食'
+            cafe_light: '☕ カフェ/軽食',
+            indian_middle_east: '🕌 インド/中東料理',
+            healthy_vege: '🥦 ヘルシー/ベジ',
+            sushi_sashimi: '🍣 寿司/刺身',
+            burger_pizza: '🍕 バーガー/ピザ',
+            rice_bento: '🍱 ご飯/定食/弁当'
         },
         unknownName: "不明",
         noAddress: "住所不明",

@@ -476,9 +476,11 @@ export async function restoreSession(App) {
         // Fetch exhaustive fields for shared links (single request)
         await p.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
 
-        const lat = App.Data.params.get('lat');
-        const lng = App.Data.params.get('lng');
-        if (lat && lng) App.Data.userPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
+        const lat = parseFloat(App.Data.params.get('lat'));
+        const lng = parseFloat(App.Data.params.get('lng'));
+        if (!isNaN(lat) && !isNaN(lng)) {
+            App.Data.userPos = { lat, lng };
+        }
 
         const t = App.translations[App.currentLang];
         const restored = mapPlaceData(p, t);

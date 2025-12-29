@@ -241,17 +241,20 @@ async function processCandidates(places, userLoc, App) {
         const item = mapPlaceData(p, t);
         try {
             item.isOpen = await p.isOpen();
-            if (item.isOpen === null && item.openingHours?.periods) {
-                item.isOpen = checkPeriodAvailability(item.openingHours.periods);
-            }
-
-            if (item.isOpen === null) item.isOpen = item.openingHours?.openNow;
         } catch (e) {
             console.warn(`isOpen check failed for ${item.name}`, e);
+            item.isOpen = null;
+        }
+
+        // Unified Fallback: If API returned null OR threw error (resulting in null)
+        if (item.isOpen === null) {
             if (item.openingHours?.periods) {
+                // Try manual check using raw periods
                 item.isOpen = checkPeriodAvailability(item.openingHours.periods);
-            } else {
-                item.isOpen = null;
+            }
+            // Final fallback to simple openNow flag if manual check also failed/not possible
+            if (item.isOpen === null) {
+                item.isOpen = item.openingHours?.openNow;
             }
         }
         return item;

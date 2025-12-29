@@ -16,7 +16,8 @@ export const CUISINE_MAPPING = {
 // Basic fields for discovery (Low cost or free SKUs)
 export const BASIC_PLACE_FIELDS = [
     "id", "displayName", "location", "rating", "userRatingCount",
-    "regularOpeningHours", "priceLevel", "businessStatus", "types"
+    "regularOpeningHours", "priceLevel", "businessStatus", "types",
+    "utcOffsetMinutes"
 ];
 
 // Detailed fields for the winner (Expensive SKUs like photos and reviews)

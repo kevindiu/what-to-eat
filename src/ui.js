@@ -7,8 +7,8 @@ export const UI = {
     showScreen(screenId) {
         const screens = ['main-flow', 'result-screen', 'loading-screen'];
         screens.forEach(id => {
-            const el = getEl(id);
-            if (el) el.classList.toggle('hidden', id !== screenId);
+            const element = getEl(id);
+            if (element) element.classList.toggle('hidden', id !== screenId);
         });
 
         // Footer Management
@@ -31,44 +31,44 @@ export const UI = {
     },
 
     updateStrings(App) {
-        const t = App.translations[App.currentLang];
+        const translations = App.translations[App.currentLang];
         const mappings = {
-            'location-title': t.locationTitle,
-            'app-title': t.title,
-            'app-subtitle': t.subtitle,
-            'price-title': t.priceTitle,
-            'filter-title': App.Config.filterMode === 'whitelist' ? t.filterModeWhitelist : t.filterModeBlacklist,
-            'find-btn': t.findBtn,
-            'retry-btn': t.retry,
-            'back-btn': t.backBtn,
-            'loading-text': t.loading,
-            'open-maps-btn': t.openMaps,
-            'share-btn': t.shareBtn,
-            'install-btn': t.installBtn,
-            'reviews-title': t.reviews,
-            'view-all-reviews': t.viewAllReviews,
-            'photos-title': t.photosTitle,
-            'view-all-photos': t.viewAllPhotos
+            'location-title': translations.locationTitle,
+            'app-title': translations.title,
+            'app-subtitle': translations.subtitle,
+            'price-title': translations.priceTitle,
+            'filter-title': App.Config.filterMode === 'whitelist' ? translations.filterModeWhitelist : translations.filterModeBlacklist,
+            'find-btn': translations.findBtn,
+            'retry-btn': translations.retry,
+            'back-btn': translations.backBtn,
+            'loading-text': translations.loading,
+            'open-maps-btn': translations.openMaps,
+            'share-btn': translations.shareBtn,
+            'install-btn': translations.installBtn,
+            'reviews-title': translations.reviews,
+            'view-all-reviews': translations.viewAllReviews,
+            'photos-title': translations.photosTitle,
+            'view-all-photos': translations.viewAllPhotos
         };
 
         Object.entries(mappings).forEach(([id, text]) => {
-            const el = getEl(id);
-            if (el) el.textContent = text;
+            const element = getEl(id);
+            if (element) element.textContent = text;
         });
 
         // Location specific updates
         const locInput = getEl('location-input');
-        if (locInput) locInput.placeholder = t.searchPlaceholder;
+        if (locInput) locInput.placeholder = translations.searchPlaceholder;
 
         const locDisplay = getEl('location-display');
         if (locDisplay && !App.Data.manualLocation) {
-            locDisplay.textContent = t.useCurrentLocation;
+            locDisplay.textContent = translations.useCurrentLocation;
         }
 
         const distTitle = getEl('distance-title');
         if (distTitle) {
             distTitle.textContent = "";
-            distTitle.appendChild(document.createTextNode(`${t.distanceTitle} (`));
+            distTitle.appendChild(document.createTextNode(`${translations.distanceTitle} (`));
             const span = document.createElement('span');
             span.id = 'distance-val';
             span.textContent = App.Config.mins;
@@ -83,13 +83,13 @@ export const UI = {
 
             const label = getEl('include-closed-label');
             if (label) {
-                label.textContent = isActive ? t.includeClosed : t.excludeClosed;
+                label.textContent = isActive ? translations.includeClosed : translations.excludeClosed;
             }
         }
 
         const filterModeLabel = getEl('filter-mode-label');
         if (filterModeLabel) {
-            filterModeLabel.textContent = App.Config.filterMode === 'whitelist' ? t.filterToggleBlacklist : t.filterToggleWhitelist;
+            filterModeLabel.textContent = App.Config.filterMode === 'whitelist' ? translations.filterToggleBlacklist : translations.filterToggleWhitelist;
         }
 
         document.querySelectorAll('.lang-selector span').forEach(span => {
@@ -124,15 +124,15 @@ export const UI = {
         });
 
         document.querySelectorAll('.price-item').forEach(item => {
-            const p = item.dataset.price;
-            item.classList.toggle('active', App.Config.prices.has(p));
+            const priceValue = item.dataset.price;
+            item.classList.toggle('active', App.Config.prices.has(priceValue));
             item.onclick = () => {
-                const currentlySelected = App.Config.prices.has(p);
+                const currentlySelected = App.Config.prices.has(priceValue);
                 if (currentlySelected) {
-                    App.Config.prices.delete(p);
+                    App.Config.prices.delete(priceValue);
                     item.classList.remove('active');
                 } else {
-                    App.Config.prices.add(p);
+                    App.Config.prices.add(priceValue);
                     item.classList.add('active');
                 }
                 App.saveSettings();
@@ -148,14 +148,14 @@ export const UI = {
         App.Data.currentPlace = place;
         this.updateHistory(App, place);
 
-        const el = this.getElements();
+        const elements = this.getElements();
 
         // Sequential rendering for clarity and stability
-        this.renderHeader(el, place, fromShare);
-        this.renderPhotos(el, place);
-        this.renderReviews(el, place);
-        this.renderDetails(el, place, App);
-        this.renderMap(el.mapCont, place, App);
+        this.renderHeader(elements, place, fromShare);
+        this.renderPhotos(elements, place);
+        this.renderReviews(elements, place);
+        this.renderDetails(elements, place, App);
+        this.renderMap(elements.mapCont, place, App);
 
         if (!fromShare) {
             this.triggerConfetti();
@@ -199,58 +199,63 @@ export const UI = {
         };
     },
 
-    renderHeader(el, place, fromShare) {
-        if (el.name) el.name.textContent = place.name;
-        if (el.address) el.address.textContent = place.vicinity;
-        if (el.reviewsViewAll) el.reviewsViewAll.href = place.googleMapsURI || '#';
-        if (el.photosViewAll) el.photosViewAll.href = place.googleMapsURI || '#';
+    renderHeader(elements, place, fromShare) {
+        if (elements.name) elements.name.textContent = place.name;
+        if (elements.address) elements.address.textContent = place.vicinity;
+        if (elements.reviewsViewAll) elements.reviewsViewAll.href = place.googleMapsURI || '#';
+        if (elements.photosViewAll) elements.photosViewAll.href = place.googleMapsURI || '#';
     },
 
-    renderPhotos(el, place) {
-        if (!el.photoSection) return;
+    renderPhotos(elements, place) {
+        if (!elements.photoSection) return;
 
         if (place.photos && place.photos.length > 0) {
-            el.photoSection.classList.remove('hidden');
-            if (el.photoCont) {
-                el.photoCont.innerHTML = '';
+            elements.photoSection.classList.remove('hidden');
+            if (elements.photoCont) {
+                elements.photoCont.innerHTML = '';
                 const fragment = document.createDocumentFragment();
                 place.photos.forEach(photo => {
-                    const img = document.createElement('img');
-                    img.src = photo.getURI({ maxHeight: 400 });
-                    img.className = 'photo-item';
-                    img.alt = place.name;
-                    img.loading = 'lazy';
-                    img.style.opacity = '0';
-                    img.style.transition = 'opacity 0.3s ease';
-                    img.onload = () => { img.style.opacity = '1'; };
-                    img.onerror = function () {
-                        if (!this.getAttribute('data-retried')) {
-                            this.setAttribute('data-retried', 'true');
-                            setTimeout(() => {
-                                const sep = this.src.includes('?') ? '&' : '?';
-                                this.src = this.src + sep + 'retry=' + Date.now();
-                            }, 1000);
-                        } else {
-                            this.style.display = 'none';
-                        }
-                    };
-                    img.onclick = () => window.open(img.src, '_blank');
+                    const img = this.createPhotoItem(photo, place.name);
                     fragment.appendChild(img);
                 });
-                el.photoCont.appendChild(fragment);
+                elements.photoCont.appendChild(fragment);
             }
         } else {
-            el.photoSection.classList.add('hidden');
+            elements.photoSection.classList.add('hidden');
         }
     },
 
-    renderReviews(el, place) {
-        if (!el.reviewsCont || !el.reviewsList) return;
+    createPhotoItem(photo, altText) {
+        const img = document.createElement('img');
+        img.src = photo.getURI({ maxHeight: 400 });
+        img.className = 'photo-item';
+        img.alt = altText;
+        img.loading = 'lazy';
+        img.style.opacity = '0';
+        img.style.transition = 'opacity 0.3s ease';
+        img.onload = () => { img.style.opacity = '1'; };
+        img.onerror = function () {
+            if (!this.getAttribute('data-retried')) {
+                this.setAttribute('data-retried', 'true');
+                setTimeout(() => {
+                    const sep = this.src.includes('?') ? '&' : '?';
+                    this.src = this.src + sep + 'retry=' + Date.now();
+                }, 1000);
+            } else {
+                this.style.display = 'none';
+            }
+        };
+        img.onclick = () => window.open(img.src, '_blank');
+        return img;
+    },
+
+    renderReviews(elements, place) {
+        if (!elements.reviewsCont || !elements.reviewsList) return;
 
         if (place.reviews && place.reviews.length > 0) {
-            el.reviewsCont.classList.remove('hidden');
-            el.reviewsList.innerHTML = '';
-            el.reviewsList.scrollLeft = 0;
+            elements.reviewsCont.classList.remove('hidden');
+            elements.reviewsList.innerHTML = '';
+            elements.reviewsList.scrollLeft = 0;
             const validReviews = place.reviews
                 .filter(r => r.text && (r.text.text || r.text).length > 0)
                 .sort((a, b) => {
@@ -260,87 +265,92 @@ export const UI = {
                 });
 
             if (validReviews.length === 0) {
-                el.reviewsCont.classList.add('hidden');
+                elements.reviewsCont.classList.add('hidden');
             } else {
                 const fragment = document.createDocumentFragment();
                 validReviews.forEach(review => {
-                    const item = document.createElement('div');
-                    item.className = 'review-item';
-                    const stars = '⭐'.repeat(Math.round(review.rating || 0));
-                    const timeStr = review.relativePublishTimeDescription || "";
-                    const topDiv = document.createElement('div');
-                    topDiv.className = 'review-top';
-                    const authorSpan = document.createElement('span');
-                    authorSpan.className = 'review-author';
-                    authorSpan.textContent = review.authorAttribution?.displayName || "Anonymous";
-                    const timeSpan = document.createElement('span');
-                    timeSpan.className = 'review-time';
-                    timeSpan.textContent = timeStr;
-                    topDiv.appendChild(authorSpan);
-                    topDiv.appendChild(timeSpan);
-
-                    const starsDiv = document.createElement('div');
-                    starsDiv.className = 'review-stars';
-                    starsDiv.textContent = stars;
-
-                    const textP = document.createElement('p');
-                    textP.className = 'review-text';
-                    textP.textContent = review.text?.text || review.text || "";
-
-                    item.appendChild(topDiv);
-                    item.appendChild(starsDiv);
-                    item.appendChild(textP);
+                    const item = this.createReviewItem(review);
                     fragment.appendChild(item);
                 });
-                el.reviewsList.appendChild(fragment);
+                elements.reviewsList.appendChild(fragment);
             }
         } else {
-            el.reviewsCont.classList.add('hidden');
+            elements.reviewsCont.classList.add('hidden');
         }
     },
 
-    renderDetails(el, place, App) {
-        const t = App.translations[App.currentLang];
+    createReviewItem(review) {
+        const item = document.createElement('div');
+        item.className = 'review-item';
+        const stars = '⭐'.repeat(Math.round(review.rating || 0));
+        const timeStr = review.relativePublishTimeDescription || "";
+        const topDiv = document.createElement('div');
+        topDiv.className = 'review-top';
+        const authorSpan = document.createElement('span');
+        authorSpan.className = 'review-author';
+        authorSpan.textContent = review.authorAttribution?.displayName || "Anonymous";
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'review-time';
+        timeSpan.textContent = timeStr;
+        topDiv.appendChild(authorSpan);
+        topDiv.appendChild(timeSpan);
+
+        const starsDiv = document.createElement('div');
+        starsDiv.className = 'review-stars';
+        starsDiv.textContent = stars;
+
+        const textP = document.createElement('p');
+        textP.className = 'review-text';
+        textP.textContent = review.text?.text || review.text || "";
+
+        item.appendChild(topDiv);
+        item.appendChild(starsDiv);
+        item.appendChild(textP);
+        return item;
+    },
+
+    renderDetails(elements, place, App) {
+        const translations = App.translations[App.currentLang];
 
         // Rating
         const hasRating = typeof place.rating === 'number' && place.rating > 0;
-        if (el.rating) el.rating.textContent = hasRating ? place.rating : (t.ratingNew.replace(/⭐\s*/, ''));
+        if (elements.rating) elements.rating.textContent = hasRating ? place.rating : (translations.ratingNew.replace(/⭐\s*/, ''));
 
         // Price
-        const priceText = this.getPriceDisplay(place.priceLevel, t);
-        if (el.price) el.price.textContent = priceText;
-        if (el.priceCont) el.priceCont.style.display = priceText ? 'flex' : 'none';
+        const priceText = this.getPriceDisplay(place.priceLevel, translations);
+        if (elements.price) elements.price.textContent = priceText;
+        if (elements.priceCont) elements.priceCont.style.display = priceText ? 'flex' : 'none';
 
         // Category
         const catFull = this.getPlaceCategory(place, App);
         if (catFull) {
             const emojiMatch = catFull.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*(.*)$/u);
-            if (el.catIcon) el.catIcon.textContent = emojiMatch ? emojiMatch[1] : "🍴";
-            if (el.cat) el.cat.textContent = emojiMatch ? emojiMatch[2] : catFull;
-            if (el.catCont) el.catCont.style.display = 'flex';
-        } else if (el.catCont) el.catCont.style.display = 'none';
+            if (elements.catIcon) elements.catIcon.textContent = emojiMatch ? emojiMatch[1] : "🍴";
+            if (elements.cat) elements.cat.textContent = emojiMatch ? emojiMatch[2] : catFull;
+            if (elements.catCont) elements.catCont.style.display = 'flex';
+        } else if (elements.catCont) elements.catCont.style.display = 'none';
 
         // Opening Hours
         const todayHours = this.getTodayHours(place, App);
-        if (el.hours) el.hours.textContent = todayHours;
-        if (el.hoursCont) el.hoursCont.style.display = 'flex'; // Always show if we have a message (including "No info")
+        if (elements.hours) elements.hours.textContent = todayHours;
+        if (elements.hoursCont) elements.hoursCont.style.display = 'flex'; // Always show if we have a message (including "No info")
 
         // Distance
         if (place.durationText) {
-            if (el.distance) el.distance.textContent = place.durationText;
-            if (el.distanceCont) el.distanceCont.style.display = 'flex';
-        } else if (el.distanceCont) el.distanceCont.style.display = 'none';
+            if (elements.distance) elements.distance.textContent = place.durationText;
+            if (elements.distanceCont) elements.distanceCont.style.display = 'flex';
+        } else if (elements.distanceCont) elements.distanceCont.style.display = 'none';
 
         // Phone
         if (place.phone) {
-            if (el.phone) {
-                el.phone.textContent = `📞 ${place.phone}`;
-                el.phone.href = `tel:${place.phone.replace(/\s+/g, '')}`;
-                el.phone.style.display = '';
+            if (elements.phone) {
+                elements.phone.textContent = `📞 ${place.phone}`;
+                elements.phone.href = `tel:${place.phone.replace(/\s+/g, '')}`;
+                elements.phone.style.display = '';
             }
-        } else if (el.phone) el.phone.style.display = 'none';
+        } else if (elements.phone) elements.phone.style.display = 'none';
 
-        if (el.mapsBtn) el.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`;
+        if (elements.mapsBtn) elements.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`;
     },
 
     async renderMap(container, place, App) {
@@ -375,56 +385,59 @@ export const UI = {
             });
 
             if (App.Data.userPos) {
-                const userDot = document.createElement('div');
-                userDot.style.width = '16px';
-                userDot.style.height = '16px';
-                userDot.style.backgroundColor = '#4285F4';
-                userDot.style.border = '2px solid white';
-                userDot.style.borderRadius = '50%';
-                userDot.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)';
-
-                new AdvancedMarkerElement({
-                    map,
-                    position: App.Data.userPos,
-                    title: "Your Location",
-                    content: userDot
-                });
-
-                const bounds = new google.maps.LatLngBounds();
-                bounds.extend(place.location);
-                bounds.extend(App.Data.userPos);
-                map.fitBounds(bounds, 50);
-
-                // Add Re-center Control
-                const centerBtn = document.createElement('button');
-                centerBtn.className = 'map-center-btn';
-                centerBtn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#666"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>';
-                centerBtn.title = 'Re-center Map';
-                centerBtn.onclick = () => {
-                    const b = new google.maps.LatLngBounds();
-                    b.extend(place.location);
-                    b.extend(App.Data.userPos);
-                    map.fitBounds(b, 50);
-                };
-                map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerBtn);
-            } else {
-                // If no user position, just center on place
-                const centerBtn = document.createElement('button');
-                centerBtn.className = 'map-center-btn';
-                centerBtn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#666"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>';
-                centerBtn.title = 'Re-center Map';
-                centerBtn.onclick = () => {
-                    map.setCenter(place.location);
-                    map.setZoom(16);
-                };
-                map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerBtn);
+                this.renderUserLocationOnMap(map, App.Data.userPos, place.location, AdvancedMarkerElement);
             }
+
+            // Cross-platform re-center control
+            const centerBtn = this.createMapCenterControl(map, place.location, App.Data.userPos);
+            map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerBtn);
 
             google.maps.event.addListenerOnce(map, 'idle', () => container.classList.remove('skeleton'));
         } catch (e) {
             console.error("Map Render Error:", e);
             container.style.display = 'none';
         }
+    },
+
+    renderUserLocationOnMap(map, userPos, placeLoc, AdvancedMarkerElement) {
+        const userDot = document.createElement('div');
+        userDot.style.width = '16px';
+        userDot.style.height = '16px';
+        userDot.style.backgroundColor = '#4285F4';
+        userDot.style.border = '2px solid white';
+        userDot.style.borderRadius = '50%';
+        userDot.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)';
+
+        new AdvancedMarkerElement({
+            map,
+            position: userPos,
+            title: "Your Location",
+            content: userDot
+        });
+
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(placeLoc);
+        bounds.extend(userPos);
+        map.fitBounds(bounds, 50);
+    },
+
+    createMapCenterControl(map, placeLoc, userPos) {
+        const centerBtn = document.createElement('button');
+        centerBtn.className = 'map-center-btn';
+        centerBtn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#666"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>';
+        centerBtn.title = 'Re-center Map';
+        centerBtn.onclick = () => {
+            if (userPos) {
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(placeLoc);
+                bounds.extend(userPos);
+                map.fitBounds(bounds, 50);
+            } else {
+                map.setCenter(placeLoc);
+                map.setZoom(16);
+            }
+        };
+        return centerBtn;
     },
 
     startSlotAnimation(App) {
@@ -442,25 +455,25 @@ export const UI = {
     },
 
     getPlaceCategory(place, App) {
-        const t = App.translations[App.currentLang].categories;
+        const categoriesTranslations = App.translations[App.currentLang].categories;
         for (const [id, keywords] of Object.entries(CUISINE_MAPPING)) {
-            if (isPlaceMatch(place, keywords)) return t[id];
+            if (isPlaceMatch(place, keywords)) return categoriesTranslations[id];
         }
         return null;
     },
 
-    getPriceDisplay(level, t) {
+    getPriceDisplay(level, translations) {
         if (level === undefined || level === null) return "";
         let key = level;
         if (PRICE_VAL_TO_KEY[key]) key = PRICE_VAL_TO_KEY[key];
         const config = PRICE_LEVEL_MAP[key];
-        return config ? config.label(t) : "";
+        return config ? config.label(translations) : "";
     },
 
     getTodayHours(place, App) {
-        const t = App.translations[App.currentLang];
+        const translations = App.translations[App.currentLang];
         const descriptions = place.openingHours?.weekdayDescriptions;
-        if (!descriptions || descriptions.length !== 7) return t.noHoursInfo;
+        if (!descriptions || descriptions.length !== 7) return translations.noHoursInfo;
 
         const today = new Date();
         // Google weekdayDescriptions usually start with Monday (index 0) or Sunday depending on locale, 
@@ -474,7 +487,7 @@ export const UI = {
             const parts = match.split(/: |：/);
             return parts[1] ? parts[1].trim() : match;
         }
-        return t.noHoursInfo;
+        return translations.noHoursInfo;
     },
 
     triggerHaptic(duration) {
@@ -494,9 +507,9 @@ export const UI = {
     async shareCurrentPlace(App) {
         const place = App.Data.currentPlace;
         if (!place) return;
-        const t = App.translations[App.currentLang];
+        const translations = App.translations[App.currentLang];
         const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.id}${App.Data.userPos ? `&lat=${App.Data.userPos.lat}&lng=${App.Data.userPos.lng}` : ''}`;
-        const shareText = t.shareText.replace('${name}', place.name);
+        const shareText = translations.shareText.replace('${name}', place.name);
 
         if (navigator.share) {
             try {
@@ -505,7 +518,7 @@ export const UI = {
         } else {
             try {
                 await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-                alert(t.linkCopied);
+                alert(translations.linkCopied);
             } catch (e) { alert(shareUrl); }
         }
     }

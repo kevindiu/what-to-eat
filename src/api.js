@@ -6,25 +6,25 @@ import { CUISINE_MAPPING, GOOGLE_PLACE_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_F
 /**
  * Centalized mapping from Google Place object to internal restaurant model.
  */
-function mapPlaceData(p, t) {
+function mapPlaceData(place, translations) {
     return {
-        id: p.id || p.place_id,
-        name: typeof p.displayName === 'string' ? p.displayName : (p.displayName?.text || t.unknownName),
-        rating: p.rating,
-        userRatingCount: p.userRatingCount || 0,
-        vicinity: p.formattedAddress || p.vicinity || t.noAddress,
-        types: p.types || [],
-        priceLevel: p.priceLevel,
-        phone: p.nationalPhoneNumber,
-        businessStatus: p.businessStatus,
-        location: p.location,
-        openingHours: p.regularOpeningHours,
+        id: place.id || place.place_id,
+        name: typeof place.displayName === 'string' ? place.displayName : (place.displayName?.text || translations.unknownName),
+        rating: place.rating,
+        userRatingCount: place.userRatingCount || 0,
+        vicinity: place.formattedAddress || place.vicinity || translations.noAddress,
+        types: place.types || [],
+        priceLevel: place.priceLevel,
+        phone: place.nationalPhoneNumber,
+        businessStatus: place.businessStatus,
+        location: place.location,
+        openingHours: place.regularOpeningHours,
         isOpen: null,
         durationText: null,
         durationValue: null,
-        photos: p.photos || [],
-        reviews: p.reviews || [],
-        googleMapsURI: p.googleMapsURI
+        photos: place.photos || [],
+        reviews: place.reviews || [],
+        googleMapsURI: place.googleMapsURI
     };
 }
 
@@ -54,7 +54,7 @@ export async function findRestaurant(App) {
         const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius, App);
 
         if (!places || places.length === 0) {
-            alert(t.noResults);
+            alert(translations.noResults);
             App.UI.showScreen('main-flow');
             return;
         }
@@ -62,7 +62,7 @@ export async function findRestaurant(App) {
         const candidates = await processCandidates(places, App.Data.userPos, App);
 
         if (candidates.length === 0) {
-            const errorMsg = App.Config.filterMode === 'whitelist' ? t.noFilteredResultsWhitelist : t.noFilteredResultsBlacklist;
+            const errorMsg = App.Config.filterMode === 'whitelist' ? translations.noFilteredResultsWhitelist : translations.noFilteredResultsBlacklist;
             alert(errorMsg);
             App.UI.showScreen('main-flow');
             return;
@@ -77,74 +77,16 @@ export async function findRestaurant(App) {
         App.UI.startSlotAnimation(App);
     } catch (error) {
         console.error("Search Error:", error);
-        handleError(error, t, App);
+        handleError(error, translations, App);
     }
 }
 
 async function fetchNearby(Place, location, radius, App) {
-    const offset = radius * 0.6;
-    const latOffset = offset / CONSTANTS.METERS_PER_DEGREE_LAT;
-    const lngOffset = offset / (CONSTANTS.METERS_PER_DEGREE_LAT * Math.cos(location.lat * Math.PI / 180));
-
-    // 5-point grid search to maximize coverage around user location
-    const points = [
-        { lat: location.lat, lng: location.lng }, // 0: Center
-        { lat: location.lat - latOffset, lng: location.lng - lngOffset }, // 1: Bottom-Left
-        { lat: location.lat + latOffset, lng: location.lng - lngOffset }, // 2: Top-Left
-        { lat: location.lat - latOffset, lng: location.lng + lngOffset }, // 3: Bottom-Right
-        { lat: location.lat + latOffset, lng: location.lng + lngOffset }  // 4: Top-Right
-    ];
+    const points = getGridPoints(location, radius);
+    const searchGroups = getSearchTypeGroups(App);
 
     const allPlaces = [];
     const seenIds = new Set();
-    const searchGroups = [];
-    const allTypes = GOOGLE_PLACE_TYPES;
-
-    // Mode 1: Whitelist Optimization
-    if (App.Config.filterMode === 'whitelist' && App.Config.excluded.size > 0) {
-        const typeSet = new Set(allTypes);
-        const selectedTypes = new Set();
-
-        App.Config.excluded.forEach(id => {
-            const mappings = CUISINE_MAPPING[id] || [];
-            mappings.forEach(m => {
-                if (typeSet.has(m)) selectedTypes.add(m);
-            });
-        });
-
-        const typesArray = Array.from(selectedTypes);
-        if (typesArray.length > 0) {
-            for (let i = 0; i < typesArray.length; i += 20) {
-                searchGroups.push(typesArray.slice(i, i + 20));
-            }
-        }
-    }
-    // Mode 2: Blacklist Optimization (Filter out excluded types from global list)
-    else if (App.Config.filterMode === 'blacklist' && App.Config.excluded.size > 0) {
-        const blacklist = new Set();
-        App.Config.excluded.forEach(id => {
-            const mappings = CUISINE_MAPPING[id] || [];
-            mappings.forEach(m => {
-                if (m.includes('_') || /^[a-z]+$/.test(m)) blacklist.add(m);
-            });
-        });
-
-        const activeTypes = allTypes.filter(t => !blacklist.has(t));
-        if (activeTypes.length > 0) {
-            for (let i = 0; i < activeTypes.length; i += 20) {
-                searchGroups.push(activeTypes.slice(i, i + 20));
-            }
-        }
-    }
-
-    // Default Fallback: split all supported types into 3 groups
-    if (searchGroups.length === 0) {
-        searchGroups.push(
-            allTypes.slice(0, 20),
-            allTypes.slice(20, 40),
-            allTypes.slice(40)
-        );
-    }
 
     const fetchPoint = async (pos, types) => {
         const request = {
@@ -165,10 +107,10 @@ async function fetchNearby(Place, location, radius, App) {
 
     const processResults = (newPlaces) => {
         let addedCount = 0;
-        newPlaces.forEach(p => {
-            if (p && p.id && !seenIds.has(p.id)) {
-                seenIds.add(p.id);
-                allPlaces.push(p);
+        newPlaces.forEach(place => {
+            if (place && place.id && !seenIds.has(place.id)) {
+                seenIds.add(place.id);
+                allPlaces.push(place);
                 addedCount++;
             }
         });
@@ -214,6 +156,62 @@ async function fetchNearby(Place, location, radius, App) {
     return allPlaces;
 }
 
+function getGridPoints(location, radius) {
+    const offset = radius * 0.6;
+    const latOffset = offset / CONSTANTS.METERS_PER_DEGREE_LAT;
+    const lngOffset = offset / (CONSTANTS.METERS_PER_DEGREE_LAT * Math.cos(location.lat * Math.PI / 180));
+
+    return [
+        { lat: location.lat, lng: location.lng }, // 0: Center
+        { lat: location.lat - latOffset, lng: location.lng - lngOffset }, // 1: Bottom-Left
+        { lat: location.lat + latOffset, lng: location.lng - lngOffset }, // 2: Top-Left
+        { lat: location.lat - latOffset, lng: location.lng + lngOffset }, // 3: Bottom-Right
+        { lat: location.lat + latOffset, lng: location.lng + lngOffset }  // 4: Top-Right
+    ];
+}
+
+function getSearchTypeGroups(App) {
+    const searchGroups = [];
+    const allTypes = GOOGLE_PLACE_TYPES;
+
+    // Mode 1: Whitelist Optimization
+    if (App.Config.filterMode === 'whitelist' && App.Config.excluded.size > 0) {
+        const selectedTypes = new Set();
+        App.Config.excluded.forEach(id => {
+            (CUISINE_MAPPING[id] || []).forEach(m => {
+                if (GOOGLE_PLACE_TYPES.includes(m)) selectedTypes.add(m);
+            });
+        });
+
+        const typesArray = Array.from(selectedTypes);
+        for (let i = 0; i < typesArray.length; i += 20) {
+            searchGroups.push(typesArray.slice(i, i + 20));
+        }
+    }
+    // Mode 2: Blacklist Optimization
+    else if (App.Config.filterMode === 'blacklist' && App.Config.excluded.size > 0) {
+        const blacklist = new Set();
+        App.Config.excluded.forEach(id => {
+            (CUISINE_MAPPING[id] || []).forEach(m => {
+                if (m.includes('_') || /^[a-z]+$/.test(m)) blacklist.add(m);
+            });
+        });
+
+        const activeTypes = allTypes.filter(t => !blacklist.has(t));
+        for (let i = 0; i < activeTypes.length; i += 20) {
+            searchGroups.push(activeTypes.slice(i, i + 20));
+        }
+    }
+
+    // Default Fallback
+    if (searchGroups.length === 0) {
+        for (let i = 0; i < allTypes.length; i += 20) {
+            searchGroups.push(allTypes.slice(i, i + 20));
+        }
+    }
+    return searchGroups;
+}
+
 /**
  * Filters and validates candidate places based on business status, hours, and user preferences.
  * @param {Array} places - List of raw place objects.
@@ -224,10 +222,20 @@ async function fetchNearby(Place, location, radius, App) {
 async function processCandidates(places, userLoc, App) {
     const t = App.translations[App.currentLang];
 
-    // 1. Map to internal model and resolve opening status
-    const placesWithStatus = await Promise.all(places.map(async p => {
-        const item = mapPlaceData(p, t);
-        try { item.isOpen = await p.isOpen(); } catch (e) { item.isOpen = null; }
+    // 1. Map and check basic operability
+    const operational = await filterOperational(places, App, t);
+
+    // 2. Filter by range
+    const withinRange = await filterByDistance(userLoc, operational, App);
+
+    // 3. Final filter by categories and price
+    return filterByPreferences(withinRange, App);
+}
+
+async function filterOperational(places, App, translations) {
+    const candidates = await Promise.all(places.map(async place => {
+        const item = mapPlaceData(place, translations);
+        try { item.isOpen = await place.isOpen(); } catch (e) { item.isOpen = null; }
 
         if (item.isOpen === null) {
             item.isOpen = item.openingHours?.periods ? checkPeriodAvailability(item.openingHours.periods) : item.openingHours?.openNow;
@@ -235,30 +243,36 @@ async function processCandidates(places, userLoc, App) {
         return item;
     }));
 
-    // 2. Initial filter by business status and open status
-    const operational = placesWithStatus.filter(p => {
-        if (p.businessStatus !== 'OPERATIONAL' && p.businessStatus) return false;
-        return App.Config.includeClosed || p.isOpen !== false;
+    return candidates.filter(place => {
+        if (place.businessStatus !== 'OPERATIONAL' && place.businessStatus) return false;
+        return App.Config.includeClosed || place.isOpen !== false;
     });
+}
 
-    // 3. Distance calculation and filtering
-    const withDurations = await calculateDistances(userLoc, operational);
-    let withinRange = withDurations.filter(p => !p.durationValue || (p.durationValue / 60) <= App.Config.mins);
-    if (withinRange.length === 0) withinRange = withDurations.sort((a, b) => (a.durationValue || 9999) - (b.durationValue || 9999)).slice(0, 3);
+async function filterByDistance(userLoc, candidates, App) {
+    const withDurations = await calculateDistances(userLoc, candidates);
+    let filtered = withDurations.filter(place => !place.durationValue || (place.durationValue / 60) <= App.Config.mins);
 
-    // 4. Final filter by category and price
-    return withinRange.filter(p => {
+    // Fallback if everyone is too far
+    if (filtered.length === 0) {
+        filtered = withDurations.sort((a, b) => (a.durationValue || 9999) - (b.durationValue || 9999)).slice(0, 3);
+    }
+    return filtered;
+}
+
+function filterByPreferences(candidates, App) {
+    return candidates.filter(place => {
         const selectedCategories = Array.from(App.Config.excluded);
-        const isSelected = selectedCategories.some(id => isPlaceMatch(p, CUISINE_MAPPING[id]));
+        const isMatch = selectedCategories.some(id => isPlaceMatch(place, CUISINE_MAPPING[id]));
 
         if (App.Config.filterMode === 'whitelist') {
-            if (selectedCategories.length > 0 && !isSelected) return false;
+            if (selectedCategories.length > 0 && !isMatch) return false;
         } else {
-            if (isSelected) return false;
+            if (isMatch) return false;
         }
 
-        if (p.priceLevel !== undefined && p.priceLevel !== null) {
-            const key = PRICE_VAL_TO_KEY[p.priceLevel] || p.priceLevel;
+        if (place.priceLevel !== undefined && place.priceLevel !== null) {
+            const key = PRICE_VAL_TO_KEY[place.priceLevel] || place.priceLevel;
             const config = PRICE_LEVEL_MAP[key];
             if (config && App.Config.prices.size > 0 && !App.Config.prices.has(config.val)) return false;
         }
@@ -301,9 +315,9 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
 
     const restorePhotoMethods = (photos) => {
         if (!photos) return photos;
-        return photos.map(p => ({
-            ...p,
-            getURI: (options) => p.cachedURI || ""
+        return photos.map(photo => ({
+            ...photo,
+            getURI: (options) => photo.cachedURI || ""
         }));
     };
 
@@ -338,15 +352,15 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
 
 
     try {
-        const p = new Place({ id: basicPlace.id });
+        const place = new Place({ id: basicPlace.id });
         // Must fetch BASIC + DETAIL fields to ensure mapPlaceData has everything it needs
-        await p.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
+        await place.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
 
-        const mapped = mapPlaceData(p, App.translations[App.currentLang]);
+        const mapped = mapPlaceData(place, translations);
 
         // Pre-fetch photo URIs because the getURI method is lost after JSON.stringify
-        if (p.photos && p.photos.length > 0) {
-            mapped.photos = p.photos.map(photo => ({
+        if (place.photos && place.photos.length > 0) {
+            mapped.photos = place.photos.map(photo => ({
                 cachedURI: photo.getURI({ maxHeight: 1000 }),
                 widthPx: photo.widthPx,
                 heightPx: photo.heightPx,
@@ -376,9 +390,9 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
     return basicPlace;
 }
 
-function handleError(error, t, App) {
-    if (error.message === "GEOLOCATION_NOT_SUPPORTED") alert(t.noGeo);
-    else if (error.code === 1) alert(t.geoError);
+function handleError(error, translations, App) {
+    if (error.message === "GEOLOCATION_NOT_SUPPORTED") alert(translations.noGeo);
+    else if (error.code === 1) alert(translations.geoError);
     else alert("Error: " + error.message);
     App.UI.showScreen('main-flow');
 }
@@ -439,13 +453,13 @@ export async function reRoll(App) {
     if (candidates.length > 1) {
         // Exclude everything in history if possible
         const historyIds = new Set(App.Data.history || []);
-        const others = candidates.filter(p => !historyIds.has(p.id));
+        const others = candidates.filter(place => !historyIds.has(place.id));
 
         if (others.length > 0) {
             candidates = others;
         } else if (App.Data.lastPickedId) {
             // If everything has been seen, at least avoid the immediate last one
-            const avoidLast = candidates.filter(p => p.id !== App.Data.lastPickedId);
+            const avoidLast = candidates.filter(place => place.id !== App.Data.lastPickedId);
             if (avoidLast.length > 0) candidates = avoidLast;
         }
     }
@@ -471,10 +485,10 @@ export async function restoreSession(App) {
 
     try {
         const { Place } = await google.maps.importLibrary("places");
-        const p = new Place({ id: resId });
+        const place = new Place({ id: resId });
 
         // Fetch exhaustive fields for shared links (single request)
-        await p.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
+        await place.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
 
         const lat = parseFloat(App.Data.params.get('lat'));
         const lng = parseFloat(App.Data.params.get('lng'));
@@ -482,8 +496,8 @@ export async function restoreSession(App) {
             App.Data.userPos = { lat, lng };
         }
 
-        const t = App.translations[App.currentLang];
-        const restored = mapPlaceData(p, t);
+        const translations = App.translations[App.currentLang];
+        const restored = mapPlaceData(place, translations);
 
         if (App.Data.userPos && restored.location) {
             const [withDuration] = await calculateDistances(App.Data.userPos, [restored]);

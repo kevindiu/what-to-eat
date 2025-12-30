@@ -3,13 +3,16 @@ import { registerSW } from 'virtual:pwa-register';
 
 export const PWA = {
     deferredPrompt: null,
+    translations: null,
+    currentLang: null,
     init(translations, currentLang) {
+        this.translations = translations;
+        this.currentLang = currentLang;
         if ('serviceWorker' in navigator) {
             registerSW({
                 immediate: true,
                 onNeedRefresh() {
-                    console.log("New content available, reloading...");
-                    window.location.reload();
+                    console.log("New content available, will update on next launch.");
                 },
                 onOfflineReady() { console.log("App ready to work offline"); }
             });
@@ -36,11 +39,16 @@ export const PWA = {
             }
         }
     },
-    isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; },
+    isIOS() {
+        return (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    },
     isStandalone() { return window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches; },
     async handleInstall() {
         if (this.isIOS()) {
-            alert(window.App.translations[window.App.currentLang].iosInstallAlert);
+            if (this.translations && this.currentLang) {
+                alert(this.translations[this.currentLang].iosInstallAlert);
+            }
             return;
         }
 

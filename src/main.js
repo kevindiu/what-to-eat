@@ -212,6 +212,7 @@ const App = {
 };
 
 // Expose globally
+window.App = App;
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
 });

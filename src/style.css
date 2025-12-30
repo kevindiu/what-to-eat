@@ -570,25 +570,22 @@ header p {
 .res-meta {
     display: flex;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     margin-bottom: 1rem;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     width: 100%;
-    overflow-x: auto;
-    padding-bottom: 4px;
 }
 
 .meta-box {
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 6px 10px;
+    padding: 6px 12px;
     border-radius: 12px;
     font-size: 0.85rem;
     font-weight: 600;
     white-space: nowrap;
     flex-shrink: 0;
-    max-width: 100px;
     transition: transform 0.2s ease;
 }
 
@@ -597,9 +594,10 @@ header p {
 }
 
 .meta-icon {
-    font-size: 1.5rem;
-    margin-bottom: 6px;
+    font-size: 1.2rem;
     line-height: 1;
+    display: flex;
+    align-items: center;
 }
 
 .meta-val {

@@ -4,6 +4,10 @@ import { CUISINE_MAPPING, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from '.
 import confetti from 'canvas-confetti';
 
 export const UI = {
+    /**
+     * Manages screen transitions and footer visibility.
+     * Screens: 'main-flow' (search), 'result-screen' (winner), 'loading-screen' (animation).
+     */
     showScreen(screenId) {
         const screens = ['main-flow', 'result-screen', 'loading-screen'];
         screens.forEach(id => {
@@ -11,7 +15,6 @@ export const UI = {
             if (element) element.classList.toggle('hidden', id !== screenId);
         });
 
-        // Footer Management
         const footerHome = getEl('footer-home');
         const footerResult = getEl('footer-result');
         const appFooter = getEl('app-footer');
@@ -25,7 +28,6 @@ export const UI = {
             if (footerHome) footerHome.classList.add('hidden');
             if (footerResult) footerResult.classList.remove('hidden');
         } else {
-            // Loading screen or others - hide footer
             if (appFooter) appFooter.classList.add('hidden');
         }
     },
@@ -353,6 +355,10 @@ export const UI = {
         if (elements.mapsBtn) elements.mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`;
     },
 
+    /**
+     * Renders a Google Map focused on the restaurant, with a custom re-center control.
+     * Uses the Advanced Marker library for a premium feel.
+     */
     async renderMap(container, place, App) {
         if (!container) return;
         if (!place.location) {
@@ -388,7 +394,7 @@ export const UI = {
                 this.renderUserLocationOnMap(map, App.Data.userPos, place.location, AdvancedMarkerElement);
             }
 
-            // Cross-platform re-center control
+            // Cross-platform re-center control (custom UI to match branding)
             const centerBtn = this.createMapCenterControl(map, place.location, App.Data.userPos);
             map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerBtn);
 
@@ -470,14 +476,17 @@ export const UI = {
         return config ? config.label(translations) : "";
     },
 
+    /**
+     * Resolves today's opening hours from Google's weekdayDescriptions array.
+     * Uses fuzzy string matching to find the correct day regardless of the user's locale.
+     */
     getTodayHours(place, App) {
         const translations = App.translations[App.currentLang];
         const descriptions = place.openingHours?.weekdayDescriptions;
         if (!descriptions || descriptions.length !== 7) return translations.noHoursInfo;
 
         const today = new Date();
-        // Google weekdayDescriptions usually start with Monday (index 0) or Sunday depending on locale, 
-        // but we can reliably find it by matching the day name.
+        // Match day name in both local and English as a fallback for various Google API behaviors.
         const dayName = today.toLocaleDateString(App.currentLang === 'en' ? 'en-US' : (App.currentLang === 'ja' ? 'ja-JP' : 'zh-HK'), { weekday: 'long' });
         const enDayName = today.toLocaleDateString('en-US', { weekday: 'long' });
 

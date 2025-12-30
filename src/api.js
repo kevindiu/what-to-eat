@@ -117,19 +117,25 @@ async function fetchNearby(Place, location, radius, App) {
         return addedCount;
     };
 
-    // Perform search across grid points and type groups with early-exit optimization
+    /**
+     * Perform search across grid points and type groups with early-exit optimization.
+     * 
+     * Strategy:
+     * 1. Search the center point first.
+     * 2. If center is saturated (20 results), search diagonal corners.
+     * 3. If diagonals yield new results, search the remaining two corners.
+     * This maximizes coverage while significantly reducing API costs in sparse areas.
+     */
     for (const groups of searchGroups) {
         if (!groups || groups.length === 0) continue;
 
-        // Phase 1: Search Center using ONLY active groups of types
         const centerResults = await fetchPoint(points[0], groups);
         processResults(centerResults);
 
-        // If center point isn't saturated (returns < 20),
-        // we assume the area is sparse and skip the corners to save API cost.
+        // If the center point returns fewer than 20 results, the area is unlikely to have 
+        // more unique results in the corners for this set of types. Skip to save quota.
         if (centerResults.length < 20) continue;
 
-        // Phase 2: Search 2 Diagonal Corners (Bottom-Left & Top-Right)
         const diagonalResults = await Promise.all([
             fetchPoint(points[1], groups),
             fetchPoint(points[4], groups)
@@ -140,11 +146,10 @@ async function fetchNearby(Place, location, radius, App) {
             newInPhase2 += processResults(res);
         });
 
-        // If diagonals didn't yield ANY new unique locations,
-        // assume we've covered the area effectively and skip the last 2 corners.
+        // If diagonal searches didn't return any new unique IDs, it indicates 
+        // high overlap. Skip the last two corners to prevent redundant API calls.
         if (newInPhase2 === 0) continue;
 
-        // Phase 3: Search Remaining 2 Corners (Top-Left & Bottom-Right)
         const remainingResults = await Promise.all([
             fetchPoint(points[2], groups),
             fetchPoint(points[3], groups)
@@ -280,9 +285,14 @@ function filterByPreferences(candidates, App) {
     });
 }
 
+/**
+ * Checks if a place is open based on its weekly periods.
+ * Converts current time and open/close times into absolute minutes from start of week (Sunday 00:00).
+ * Handles wrap-around logic for shift-based businesses (e.g., open till 02:00 next day).
+ */
 function checkPeriodAvailability(periods) {
     if (!periods || !Array.isArray(periods) || periods.length === 0) return null;
-    if (periods.length === 1 && !periods[0].close) return true;
+    if (periods.length === 1 && !periods[0].close) return true; // Always open
 
     const now = new Date();
     const nowAbs = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
@@ -292,8 +302,14 @@ function checkPeriodAvailability(periods) {
         if (!period.open || !period.close) continue;
         const openAbs = Number(period.open.day) * 1440 + Number(period.open.hour) * 60 + Number(period.open.minute);
         let closeAbs = Number(period.close.day) * 1440 + Number(period.close.hour) * 60 + Number(period.close.minute);
+
+        // Handle midnight wrap-around (e.g., Open Sun 10:00, Close Mon 02:00)
         if (closeAbs <= openAbs) closeAbs += WEEK_MINUTES;
-        if ((nowAbs >= openAbs && nowAbs < closeAbs) || (nowAbs + WEEK_MINUTES >= openAbs && nowAbs + WEEK_MINUTES < closeAbs)) return true;
+
+        // Check current week and "prev week overflow" for late-night shifts
+        if ((nowAbs >= openAbs && nowAbs < closeAbs) || (nowAbs + WEEK_MINUTES >= openAbs && nowAbs + WEEK_MINUTES < closeAbs)) {
+            return true;
+        }
     }
     return false;
 }
@@ -321,22 +337,19 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
         }));
     };
 
-    // Try reading from cache
+    // Try reading from cache. Photo methods are stripped during serialization, so they must be restored.
     try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
             const { data, timestamp } = JSON.parse(cached);
             if (now - timestamp < TTL) {
-                // Restore photo methods so UI doesn't crash
                 if (data.photos) data.photos = restorePhotoMethods(data.photos);
 
-                // Strip location-dependent fields from cache to ensure we don't show stale distances
+                // Strip location-dependent fields from cache to ensure fresh duration calculations 
+                // when the user moves but the place data is still cached.
                 delete data.durationText;
                 delete data.durationValue;
-                delete data.distanceText;
-                delete data.distanceValue;
 
-                // Preserve duration info which is calculated client-side
                 const { durationText, durationValue } = basicPlace;
                 Object.assign(basicPlace, data);
                 if (durationText) basicPlace.durationText = durationText;

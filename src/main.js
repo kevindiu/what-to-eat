@@ -90,6 +90,12 @@ const App = {
         this.initLocationSearch();
     },
 
+    /**
+     * Initializes the Google Places Autocomplete search.
+     * Implements a hybrid UX: 
+     * - A 'bar' mode for display 
+     * - An 'input' mode for typing (visible on click/focus)
+     */
     async initLocationSearch() {
         const input = getEl('location-input');
         const bar = getEl('location-bar');
@@ -100,7 +106,6 @@ const App = {
         const t = this.translations[this.currentLang];
         display.textContent = t.useCurrentLocation;
 
-        // Toggle Logic
         bar.onclick = (e) => {
             if (e.target.closest('.clear-icon')) return;
             bar.classList.add('hidden');
@@ -117,7 +122,6 @@ const App = {
 
         input.onblur = resetToBar;
 
-        // Clear Logic
         clearBtn.onclick = (e) => {
             e.stopPropagation();
             this.Data.manualLocation = null;
@@ -151,8 +155,7 @@ const App = {
                 this.UI.triggerHaptic(50);
             });
         } catch (e) {
-            // Autocomplete init failed, likely due to script load error or API key issue.
-            // Silent failure is acceptable as we fallback to "Use Current Location" logic.
+            // Silently fail if Library load fails; app defaults to Geolocation.
         }
     },
 

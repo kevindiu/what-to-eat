@@ -139,11 +139,11 @@ async function fetchNearby(Place, location, radius, App) {
 
     // Default Fallback: split all supported types into 3 groups
     if (searchGroups.length === 0) {
-        searchGroups = [
+        searchGroups.push(
             allTypes.slice(0, 20),
             allTypes.slice(20, 40),
             allTypes.slice(40)
-        ];
+        );
     }
 
     const fetchPoint = async (pos, types) => {

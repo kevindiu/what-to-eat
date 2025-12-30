@@ -11,7 +11,11 @@ const App = {
         mins: parseInt(localStorage.getItem('currentMins') || CONSTANTS.DEFAULT_MINS.toString()),
         includeClosed: localStorage.getItem('includeClosed') === 'true',
         get radius() { return this.mins * CONSTANTS.DEFAULT_SEARCH_RADIUS_MULTIPLIER; },
-        excluded: new Set(JSON.parse(localStorage.getItem('excludedTypes') || '[]')),
+        blacklist: new Set(JSON.parse(localStorage.getItem('blacklist') || localStorage.getItem('excludedTypes') || '[]')),
+        whitelist: new Set(JSON.parse(localStorage.getItem('whitelist') || '[]')),
+        get excluded() {
+            return this.filterMode === 'whitelist' ? this.whitelist : this.blacklist;
+        },
         filterMode: localStorage.getItem('filterMode') || 'blacklist', // 'blacklist' or 'whitelist'
         prices: new Set(JSON.parse(localStorage.getItem('selectedPrices') || '["1","2","3","4"]')),
         lang: (function () {
@@ -51,7 +55,8 @@ const App = {
         localStorage.setItem('currentMins', this.Config.mins.toString());
         localStorage.setItem('includeClosed', this.Config.includeClosed);
         localStorage.setItem('selectedPrices', JSON.stringify(Array.from(this.Config.prices)));
-        localStorage.setItem('excludedTypes', JSON.stringify(Array.from(this.Config.excluded)));
+        localStorage.setItem('blacklist', JSON.stringify(Array.from(this.Config.blacklist)));
+        localStorage.setItem('whitelist', JSON.stringify(Array.from(this.Config.whitelist)));
         localStorage.setItem('filterMode', this.Config.filterMode);
     },
 

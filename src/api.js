@@ -1,5 +1,6 @@
-import { getEl, getCurrentPosition, isPlaceMatch } from './utils.js';
+import { getEl, getCurrentPosition, isPlaceMatch, triggerHaptic } from './utils.js';
 import { CUISINE_MAPPING, GOOGLE_PLACE_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
+import { Cache } from './cache.js';
 
 
 
@@ -36,7 +37,7 @@ function mapPlaceData(place, translations) {
  * @param {Object} App - The application state object.
  */
 export async function findRestaurant(App) {
-    App.UI.triggerHaptic(50);
+    triggerHaptic(50);
     App.UI.showScreen('loading-screen');
     App.Data.history = [];
     const translations = App.translations[App.currentLang];
@@ -327,10 +328,6 @@ function checkPeriodAvailability(periods) {
 export async function fetchPlaceDetails(Place, basicPlace, App) {
     if (!basicPlace || !basicPlace.id) return basicPlace;
 
-    const cacheKey = `place_detail_${basicPlace.id}`;
-    const now = Date.now();
-    const TTL = 24 * 60 * 60 * 1000; // 24 hours
-
     const restorePhotoMethods = (photos) => {
         if (!photos) return photos;
         return photos.map(photo => ({
@@ -339,32 +336,17 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
         }));
     };
 
-    // Try reading from cache. Photo methods are stripped during serialization, so they must be restored.
-    try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-            const { data, timestamp } = JSON.parse(cached);
-            if (now - timestamp < TTL) {
-                if (data.photos) data.photos = restorePhotoMethods(data.photos);
+    const cachedData = Cache.get(basicPlace.id);
+    if (cachedData) {
+        if (cachedData.photos) cachedData.photos = restorePhotoMethods(cachedData.photos);
 
-                // Strip location-dependent fields from cache to ensure fresh duration calculations 
-                // when the user moves but the place data is still cached.
-                delete data.durationText;
-                delete data.durationValue;
-
-                const { durationText, durationValue } = basicPlace;
-                Object.assign(basicPlace, data);
-                if (durationText) basicPlace.durationText = durationText;
-                if (durationValue) basicPlace.durationValue = durationValue;
-
-                return basicPlace;
-            }
-        }
-    } catch (e) {
-        console.warn("Cache read error:", e);
+        // Ensure distance/duration persists across cache hits
+        const { durationText, durationValue } = basicPlace;
+        const merged = { ...basicPlace, ...cachedData };
+        if (durationText) merged.durationText = durationText;
+        if (durationValue) merged.durationValue = durationValue;
+        return merged;
     }
-
-
 
     try {
         const place = new Place({ id: basicPlace.id });
@@ -392,10 +374,7 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
         if (durationValue) basicPlace.durationValue = durationValue;
 
         // Persist to cache
-        localStorage.setItem(cacheKey, JSON.stringify({
-            data: mapped,
-            timestamp: now
-        }));
+        Cache.set(basicPlace.id, mapped);
 
         // Restore methods for the current session object
         if (basicPlace.photos) basicPlace.photos = restorePhotoMethods(basicPlace.photos);
@@ -462,7 +441,7 @@ export async function calculateDistances(origin, destinations) {
  * @param {Object} App - The application state.
  */
 export async function reRoll(App) {
-    App.UI.triggerHaptic([50, 30, 50]);
+    triggerHaptic([50, 30, 50]);
     if (App.Data.candidates.length === 0) return findRestaurant(App);
 
     let candidates = App.Data.candidates;
@@ -534,43 +513,3 @@ export async function restoreSession(App) {
     }
 }
 
-/**
- * Cleanup expired cache entries from localStorage.
- * Runs asynchronously via requestIdleCallback to avoid blocking startup.
- */
-export function cleanExpiredCache() {
-    const runCleanup = () => {
-        const now = Date.now();
-        const TTL = 24 * 60 * 60 * 1000;
-        let count = 0;
-
-        try {
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('place_detail_')) {
-                    try {
-                        const cached = localStorage.getItem(key);
-                        if (cached) {
-                            const { timestamp } = JSON.parse(cached);
-                            if (now - timestamp > TTL) {
-                                localStorage.removeItem(key);
-                                count++;
-                                i--; // Adjust index after removal
-                            }
-                        }
-                    } catch (e) {
-                        localStorage.removeItem(key); // Remove malformed
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn("Garbage collection failed:", e);
-        }
-    };
-
-    if ('requestIdleCallback' in window) {
-        requestIdleCallback(runCleanup, { timeout: 5000 });
-    } else {
-        setTimeout(runCleanup, 2000);
-    }
-}

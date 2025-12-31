@@ -1,9 +1,10 @@
 import { translations } from './translations.js';
 import { UI } from './ui.js';
 import { PWA } from './pwa.js';
-import { findRestaurant, reRoll, restoreSession, cleanExpiredCache } from './api.js';
+import { findRestaurant, reRoll, restoreSession } from './api.js';
+import { Cache } from './cache.js';
 import { CONSTANTS } from './constants.js';
-import { getEl } from './utils.js';
+import { getEl, triggerHaptic } from './utils.js';
 import './style.css';
 
 const App = {
@@ -81,7 +82,7 @@ const App = {
      * Initialize the application.
      */
     init() {
-        cleanExpiredCache();
+        Cache.clean();
         const t = this.translations[this.currentLang];
         this.UI.updateStrings(t, this.Config, this.Data);
         this.UI.initFilters(t, this.Config, () => this.saveSettings());
@@ -130,7 +131,7 @@ const App = {
             input.value = "";
             display.textContent = t.useCurrentLocation;
             clearBtn.classList.add('hidden');
-            this.UI.triggerHaptic(30);
+            triggerHaptic(30);
         };
 
         try {
@@ -154,7 +155,7 @@ const App = {
                 clearBtn.classList.remove('hidden');
                 input.value = place.name;
                 resetToBar();
-                this.UI.triggerHaptic(50);
+                triggerHaptic(50);
             });
         } catch (e) {
             // Silently fail if Library load fails; app defaults to Geolocation.
@@ -192,7 +193,7 @@ const App = {
                 const valDisp = getEl('distance-val');
                 if (valDisp) valDisp.textContent = mins;
                 this.saveSettings();
-                this.UI.triggerHaptic(10);
+                triggerHaptic(10);
             };
         }
 
@@ -202,7 +203,7 @@ const App = {
                 this.Config.includeClosed = !this.Config.includeClosed;
                 this.saveSettings();
                 this.UI.updateStrings(t(), this.Config, this.Data);
-                this.UI.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
+                triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
         }
 
@@ -213,7 +214,7 @@ const App = {
                 this.saveSettings();
                 this.UI.updateStrings(t(), this.Config, this.Data);
                 this.UI.initFilters(t(), this.Config, () => this.saveSettings());
-                this.UI.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
+                triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
         }
     }

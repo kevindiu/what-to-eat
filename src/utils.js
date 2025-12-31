@@ -45,3 +45,12 @@ export function isPlaceMatch(place, keywords) {
         types.some(pt => pt.toLowerCase().includes(k.toLowerCase()))
     );
 }
+/**
+ * Triggers a haptic feedback if supported by the device.
+ * @param {number|Array} duration - Duration of the vibration in ms.
+ */
+export function triggerHaptic(duration) {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try { navigator.vibrate(duration); } catch (e) { }
+    }
+}

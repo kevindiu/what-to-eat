@@ -1,4 +1,4 @@
-import { getEl, isPlaceMatch } from './utils.js';
+import { getEl, isPlaceMatch, triggerHaptic } from './utils.js';
 import { reRoll } from './api.js';
 import { CUISINE_MAPPING, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import confetti from 'canvas-confetti';
@@ -131,7 +131,7 @@ export const UI = {
                     div.classList.add('active');
                 }
                 if (typeof onSettingsChange === 'function') onSettingsChange();
-                this.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
+                triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
             list.appendChild(div);
         });
@@ -149,7 +149,7 @@ export const UI = {
                     item.classList.add('active');
                 }
                 if (typeof onSettingsChange === 'function') onSettingsChange();
-                this.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
+                triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
         });
     },
@@ -586,10 +586,6 @@ export const UI = {
             return parts[1] ? parts[1].trim() : match;
         }
         return translations.noHoursInfo;
-    },
-
-    triggerHaptic(duration) {
-        if (navigator.vibrate) navigator.vibrate(duration || CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
     },
 
     triggerConfetti() {

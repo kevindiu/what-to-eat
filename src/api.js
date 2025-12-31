@@ -37,7 +37,7 @@ export async function findRestaurant(App) {
     App.UI.triggerHaptic(50);
     App.UI.showScreen('loading-screen');
     App.Data.history = [];
-    const t = App.translations[App.currentLang];
+    const translations = App.translations[App.currentLang];
 
     try {
         let position;
@@ -369,6 +369,7 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
         // Must fetch BASIC + DETAIL fields to ensure mapPlaceData has everything it needs
         await place.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
 
+        const translations = App.translations[App.currentLang];
         const mapped = mapPlaceData(place, translations);
 
         // Pre-fetch photo URIs because the getURI method is lost after JSON.stringify

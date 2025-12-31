@@ -87,6 +87,7 @@ const App = {
         this.setupEventListeners();
         this.PWA.init(this.translations, this.currentLang);
         restoreSession(this);
+        this.UI.initPhotoModal(this);
         this.initLocationSearch();
     },
 

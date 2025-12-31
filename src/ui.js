@@ -237,6 +237,12 @@ export const UI = {
         img.style.opacity = '0';
         img.style.transition = 'opacity 0.3s ease';
         img.onload = () => { img.style.opacity = '1'; };
+        img.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const index = Array.from(img.parentElement.children).indexOf(img);
+            this.openPhotoModal(index);
+        };
         img.onerror = function () {
             if (!this.getAttribute('data-retried')) {
                 this.setAttribute('data-retried', 'true');
@@ -248,7 +254,6 @@ export const UI = {
                 this.style.display = 'none';
             }
         };
-        img.onclick = () => window.open(img.src, '_blank');
         return img;
     },
 
@@ -404,6 +409,78 @@ export const UI = {
             console.error("Map Render Error:", e);
             container.style.display = 'none';
         }
+    },
+
+    // --- Photo Modal Management ---
+
+    openPhotoModal(index) {
+        const app = this.App || window.App; // Fallback to window.App if available
+        if (!app?.Data?.currentPlace?.photos) {
+            console.error("Photo Modal Error: No photos found in current place data.");
+            return;
+        }
+
+        this.currentPhotoIndex = index;
+        const modal = getEl('photo-modal');
+        const img = getEl('modal-img');
+        const photos = app.Data.currentPlace.photos;
+        const photo = photos[index];
+
+        if (!photo) return;
+
+        img.src = typeof photo.getURI === 'function' ? photo.getURI({ maxHeight: 1200 }) : (photo.cachedURI || "");
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        const hasMultiple = photos.length > 1;
+        getEl('modal-prev').style.display = hasMultiple ? 'block' : 'none';
+        getEl('modal-next').style.display = hasMultiple ? 'block' : 'none';
+    },
+
+    closePhotoModal() {
+        const modal = getEl('photo-modal');
+        if (modal) modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    },
+
+    navigatePhoto(step) {
+        const photos = this.App?.Data?.currentPlace?.photos;
+        if (!photos || photos.length <= 1) return;
+
+        this.currentPhotoIndex = (this.currentPhotoIndex + step + photos.length) % photos.length;
+        const img = getEl('modal-img');
+        const photo = photos[this.currentPhotoIndex];
+
+        // Subtle fade effect during navigation
+        img.style.opacity = '0.5';
+        img.src = photo.getURI({ maxHeight: 1000 });
+        img.onload = () => { img.style.opacity = '1'; };
+    },
+
+    initPhotoModal(App) {
+        this.App = App;
+        const prevBtn = getEl('modal-prev');
+        const nextBtn = getEl('modal-next');
+        const modalImg = getEl('modal-img');
+        const overlay = document.querySelector('.modal-overlay');
+
+        if (modalImg) {
+            modalImg.onclick = () => this.closePhotoModal();
+            modalImg.style.cursor = 'zoom-out';
+        }
+        if (overlay) overlay.onclick = () => this.closePhotoModal();
+        if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); this.navigatePhoto(-1); };
+        if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); this.navigatePhoto(1); };
+
+        // Keyboard support
+        window.addEventListener('keydown', (e) => {
+            const modal = getEl('photo-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                if (e.key === 'Escape') this.closePhotoModal();
+                if (e.key === 'ArrowLeft') this.navigatePhoto(-1);
+                if (e.key === 'ArrowRight') this.navigatePhoto(1);
+            }
+        });
     },
 
     renderUserLocationOnMap(map, userPos, placeLoc, AdvancedMarkerElement) {

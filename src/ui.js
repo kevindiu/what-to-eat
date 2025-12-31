@@ -32,14 +32,19 @@ export const UI = {
         }
     },
 
-    updateStrings(App) {
-        const translations = App.translations[App.currentLang];
+    /**
+     * Updates all UI strings based on the current language and configuration.
+     * @param {Object} translations - The translation object for the current language.
+     * @param {Object} config - The app configuration object.
+     * @param {Object} data - The app data object.
+     */
+    updateStrings(translations, config, data) {
         const mappings = {
             'location-title': translations.locationTitle,
             'app-title': translations.title,
             'app-subtitle': translations.subtitle,
             'price-title': translations.priceTitle,
-            'filter-title': App.Config.filterMode === 'whitelist' ? translations.filterModeWhitelist : translations.filterModeBlacklist,
+            'filter-title': config.filterMode === 'whitelist' ? translations.filterModeWhitelist : translations.filterModeBlacklist,
             'find-btn': translations.findBtn,
             'retry-btn': translations.retry,
             'back-btn': translations.backBtn,
@@ -63,7 +68,7 @@ export const UI = {
         if (locInput) locInput.placeholder = translations.searchPlaceholder;
 
         const locDisplay = getEl('location-display');
-        if (locDisplay && !App.Data.manualLocation) {
+        if (locDisplay && !data.manualLocation) {
             locDisplay.textContent = translations.useCurrentLocation;
         }
 
@@ -73,14 +78,14 @@ export const UI = {
             distTitle.appendChild(document.createTextNode(`${translations.distanceTitle} (`));
             const span = document.createElement('span');
             span.id = 'distance-val';
-            span.textContent = App.Config.mins;
+            span.textContent = config.mins;
             distTitle.appendChild(span);
             distTitle.appendChild(document.createTextNode(' mins)'));
         }
 
         const includeClosedBtn = getEl('include-closed-btn');
         if (includeClosedBtn) {
-            const isActive = App.Config.includeClosed;
+            const isActive = config.includeClosed;
             includeClosedBtn.classList.toggle('active', isActive);
 
             const label = getEl('include-closed-label');
@@ -91,35 +96,41 @@ export const UI = {
 
         const filterModeLabel = getEl('filter-mode-label');
         if (filterModeLabel) {
-            filterModeLabel.textContent = App.Config.filterMode === 'whitelist' ? translations.filterToggleBlacklist : translations.filterToggleWhitelist;
+            filterModeLabel.textContent = config.filterMode === 'whitelist' ? translations.filterToggleBlacklist : translations.filterToggleWhitelist;
         }
 
         document.querySelectorAll('.lang-selector span').forEach(span => {
-            span.classList.toggle('active', span.dataset.lang === App.currentLang);
+            span.classList.toggle('active', span.dataset.lang === data.currentLang);
         });
     },
 
-    initFilters(App) {
+    /**
+     * Initializes the filter and price selection UI.
+     * @param {Object} translations - The translation object.
+     * @param {Object} config - The app configuration object.
+     * @param {Function} onSettingsChange - Callback called when settings are updated.
+     */
+    initFilters(translations, config, onSettingsChange) {
         const list = getEl('filter-list');
         if (!list) return;
 
         list.innerHTML = '';
-        const cats = App.translations[App.currentLang].categories;
+        const cats = translations.categories;
 
         Object.keys(cats).forEach(id => {
             const div = document.createElement('div');
-            div.className = `filter-item ${App.Config.excluded.has(id) ? 'active' : ''}`;
+            div.className = `filter-item ${config.excluded.has(id) ? 'active' : ''}`;
             div.textContent = cats[id];
             div.onclick = () => {
-                const currentlyExcluded = App.Config.excluded.has(id);
+                const currentlyExcluded = config.excluded.has(id);
                 if (currentlyExcluded) {
-                    App.Config.excluded.delete(id);
+                    config.excluded.delete(id);
                     div.classList.remove('active');
                 } else {
-                    App.Config.excluded.add(id);
+                    config.excluded.add(id);
                     div.classList.add('active');
                 }
-                App.saveSettings();
+                if (typeof onSettingsChange === 'function') onSettingsChange();
                 this.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
             list.appendChild(div);
@@ -127,28 +138,28 @@ export const UI = {
 
         document.querySelectorAll('.price-item').forEach(item => {
             const priceValue = item.dataset.price;
-            item.classList.toggle('active', App.Config.prices.has(priceValue));
+            item.classList.toggle('active', config.prices.has(priceValue));
             item.onclick = () => {
-                const currentlySelected = App.Config.prices.has(priceValue);
+                const currentlySelected = config.prices.has(priceValue);
                 if (currentlySelected) {
-                    App.Config.prices.delete(priceValue);
+                    config.prices.delete(priceValue);
                     item.classList.remove('active');
                 } else {
-                    App.Config.prices.add(priceValue);
+                    config.prices.add(priceValue);
                     item.classList.add('active');
                 }
-                App.saveSettings();
+                if (typeof onSettingsChange === 'function') onSettingsChange();
                 this.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
         });
     },
 
-    async showResult(App, place, options = {}) {
+    async showResult(place, translations, config, data, options = {}) {
         const { fromShare = false } = options;
         this.showScreen('result-screen');
 
-        App.Data.currentPlace = place;
-        this.updateHistory(App, place);
+        data.currentPlace = place;
+        this.updateHistory(data, place);
 
         const elements = this.getElements();
 
@@ -156,8 +167,8 @@ export const UI = {
         this.renderHeader(elements, place, fromShare);
         this.renderPhotos(elements, place);
         this.renderReviews(elements, place);
-        this.renderDetails(elements, place, App);
-        this.renderMap(elements.mapCont, place, App);
+        this.renderDetails(elements, place, translations);
+        this.renderMap(elements.mapCont, place, data.userPos);
 
         if (!fromShare) {
             this.triggerConfetti();
@@ -166,11 +177,11 @@ export const UI = {
         }
     },
 
-    updateHistory(App, place) {
-        App.Data.lastPickedId = place.id;
-        if (!App.Data.history) App.Data.history = [];
-        if (!App.Data.history.includes(place.id)) {
-            App.Data.history.push(place.id);
+    updateHistory(data, place) {
+        data.lastPickedId = place.id;
+        if (!data.history) data.history = [];
+        if (!data.history.includes(place.id)) {
+            data.history.push(place.id);
         }
     },
 
@@ -317,9 +328,7 @@ export const UI = {
         return item;
     },
 
-    renderDetails(elements, place, App) {
-        const translations = App.translations[App.currentLang];
-
+    renderDetails(elements, place, translations) {
         // Rating
         const hasRating = typeof place.rating === 'number' && place.rating > 0;
         if (elements.rating) elements.rating.textContent = hasRating ? place.rating : (translations.ratingNew.replace(/⭐\s*/, ''));
@@ -330,7 +339,7 @@ export const UI = {
         if (elements.priceCont) elements.priceCont.style.display = priceText ? 'flex' : 'none';
 
         // Category
-        const catFull = this.getPlaceCategory(place, App);
+        const catFull = this.getPlaceCategory(place, translations);
         if (catFull) {
             const emojiMatch = catFull.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*(.*)$/u);
             if (elements.catIcon) elements.catIcon.textContent = emojiMatch ? emojiMatch[1] : "🍴";
@@ -339,7 +348,7 @@ export const UI = {
         } else if (elements.catCont) elements.catCont.style.display = 'none';
 
         // Opening Hours
-        const todayHours = this.getTodayHours(place, App);
+        const todayHours = this.getTodayHours(place, translations);
         if (elements.hours) elements.hours.textContent = todayHours;
         if (elements.hoursCont) elements.hoursCont.style.display = 'flex'; // Always show if we have a message (including "No info")
 
@@ -365,7 +374,7 @@ export const UI = {
      * Renders a Google Map focused on the restaurant, with a custom re-center control.
      * Uses the Advanced Marker library for a premium feel.
      */
-    async renderMap(container, place, App) {
+    async renderMap(container, place, userPos) {
         if (!container) return;
         if (!place.location) {
             container.style.display = 'none';
@@ -396,12 +405,12 @@ export const UI = {
                 title: place.name
             });
 
-            if (App.Data.userPos) {
-                this.renderUserLocationOnMap(map, App.Data.userPos, place.location, AdvancedMarkerElement);
+            if (userPos) {
+                this.renderUserLocationOnMap(map, userPos, place.location, AdvancedMarkerElement);
             }
 
             // Cross-platform re-center control (custom UI to match branding)
-            const centerBtn = this.createMapCenterControl(map, place.location, App.Data.userPos);
+            const centerBtn = this.createMapCenterControl(map, place.location, userPos);
             map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerBtn);
 
             google.maps.event.addListenerOnce(map, 'idle', () => container.classList.remove('skeleton'));
@@ -524,22 +533,22 @@ export const UI = {
         return centerBtn;
     },
 
-    startSlotAnimation(App) {
+    startSlotAnimation(candidates, onComplete) {
         const slotName = getEl('slot-name');
         if (!slotName) return;
         let count = 0;
         const interval = setInterval(() => {
-            const temp = App.Data.candidates[Math.floor(Math.random() * App.Data.candidates.length)];
+            const temp = candidates[Math.floor(Math.random() * candidates.length)];
             slotName.textContent = temp?.name || "...";
             if (++count > 15) {
                 clearInterval(interval);
-                reRoll(App);
+                if (typeof onComplete === 'function') onComplete();
             }
         }, 100);
     },
 
-    getPlaceCategory(place, App) {
-        const categoriesTranslations = App.translations[App.currentLang].categories;
+    getPlaceCategory(place, translations) {
+        const categoriesTranslations = translations.categories;
         for (const [id, keywords] of Object.entries(CUISINE_MAPPING)) {
             if (isPlaceMatch(place, keywords)) return categoriesTranslations[id];
         }
@@ -558,17 +567,19 @@ export const UI = {
      * Resolves today's opening hours from Google's weekdayDescriptions array.
      * Uses fuzzy string matching to find the correct day regardless of the user's locale.
      */
-    getTodayHours(place, App) {
-        const translations = App.translations[App.currentLang];
+    getTodayHours(place, translations) {
         const descriptions = place.openingHours?.weekdayDescriptions;
         if (!descriptions || descriptions.length !== 7) return translations.noHoursInfo;
 
         const today = new Date();
-        // Match day name in both local and English as a fallback for various Google API behaviors.
-        const dayName = today.toLocaleDateString(App.currentLang === 'en' ? 'en-US' : (App.currentLang === 'ja' ? 'ja-JP' : 'zh-HK'), { weekday: 'long' });
-        const enDayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+        // Fallback matching for day names
+        const dayNames = [
+            today.toLocaleDateString('zh-HK', { weekday: 'long' }),
+            today.toLocaleDateString('en-US', { weekday: 'long' }),
+            today.toLocaleDateString('ja-JP', { weekday: 'long' })
+        ];
 
-        const match = descriptions.find(d => d.includes(dayName) || d.includes(enDayName)) || descriptions[(today.getDay() + 6) % 7];
+        const match = descriptions.find(d => dayNames.some(name => d.includes(name))) || descriptions[(today.getDay() + 6) % 7];
 
         if (match) {
             const parts = match.split(/: |：/);
@@ -591,11 +602,9 @@ export const UI = {
         });
     },
 
-    async shareCurrentPlace(App) {
-        const place = App.Data.currentPlace;
+    async shareCurrentPlace(place, translations, userPos) {
         if (!place) return;
-        const translations = App.translations[App.currentLang];
-        const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.id}${App.Data.userPos ? `&lat=${App.Data.userPos.lat}&lng=${App.Data.userPos.lng}` : ''}`;
+        const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.id}${userPos ? `&lat=${userPos.lat}&lng=${userPos.lng}` : ''}`;
         const shareText = translations.shareText.replace('${name}', place.name);
 
         if (navigator.share) {

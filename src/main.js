@@ -82,8 +82,9 @@ const App = {
      */
     init() {
         cleanExpiredCache();
-        this.UI.updateStrings(this);
-        this.UI.initFilters(this);
+        const t = this.translations[this.currentLang];
+        this.UI.updateStrings(t, this.Config, this.Data);
+        this.UI.initFilters(t, this.Config, () => this.saveSettings());
         this.setupEventListeners();
         this.PWA.init(this.translations, this.currentLang);
         restoreSession(this);
@@ -161,6 +162,8 @@ const App = {
     },
 
     setupEventListeners() {
+        const t = () => this.translations[this.currentLang];
+
         // App buttons
         const findBtn = getEl('find-btn');
         if (findBtn) findBtn.onclick = () => findRestaurant(this);
@@ -169,7 +172,7 @@ const App = {
         if (retryBtn) retryBtn.onclick = () => reRoll(this);
 
         const shareBtn = getEl('share-btn');
-        if (shareBtn) shareBtn.onclick = () => this.UI.shareCurrentPlace(this);
+        if (shareBtn) shareBtn.onclick = () => this.UI.shareCurrentPlace(this.Data.currentPlace, t(), this.Data.userPos);
 
         const backBtn = getEl('back-btn');
         if (backBtn) backBtn.onclick = () => this.UI.showScreen('main-flow');
@@ -183,33 +186,34 @@ const App = {
         const slider = getEl('distance-slider');
         if (slider) {
             slider.value = this.Config.mins;
-            slider.oninput = function () {
-                const mins = parseInt(this.value);
-                App.Config.mins = mins;
-                getEl('distance-val').textContent = mins;
-                App.saveSettings();
-                App.UI.triggerHaptic(10);
+            slider.oninput = () => {
+                const mins = parseInt(slider.value);
+                this.Config.mins = mins;
+                const valDisp = getEl('distance-val');
+                if (valDisp) valDisp.textContent = mins;
+                this.saveSettings();
+                this.UI.triggerHaptic(10);
             };
         }
 
         const includeClosedBtn = getEl('include-closed-btn');
         if (includeClosedBtn) {
             includeClosedBtn.onclick = () => {
-                App.Config.includeClosed = !App.Config.includeClosed;
-                App.saveSettings();
-                App.UI.updateStrings(App); // Re-render to update class and text
-                App.UI.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
+                this.Config.includeClosed = !this.Config.includeClosed;
+                this.saveSettings();
+                this.UI.updateStrings(t(), this.Config, this.Data);
+                this.UI.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
         }
 
         const filterModeToggle = getEl('filter-mode-toggle');
         if (filterModeToggle) {
             filterModeToggle.onclick = () => {
-                App.Config.filterMode = App.Config.filterMode === 'blacklist' ? 'whitelist' : 'blacklist';
-                App.saveSettings();
-                App.UI.updateStrings(App);
-                App.UI.initFilters(App);
-                App.UI.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
+                this.Config.filterMode = this.Config.filterMode === 'blacklist' ? 'whitelist' : 'blacklist';
+                this.saveSettings();
+                this.UI.updateStrings(t(), this.Config, this.Data);
+                this.UI.initFilters(t(), this.Config, () => this.saveSettings());
+                this.UI.triggerHaptic(CONSTANTS.HAPTIC_FEEDBACK_DURATION.SHORT);
             };
         }
     }

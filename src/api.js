@@ -76,7 +76,7 @@ export async function findRestaurant(App) {
         const winner = candidates[Math.floor(Math.random() * candidates.length)];
         App.Data.currentPlace = await fetchPlaceDetails(Place, winner, App);
 
-        App.UI.startSlotAnimation(App);
+        App.UI.startSlotAnimation(App.Data.candidates, () => reRoll(App));
     } catch (error) {
         console.error("Search Error:", error);
         handleError(error, translations, App);
@@ -484,7 +484,7 @@ export async function reRoll(App) {
     const { Place } = await google.maps.importLibrary("places");
     const detailedWinner = await fetchPlaceDetails(Place, winner, App);
 
-    App.UI.showResult(App, detailedWinner);
+    App.UI.showResult(detailedWinner, App.translations[App.currentLang], App.Config, App.Data);
 }
 
 /**
@@ -527,7 +527,7 @@ export async function restoreSession(App) {
             if (places && places.length > 0) App.Data.candidates = await processCandidates(places, App.Data.userPos, App);
         }
 
-        App.UI.showResult(App, restored, { fromShare: true });
+        App.UI.showResult(restored, App.translations[App.currentLang], App.Config, App.Data, { fromShare: true });
     } catch (e) {
         console.error("Session restoration failed:", e);
         App.UI.showScreen('main-flow');

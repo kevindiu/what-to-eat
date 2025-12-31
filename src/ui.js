@@ -204,8 +204,9 @@ export const UI = {
     renderHeader(elements, place, fromShare) {
         if (elements.name) elements.name.textContent = place.name;
         if (elements.address) elements.address.textContent = place.vicinity;
-        if (elements.reviewsViewAll) elements.reviewsViewAll.href = place.reviewsUri || place.googleMapsURI || '#';
-        if (elements.photosViewAll) elements.photosViewAll.href = place.photosUri || place.googleMapsURI || '#';
+
+        if (elements.reviewsViewAll) elements.reviewsViewAll.href = place.reviewsUri || place.googleMapsUri || '#';
+        if (elements.photosViewAll) elements.photosViewAll.href = place.photosUri || place.googleMapsUri || '#';
     },
 
     renderPhotos(elements, place) {

@@ -24,9 +24,9 @@ function mapPlaceData(place, translations) {
         durationValue: null,
         photos: place.photos || [],
         reviews: place.reviews || [],
-        googleMapsURI: place.googleMapsURI,
-        reviewsUri: place.googleMapsLinks?.reviewsUri,
-        photosUri: place.googleMapsLinks?.photosUri
+        googleMapsUri: place.googleMapsURI || place.googleMapsUri || place.googleMapsLinks?.placeURI || place.googleMapsLinks?.placeUri,
+        reviewsUri: place.googleMapsLinks?.reviewsUri || place.googleMapsLinks?.reviewsURI,
+        photosUri: place.googleMapsLinks?.photosUri || place.googleMapsLinks?.photosURI
     };
 }
 

@@ -57,7 +57,7 @@ export const BASIC_PLACE_FIELDS = [
 // Detailed fields for the winner (Expensive SKUs like photos and reviews)
 export const DETAIL_PLACE_FIELDS = [
     "id", "formattedAddress", "regularOpeningHours", "nationalPhoneNumber",
-    "photos", "reviews", "googleMapsURI"
+    "photos", "reviews", "googleMapsURI", "googleMapsLinks"
 ];
 
 export const PRICE_LEVEL_MAP = {

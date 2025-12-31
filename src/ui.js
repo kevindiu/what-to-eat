@@ -204,8 +204,8 @@ export const UI = {
     renderHeader(elements, place, fromShare) {
         if (elements.name) elements.name.textContent = place.name;
         if (elements.address) elements.address.textContent = place.vicinity;
-        if (elements.reviewsViewAll) elements.reviewsViewAll.href = place.googleMapsURI || '#';
-        if (elements.photosViewAll) elements.photosViewAll.href = place.googleMapsURI || '#';
+        if (elements.reviewsViewAll) elements.reviewsViewAll.href = place.reviewsUri || place.googleMapsURI || '#';
+        if (elements.photosViewAll) elements.photosViewAll.href = place.photosUri || place.googleMapsURI || '#';
     },
 
     renderPhotos(elements, place) {
@@ -523,7 +523,9 @@ export const UI = {
         if (navigator.share) {
             try {
                 await navigator.share({ title: place.name, text: shareText, url: shareUrl });
-            } catch (e) { console.log("Share failed", e); }
+            } catch (e) {
+                console.error("Share failed:", e);
+            }
         } else {
             try {
                 await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);

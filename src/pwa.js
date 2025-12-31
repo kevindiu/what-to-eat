@@ -34,7 +34,7 @@ export const PWA = {
             btn.addEventListener('click', () => this.handleInstall());
             if (this.isIOS() && !this.isStandalone()) {
                 getEl('install-container').classList.remove('hidden');
-                btn.innerHTML = `<span>${translations[currentLang].iosInstallText}</span>`;
+                btn.innerHTML = `<span>${this.translations[this.currentLang].iosInstallText}</span>`;
                 btn.classList.add('ios-guide');
             }
         }

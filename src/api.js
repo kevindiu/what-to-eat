@@ -24,7 +24,9 @@ function mapPlaceData(place, translations) {
         durationValue: null,
         photos: place.photos || [],
         reviews: place.reviews || [],
-        googleMapsURI: place.googleMapsURI
+        googleMapsURI: place.googleMapsURI,
+        reviewsUri: place.googleMapsLinks?.reviewsUri,
+        photosUri: place.googleMapsLinks?.photosUri
     };
 }
 
@@ -225,10 +227,10 @@ function getSearchTypeGroups(App) {
  * @returns {Promise<Array>} Filtered list of eligible places.
  */
 async function processCandidates(places, userLoc, App) {
-    const t = App.translations[App.currentLang];
+    const translations = App.translations[App.currentLang];
 
     // 1. Map and check basic operability
-    const operational = await filterOperational(places, App, t);
+    const operational = await filterOperational(places, App, translations);
 
     // 2. Filter by range
     const withinRange = await filterByDistance(userLoc, operational, App);

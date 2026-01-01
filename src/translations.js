@@ -54,7 +54,7 @@ export const translations = {
         noHoursInfo: "冇寫幾點開門",
         priceFree: "免費",
         walkMins: "🚶 步行約 ${mins} 分鐘",
-        shareBtn: "📤 些牙間餐廳",
+        shareBtn: "📤 Share比朋友",
         shareText: "我喺「食乜好」抽中咗呢間：${name}！一齊去試下？🥗",
         includeClosed: "包含已關門餐廳 🌙",
         excludeClosed: "只選營業中餐廳 ☀️",

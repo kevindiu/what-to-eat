@@ -168,9 +168,14 @@
     <div id="photo-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">
+            <button id="modal-close" class="modal-close">&times;</button>
             <button id="modal-prev" class="modal-nav prev">❮</button>
-            <div class="modal-image-container">
-                <img id="modal-img" src="" alt="Restaurant photo">
+            <div class="modal-image-container" id="modal-container">
+                <div id="image-track">
+                    <img id="photo-prev" class="track-img" src="" alt="Previous photo">
+                    <img id="photo-curr" class="track-img" src="" alt="Current photo">
+                    <img id="photo-next" class="track-img" src="" alt="Next photo">
+                </div>
             </div>
             <button id="modal-next" class="modal-nav next">❯</button>
         </div>

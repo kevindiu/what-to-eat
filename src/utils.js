@@ -54,3 +54,13 @@ export function triggerHaptic(duration) {
         try { navigator.vibrate(duration); } catch (e) { }
     }
 }
+/**
+ * Generates a robust Google Maps search URL using place name and ID as a fallback.
+ * @param {string} name - Restaurant name.
+ * @param {string} id - Google Place ID.
+ * @returns {string} The formatted URL.
+ */
+export function getGoogleMapsSearchUrl(name, id) {
+    if (!name || !id) return '#';
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=${id}`;
+}

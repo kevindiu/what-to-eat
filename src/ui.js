@@ -1,4 +1,4 @@
-import { getEl, isPlaceMatch, triggerHaptic } from './utils.js';
+import { getEl, isPlaceMatch, triggerHaptic, getGoogleMapsSearchUrl } from './utils.js';
 import { reRoll } from './api.js';
 import { CUISINE_MAPPING, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import confetti from 'canvas-confetti';
@@ -220,9 +220,7 @@ export const UI = {
     renderPhotos(elements, place) {
         if (!elements.photoSection) return;
 
-        if (elements.photosViewAll) {
-            elements.photosViewAll.href = place.photosUri || place.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`;
-        }
+        if (elements.photosViewAll) elements.photosViewAll.href = place.photosUri || place.googleMapsUri || getGoogleMapsSearchUrl(place.name, place.id);
 
         if (place.photos && place.photos.length > 0) {
             elements.photoSection.classList.remove('hidden');
@@ -272,9 +270,7 @@ export const UI = {
     renderReviews(elements, place) {
         if (!elements.reviewsCont || !elements.reviewsList) return;
 
-        if (elements.reviewsViewAll) {
-            elements.reviewsViewAll.href = place.reviewsUri || place.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`;
-        }
+        if (elements.reviewsViewAll) elements.reviewsViewAll.href = place.reviewsUri || place.googleMapsUri || getGoogleMapsSearchUrl(place.name, place.id);
 
         if (place.reviews && place.reviews.length > 0) {
             elements.reviewsCont.classList.remove('hidden');
@@ -355,7 +351,7 @@ export const UI = {
         // Opening Hours
         const todayHours = this.getTodayHours(place, translations);
         if (elements.hours) elements.hours.textContent = todayHours;
-        if (elements.hoursCont) elements.hoursCont.style.display = 'flex'; // Always show if we have a message (including "No info")
+        if (elements.hoursCont) elements.hoursCont.style.display = 'flex';
 
         // Distance
         if (place.durationText) {
@@ -372,9 +368,7 @@ export const UI = {
             }
         } else if (elements.phone) elements.phone.style.display = 'none';
 
-        if (elements.mapsBtn) {
-            elements.mapsBtn.href = place.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.id}`;
-        }
+        if (elements.mapsBtn) elements.mapsBtn.href = place.googleMapsUri || getGoogleMapsSearchUrl(place.name, place.id);
     },
 
     /**
@@ -430,27 +424,36 @@ export const UI = {
     // --- Photo Modal Management ---
 
     openPhotoModal(index) {
-        const app = this.App || window.App; // Fallback to window.App if available
-        if (!app?.Data?.currentPlace?.photos) {
-            console.error("Photo Modal Error: No photos found in current place data.");
-            return;
-        }
+        const app = this.App || window.App;
+        if (!app?.Data?.currentPlace?.photos) return;
 
         this.currentPhotoIndex = index;
         const modal = getEl('photo-modal');
-        const img = getEl('modal-img');
         const photos = app.Data.currentPlace.photos;
-        const photo = photos[index];
 
-        if (!photo) return;
-
-        img.src = typeof photo.getURI === 'function' ? photo.getURI({ maxHeight: 1200 }) : (photo.cachedURI || "");
+        this.updateModalImages(photos);
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
 
         const hasMultiple = photos.length > 1;
         getEl('modal-prev').style.display = hasMultiple ? 'block' : 'none';
         getEl('modal-next').style.display = hasMultiple ? 'block' : 'none';
+    },
+
+    updateModalImages(photos) {
+        const prevIdx = (this.currentPhotoIndex - 1 + photos.length) % photos.length;
+        const nextIdx = (this.currentPhotoIndex + 1) % photos.length;
+
+        const setImg = (id, idx) => {
+            const el = getEl(id);
+            if (!el) return;
+            const photo = photos[idx];
+            el.src = photo.getURI({ maxHeight: 1200 });
+        };
+
+        setImg('photo-prev', prevIdx);
+        setImg('photo-curr', this.currentPhotoIndex);
+        setImg('photo-next', nextIdx);
     },
 
     closePhotoModal() {
@@ -464,29 +467,79 @@ export const UI = {
         if (!photos || photos.length <= 1) return;
 
         this.currentPhotoIndex = (this.currentPhotoIndex + step + photos.length) % photos.length;
-        const img = getEl('modal-img');
-        const photo = photos[this.currentPhotoIndex];
-
-        // Subtle fade effect during navigation
-        img.style.opacity = '0.5';
-        img.src = photo.getURI({ maxHeight: 1000 });
-        img.onload = () => { img.style.opacity = '1'; };
+        this.updateModalImages(photos);
     },
 
     initPhotoModal(App) {
         this.App = App;
         const prevBtn = getEl('modal-prev');
         const nextBtn = getEl('modal-next');
-        const modalImg = getEl('modal-img');
+        const closeBtn = getEl('modal-close');
+        const track = getEl('image-track');
         const overlay = document.querySelector('.modal-overlay');
 
-        if (modalImg) {
-            modalImg.onclick = () => this.closePhotoModal();
-            modalImg.style.cursor = 'zoom-out';
-        }
         if (overlay) overlay.onclick = () => this.closePhotoModal();
+        if (closeBtn) closeBtn.onclick = () => this.closePhotoModal();
         if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); this.navigatePhoto(-1); };
         if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); this.navigatePhoto(1); };
+
+        // Click images to close
+        if (track) {
+            track.querySelectorAll('.track-img').forEach(img => {
+                img.onclick = () => this.closePhotoModal();
+                img.style.cursor = 'zoom-out';
+            });
+        }
+
+        // Swipe Detection (Native Track Feel)
+        let touchStartX = 0;
+        let isSwiping = false;
+        let startTransform = -33.333333;
+
+        if (track) {
+            track.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+                isSwiping = true;
+                track.classList.remove('track-transition');
+            }, { passive: true });
+
+            track.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
+                const currentX = e.changedTouches[0].screenX;
+                const diffX = currentX - touchStartX;
+                const containerWidth = track.parentElement.offsetWidth;
+                // Move is relative to the total track width (300%)
+                const percentMove = (diffX / (containerWidth * 3)) * 100;
+                track.style.transform = `translateX(${startTransform + percentMove}%)`;
+            }, { passive: true });
+
+            track.addEventListener('touchend', (e) => {
+                if (!isSwiping) return;
+                isSwiping = false;
+                const diffX = e.changedTouches[0].screenX - touchStartX;
+                const containerWidth = track.parentElement.offsetWidth;
+                const threshold = containerWidth * 0.2;
+
+                track.classList.add('track-transition');
+
+                if (Math.abs(diffX) > threshold) {
+                    const step = diffX > 0 ? -1 : 1;
+                    const finalPos = step === 1 ? -66.666666 : 0;
+
+                    track.style.transform = `translateX(${finalPos}%)`;
+
+                    // Wait for transition to finish
+                    setTimeout(() => {
+                        this.navigatePhoto(step);
+                        track.classList.remove('track-transition');
+                        track.style.transform = `translateX(-33.333333%)`;
+                    }, 350);
+                } else {
+                    // Snap back
+                    track.style.transform = `translateX(${startTransform}%)`;
+                }
+            }, { passive: true });
+        }
 
         // Keyboard support
         window.addEventListener('keydown', (e) => {

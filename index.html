@@ -15,8 +15,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <script type="module" crossorigin src="/assets/index-DjfNmI7R.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-LY_mciMQ.css">
+  <script type="module" crossorigin src="/assets/index-CA95UUNZ.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-ClVkjdm0.css">
 </head>
 
 <body>
@@ -170,9 +170,14 @@
     <div id="photo-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">
+            <button id="modal-close" class="modal-close">&times;</button>
             <button id="modal-prev" class="modal-nav prev">❮</button>
-            <div class="modal-image-container">
-                <img id="modal-img" src="" alt="Restaurant photo">
+            <div class="modal-image-container" id="modal-container">
+                <div id="image-track">
+                    <img id="photo-prev" class="track-img" src="" alt="Previous photo">
+                    <img id="photo-curr" class="track-img" src="" alt="Current photo">
+                    <img id="photo-next" class="track-img" src="" alt="Next photo">
+                </div>
             </div>
             <button id="modal-next" class="modal-nav next">❯</button>
         </div>

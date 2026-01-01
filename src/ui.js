@@ -228,7 +228,13 @@ export const UI = {
     renderPhotos(elements, place) {
         if (!elements.photoSection) return;
 
-        if (elements.photosViewAll) elements.photosViewAll.href = place.photosUri || place.googleMapsUri || getGoogleMapsSearchUrl(place.name, place.id);
+        if (elements.photosViewAll) {
+            let photoUrl = place.photosUri || place.googleMapsUri || getGoogleMapsSearchUrl(place.name, place.id);
+            if (photoUrl && typeof photoUrl === 'string' && photoUrl.includes('maps/place//data')) {
+                photoUrl = photoUrl.replace('maps/place//data', `maps/place/${encodeURIComponent(place.name)}/data`);
+            }
+            elements.photosViewAll.href = photoUrl;
+        }
 
         if (place.photos && place.photos.length > 0) {
             elements.photoSection.classList.remove('hidden');
@@ -278,7 +284,13 @@ export const UI = {
     renderReviews(elements, place) {
         if (!elements.reviewsCont || !elements.reviewsList) return;
 
-        if (elements.reviewsViewAll) elements.reviewsViewAll.href = place.reviewsUri || place.googleMapsUri || getGoogleMapsSearchUrl(place.name, place.id);
+        if (elements.reviewsViewAll) {
+            let reviewUrl = place.reviewsUri || place.googleMapsUri || getGoogleMapsSearchUrl(place.name, place.id);
+            if (reviewUrl && typeof reviewUrl === 'string' && reviewUrl.includes('maps/place//data')) {
+                reviewUrl = reviewUrl.replace('maps/place//data', `maps/place/${encodeURIComponent(place.name)}/data`);
+            }
+            elements.reviewsViewAll.href = reviewUrl;
+        }
 
         if (place.reviews && place.reviews.length > 0) {
             elements.reviewsCont.classList.remove('hidden');

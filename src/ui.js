@@ -4,6 +4,14 @@ import { CUISINE_MAPPING, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from '.
 import confetti from 'canvas-confetti';
 
 export const UI = {
+    // Configuration for the photo gallery interaction
+    GALLERY_CONFIG: {
+        TRACK_CENTER_PERCENT: -33.333333,
+        SWIPE_THRESHOLD_PERCENT: 0.2, // 20% of container width
+        TRANSITION_DURATION_MS: 350,
+        MAX_HEIGHT: 1200
+    },
+
     /**
      * Manages screen transitions and footer visibility.
      * Screens: 'main-flow' (search), 'result-screen' (winner), 'loading-screen' (animation).
@@ -441,19 +449,18 @@ export const UI = {
     },
 
     updateModalImages(photos) {
+        const { MAX_HEIGHT } = this.GALLERY_CONFIG;
         const prevIdx = (this.currentPhotoIndex - 1 + photos.length) % photos.length;
         const nextIdx = (this.currentPhotoIndex + 1) % photos.length;
 
-        const setImg = (id, idx) => {
+        const updateSlot = (id, idx) => {
             const el = getEl(id);
-            if (!el) return;
-            const photo = photos[idx];
-            el.src = photo.getURI({ maxHeight: 1200 });
+            if (el) el.src = photos[idx].getURI({ maxHeight: MAX_HEIGHT });
         };
 
-        setImg('photo-prev', prevIdx);
-        setImg('photo-curr', this.currentPhotoIndex);
-        setImg('photo-next', nextIdx);
+        updateSlot('photo-prev', prevIdx);
+        updateSlot('photo-curr', this.currentPhotoIndex);
+        updateSlot('photo-next', nextIdx);
     },
 
     closePhotoModal() {
@@ -472,84 +479,83 @@ export const UI = {
 
     initPhotoModal(App) {
         this.App = App;
-        const prevBtn = getEl('modal-prev');
-        const nextBtn = getEl('modal-next');
-        const closeBtn = getEl('modal-close');
-        const track = getEl('image-track');
         const overlay = document.querySelector('.modal-overlay');
+        const elements = {
+            prev: getEl('modal-prev'),
+            next: getEl('modal-next'),
+            close: getEl('modal-close'),
+            track: getEl('image-track')
+        };
 
         if (overlay) overlay.onclick = () => this.closePhotoModal();
-        if (closeBtn) closeBtn.onclick = () => this.closePhotoModal();
-        if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); this.navigatePhoto(-1); };
-        if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); this.navigatePhoto(1); };
+        if (elements.close) elements.close.onclick = () => this.closePhotoModal();
+        if (elements.prev) elements.prev.onclick = (e) => { e.stopPropagation(); this.navigatePhoto(-1); };
+        if (elements.next) elements.next.onclick = (e) => { e.stopPropagation(); this.navigatePhoto(1); };
 
-        // Click images to close
-        if (track) {
-            track.querySelectorAll('.track-img').forEach(img => {
+        if (elements.track) {
+            elements.track.querySelectorAll('.track-img').forEach(img => {
                 img.onclick = () => this.closePhotoModal();
                 img.style.cursor = 'zoom-out';
             });
-        }
-
-        // Swipe Detection (Native Track Feel)
-        let touchStartX = 0;
-        let isSwiping = false;
-        let startTransform = -33.333333;
-
-        if (track) {
-            track.addEventListener('touchstart', (e) => {
-                touchStartX = e.changedTouches[0].screenX;
-                isSwiping = true;
-                track.classList.remove('track-transition');
-            }, { passive: true });
-
-            track.addEventListener('touchmove', (e) => {
-                if (!isSwiping) return;
-                const currentX = e.changedTouches[0].screenX;
-                const diffX = currentX - touchStartX;
-                const containerWidth = track.parentElement.offsetWidth;
-                // Move is relative to the total track width (300%)
-                const percentMove = (diffX / (containerWidth * 3)) * 100;
-                track.style.transform = `translateX(${startTransform + percentMove}%)`;
-            }, { passive: true });
-
-            track.addEventListener('touchend', (e) => {
-                if (!isSwiping) return;
-                isSwiping = false;
-                const diffX = e.changedTouches[0].screenX - touchStartX;
-                const containerWidth = track.parentElement.offsetWidth;
-                const threshold = containerWidth * 0.2;
-
-                track.classList.add('track-transition');
-
-                if (Math.abs(diffX) > threshold) {
-                    const step = diffX > 0 ? -1 : 1;
-                    const finalPos = step === 1 ? -66.666666 : 0;
-
-                    track.style.transform = `translateX(${finalPos}%)`;
-
-                    // Wait for transition to finish
-                    setTimeout(() => {
-                        this.navigatePhoto(step);
-                        track.classList.remove('track-transition');
-                        track.style.transform = `translateX(-33.333333%)`;
-                    }, 350);
-                } else {
-                    // Snap back
-                    track.style.transform = `translateX(${startTransform}%)`;
-                }
-            }, { passive: true });
+            this._bindGalleryGestures(elements.track);
         }
 
         // Keyboard support
         window.addEventListener('keydown', (e) => {
             const modal = getEl('photo-modal');
             if (modal && !modal.classList.contains('hidden')) {
-                if (e.key === 'Escape') this.closePhotoModal();
-                if (e.key === 'ArrowLeft') this.navigatePhoto(-1);
-                if (e.key === 'ArrowRight') this.navigatePhoto(1);
+                const actions = { 'Escape': () => this.closePhotoModal(), 'ArrowLeft': () => this.navigatePhoto(-1), 'ArrowRight': () => this.navigatePhoto(1) };
+                if (actions[e.key]) actions[e.key]();
             }
         });
+    },
+
+    /**
+     * Internal method to bind complex swipe logic to the gallery track.
+     * @private
+     */
+    _bindGalleryGestures(track) {
+        const { TRACK_CENTER_PERCENT, SWIPE_THRESHOLD_PERCENT, TRANSITION_DURATION_MS } = this.GALLERY_CONFIG;
+        let touchStartX = 0;
+        let isSwiping = false;
+
+        track.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            isSwiping = true;
+            track.classList.remove('track-transition');
+        }, { passive: true });
+
+        track.addEventListener('touchmove', (e) => {
+            if (!isSwiping) return;
+            const diffX = e.changedTouches[0].screenX - touchStartX;
+            const containerWidth = track.parentElement.offsetWidth;
+            const percentMove = (diffX / (containerWidth * 3)) * 100;
+            track.style.transform = `translateX(${TRACK_CENTER_PERCENT + percentMove}%)`;
+        }, { passive: true });
+
+        track.addEventListener('touchend', (e) => {
+            if (!isSwiping) return;
+            isSwiping = false;
+
+            const diffX = e.changedTouches[0].screenX - touchStartX;
+            const threshold = track.parentElement.offsetWidth * SWIPE_THRESHOLD_PERCENT;
+
+            track.classList.add('track-transition');
+
+            if (Math.abs(diffX) > threshold) {
+                const step = diffX > 0 ? -1 : 1;
+                const finalPos = step === 1 ? TRACK_CENTER_PERCENT * 2 : 0; // 0% or -66.666666%
+                track.style.transform = `translateX(${finalPos}%)`;
+
+                setTimeout(() => {
+                    this.navigatePhoto(step);
+                    track.classList.remove('track-transition');
+                    track.style.transform = `translateX(${TRACK_CENTER_PERCENT}%)`;
+                }, TRANSITION_DURATION_MS);
+            } else {
+                track.style.transform = `translateX(${TRACK_CENTER_PERCENT}%)`;
+            }
+        }, { passive: true });
     },
 
     renderUserLocationOnMap(map, userPos, placeLoc, AdvancedMarkerElement) {

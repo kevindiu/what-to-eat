@@ -1,24 +1,131 @@
-export const CUISINE_MAPPING = {
-    chinese: ['chinese_restaurant', 'asian_restaurant', 'chinese', 'cantonese', 'shanghainese', 'sichuan', 'dim sum', 'congee', '中菜', '中式', '粵菜', '上海', '川菜', '京菜', '點心', '粥', '燒味'],
-    japanese: ['japanese_restaurant', 'sushi_restaurant', 'ramen_restaurant', 'japanese', 'sushi', 'ramen', 'izakaya', 'udon', 'soba', 'yakitori', 'tonkatsu', '日本', '壽司', '拉麵', '居酒屋', '烏冬', '蕎麥', '燒鳥', '丼', '天婦羅'],
-    korean: ['korean_restaurant', 'korean', 'kimchi', 'bibimbap', 'bbq', '韓國', '韓式', '泡菜', '飯卷', '韓燒', '炸雞'],
-    western: ['italian_restaurant', 'french_restaurant', 'american_restaurant', 'hamburger_restaurant', 'pizza_restaurant', 'steak_house', 'brazilian_restaurant', 'greek_restaurant', 'mediterranean_restaurant', 'mexican_restaurant', 'seafood_restaurant', 'spanish_restaurant', 'buffet_restaurant', 'fine_dining_restaurant', 'steak', 'italian', 'french', 'burger', 'pasta', 'pizza', 'western', 'mexican', 'spanish', '西餐', '意式', '法式', '漢堡', '薄餅', '牛扒', '扒房', '自助餐'],
-    se_asian: ['thai_restaurant', 'vietnamese_restaurant', 'indonesian_restaurant', 'thai', 'vietnamese', 'malaysian', 'singaporean', 'indonesian', '泰國', '越南', '星馬', '印尼', '泰式', '越式', '海南雞', '冬蔭功', '喇沙'],
-    noodles: ['ramen_restaurant', 'noodle', 'ramen', 'udon', 'pho', '米線', '拉麵', '麵', '粉', '河', '雲吞'],
-    spicy: ['spicy', 'sichuan', 'mala', 'chili', '川菜', '麻辣', '辣', '水煮', '酸辣', '湘菜'],
-    hotpot_bbq: ['barbecue_restaurant', 'steak_house', 'hot pot', 'hotpot', 'bbq', 'barbecue', 'grill', 'yakiniku', '火鍋', '雞煲', '燒肉', '韓燒', '燒烤', '串燒', '打邊爐', '肉', '扒', 'bbq'],
-    dim_sum: ['chinese_restaurant', 'dim sum', 'yum cha', 'dumpling', '點心', '飲茶', '餃子', '盅飯', '包點'],
-    dessert: ['bakery', 'ice_cream_shop', 'dessert_restaurant', 'dessert_shop', 'confectionery', 'chocolate_factory', 'chocolate_shop', 'candy_store', 'donut_shop', 'dessert', 'sugar', 'sweet', 'bakery', 'cake', 'ice cream', '糖水', '甜', '雪糕', '冰', '蛋糕', '餅', '班戟'],
-    fast_food: ['fast_food_restaurant', 'hamburger_restaurant', 'sandwich_shop', 'fast food', 'food_court', 'mcdonald', 'kfc', 'burger', 'sandwich', '快餐', '小食', '漢堡', '三文治', '炸雞', '熱狗', 'deli'],
-    indian_middle_east: ['indian_restaurant', 'lebanese_restaurant', 'turkish_restaurant', 'middle_eastern_restaurant', 'afghani_restaurant', 'indian', 'curry', 'middle eastern', 'kebab', '印度', '咖哩', '中東', '土耳其'],
-    healthy_vege: ['vegan_restaurant', 'vegetarian_restaurant', 'acai_shop', 'juice_shop', 'vegan', 'vegetarian', 'healthy', 'organic', 'salad', '素食', '健康', '沙律', '有機'],
-    sushi_sashimi: ['sushi_restaurant', 'japanese_restaurant', 'sushi', 'sashimi', '壽司', '刺身', '日本', 'omakase'],
-    burger_pizza: ['hamburger_restaurant', 'pizza_restaurant', 'burger', 'pizza', '漢堡', '薄餅', '漢堡包', '意粉'],
-    rice_bento: ['restaurant', 'bento', 'rice', 'donburi', '飯', '定食', '便當', '丼', '盅飯', '煲仔飯'],
-    fine_dining_buffet: ['fine_dining_restaurant', 'buffet_restaurant', 'steak_house', 'french_restaurant', '高級', '慶祝', '自助餐', '放題', 'omakase', 'fine dining', 'buffet'],
-    all_day_brunch: ['breakfast_restaurant', 'brunch_restaurant', 'cafe', 'tea_house', 'brunch', 'breakfast', 'pancake', '全日早餐', '早午餐', '班戟', '舒芙蕾', '鬆餅', 'cat_cafe', 'dog_cafe'],
-    bar_izakaya: ['bar', 'bar_and_grill', 'izakaya', 'pub', '酒', '居酒屋', '酒吧', '串燒', 'yakitori', 'kebab', 'bar', 'wine_bar']
+export const CATEGORY_DEFINITIONS = {
+    chinese: {
+        googleTypes: ['chinese_restaurant'],
+        searchTypes: ['chinese_restaurant'],
+        zh_keywords: ['中菜', '中式', '粵菜', '上海', '川菜', '京菜', '燒味', '大牌檔', '粥', '潮州', '客家'],
+        en_keywords: ['chinese', 'cantonese', 'sichuan', 'shanghainese', 'chiu chow', 'congee', 'hakka'],
+        jp_keywords: ['中華料理', '中国料理'],
+        negativeKeywords: ['點心'],
+        isBroad: true
+    },
+    japanese: {
+        googleTypes: ['japanese_restaurant', 'sushi_restaurant', 'ramen_restaurant'],
+        searchTypes: ['japanese_restaurant', 'sushi_restaurant', 'ramen_restaurant'],
+        zh_keywords: ['日本', '壽司', '拉麵', '居酒屋', '烏冬', '蕎麥', '燒鳥', '丼', '天婦羅', '刺身', '串燒'],
+        en_keywords: ['japanese', 'sushi', 'ramen', 'udon', 'soba', 'yakitori', 'tempura', 'donburi', 'izakaya', 'omakase', 'skewer'],
+        jp_keywords: ['日本料理', '和食', '寿司', '鮨', '刺身', 'ラーメン', 'うどん', 'そば', '天ぷら', '丼物', '懐石', '割烹', '焼き鳥', 'とんかつ'],
+        isBroad: true
+    },
+    korean: {
+        googleTypes: ['korean_restaurant'],
+        searchTypes: ['korean_restaurant'],
+        zh_keywords: ['韓國', '韓式', '泡菜', '飯卷', '韓燒', '炸雞', '部隊鍋', '石鍋拌飯'],
+        en_keywords: ['korean', 'kimchi', 'bbq', 'fried chicken', 'gimbap', 'bibimbap'],
+        jp_keywords: ['韓国料理', 'ビビンバ', 'キムチ', '焼肉'],
+        isBroad: true
+    },
+    western: {
+        googleTypes: ['italian_restaurant', 'french_restaurant', 'american_restaurant', 'steak_house', 'mediterranean_restaurant', 'mexican_restaurant', 'spanish_restaurant'],
+        searchTypes: ['italian_restaurant', 'french_restaurant', 'american_restaurant', 'steak_house'],
+        zh_keywords: ['西餐', '意式', '法式', '漢堡', '薄餅', '牛扒', '扒房', '義大利', '披薩'],
+        en_keywords: ['western', 'italian', 'french', 'burger', 'pizza', 'steak', 'pasta', 'mexican', 'spanish', 'mediterranean'],
+        jp_keywords: ['洋食', 'イタリアン', 'フレンチ', 'ステーキ', 'パスタ', 'ピザ', 'ハンバーガー'],
+        isBroad: true
+    },
+    se_asian: {
+        googleTypes: ['thai_restaurant', 'vietnamese_restaurant', 'indonesian_restaurant'],
+        searchTypes: ['thai_restaurant', 'vietnamese_restaurant', 'indonesian_restaurant'],
+        zh_keywords: ['泰國', '越南', '星馬', '印尼', '泰式', '越式', '海南雞', '冬蔭功', '喇沙', '肉骨茶', '沙爹'],
+        en_keywords: ['thai', 'vietnamese', 'malaysian', 'singaporean', 'indonesian', 'pho', 'curry', 'laksa', 'satay'],
+        jp_keywords: ['タイ料理', 'ベトナム料理'],
+        isBroad: true
+    },
+    noodles: {
+        googleTypes: ['ramen_restaurant'],
+        searchTypes: ['ramen_restaurant', 'chinese_restaurant', 'restaurant'],
+        zh_keywords: ['米線', '拉麵', '麵', '粉', '河', '雲吞', '牛腩', '水餃', '車仔麵', '墨魚丸'],
+        en_keywords: ['noodle', 'ramen', 'pho', 'udon', 'vermicelli', 'beef brisket', 'wonton', 'rice noodle'],
+        jp_keywords: ['麺', 'ラーメン', 'うどん', 'そば'],
+        negativeKeywords: ['義大利麵', '意粉', 'pasta'],
+        isBroad: false
+    },
+    spicy: {
+        googleTypes: [],
+        searchTypes: ['chinese_restaurant', 'asian_restaurant', 'restaurant'],
+        zh_keywords: ['麻辣', '辣', '水煮', '酸辣', '湘菜', '川菜'],
+        en_keywords: ['spicy', 'mala', 'chili', 'hot', 'sichuan', 'hunansese'],
+        jp_keywords: ['四川料理', '辛い', '激辛'],
+        isBroad: false
+    },
+    hotpot_bbq: {
+        googleTypes: ['barbecue_restaurant'],
+        searchTypes: ['barbecue_restaurant', 'chinese_restaurant', 'japanese_restaurant', 'korean_restaurant', 'restaurant'],
+        zh_keywords: ['火鍋', '雞煲', '燒肉', '韓燒', '燒烤', '串燒', '打邊爐'],
+        en_keywords: ['bbq', 'hot pot', 'hotpot', 'barbecue', 'grill', 'shabu shabu', 'yakiniku'],
+        jp_keywords: ['焼肉', '火鍋', 'ステーキ', 'しゃぶしゃぶ', 'すき焼き'],
+        isBroad: false
+    },
+    dim_sum: {
+        googleTypes: [],
+        searchTypes: ['chinese_restaurant', 'restaurant'],
+        zh_keywords: ['點心', '飲茶', '蝦餃', '盅飯', '小籠包', '燒賣'],
+        en_keywords: ['yum cha', 'dim sum', 'dumpling', 'xiao long bao'],
+        jp_keywords: ['飲茶', '点心'],
+        isBroad: false
+    },
+    dessert: {
+        googleTypes: ['bakery', 'ice_cream_shop', 'dessert_restaurant', 'dessert_shop', 'confectionery'],
+        searchTypes: ['bakery', 'ice_cream_shop', 'dessert_restaurant', 'dessert_shop'],
+        zh_keywords: ['糖水', '甜', '雪糕', '冰', '蛋糕', '餅', '班戟', '糖水舖'],
+        en_keywords: ['dessert', 'sweet', 'ice cream', 'cake', 'bakery', 'pancake', 'waffle', 'yogurt'],
+        jp_keywords: ['デザート', 'スイーツ', 'ケーキ', 'アイス', 'パンケーキ'],
+        isBroad: true
+    },
+    fast_food: {
+        googleTypes: ['fast_food_restaurant', 'hamburger_restaurant', 'sandwich_shop'],
+        searchTypes: ['fast_food_restaurant', 'hamburger_restaurant'],
+        zh_keywords: ['快餐', '小食', '漢堡', '三文治', '炸雞', '熱狗'],
+        en_keywords: ['fast food', 'snack', 'burger', 'sandwich', 'fried chicken', 'hotdog'],
+        jp_keywords: ['ファストフード', 'ハンバーガー'],
+        isBroad: true
+    },
+    indian_middle_east: {
+        googleTypes: ['indian_restaurant', 'lebanese_restaurant', 'turkish_restaurant', 'middle_eastern_restaurant'],
+        searchTypes: ['indian_restaurant', 'middle_eastern_restaurant'],
+        zh_keywords: ['印度', '咖哩', '中東', '土耳其'],
+        en_keywords: ['kebab', 'curry', 'indian', 'middle eastern', 'turkish', 'hummus', 'tandoori'],
+        jp_keywords: ['インド料理', 'カレー'],
+        isBroad: true
+    },
+    healthy_vege: {
+        googleTypes: ['vegan_restaurant', 'vegetarian_restaurant'],
+        searchTypes: ['vegan_restaurant', 'vegetarian_restaurant', 'restaurant'],
+        zh_keywords: ['素食', '健康', '沙律', '有機'],
+        en_keywords: ['vegan', 'vegetarian', 'salad', 'healthy', 'organic', 'green'],
+        jp_keywords: ['ベジタリアン', 'サラダ'],
+        isBroad: true
+    },
+    all_day_brunch: {
+        googleTypes: ['breakfast_restaurant', 'brunch_restaurant', 'cafe', 'tea_house'],
+        searchTypes: ['breakfast_restaurant', 'brunch_restaurant', 'cafe'],
+        zh_keywords: ['brunch', 'breakfast', 'pancake', '全日早餐', '早午餐', '班戟', '舒芙蕾', '鬆餅'],
+        en_keywords: ['coffee', 'cafe', 'tea', 'all day breakfast'],
+        jp_keywords: ['カフェ', '朝食', 'ブランチ'],
+        isBroad: true
+    },
+    bar_izakaya: {
+        googleTypes: ['bar', 'pub', 'wine_bar'],
+        searchTypes: ['bar', 'pub'],
+        zh_keywords: ['酒', '居酒屋', '酒吧', '串燒', '啤酒'],
+        en_keywords: ['bar', 'pub', 'wine', 'beer', 'cocktail', 'izakaya', 'craft beer'],
+        jp_keywords: ['居酒屋', 'バー', 'ビール', 'ワイン'],
+        isBroad: true
+    }
 };
+
+export const BROAD_PLACE_TYPES = [
+    'restaurant', 'food', 'establishment', 'point_of_interest'
+];
 
 export const GOOGLE_PLACE_TYPES = [
     "asian_restaurant", "chinese_restaurant", "indian_restaurant",

@@ -1,6 +1,6 @@
 import { getEl, isPlaceMatch, triggerHaptic, getGoogleMapsSearchUrl } from './utils.js';
 import { reRoll } from './api.js';
-import { CUISINE_MAPPING, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
+import { CATEGORY_DEFINITIONS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import confetti from 'canvas-confetti';
 
 export const UI = {
@@ -125,10 +125,10 @@ export const UI = {
         list.innerHTML = '';
         const cats = translations.categories;
 
-        Object.keys(cats).forEach(id => {
+        Object.keys(CATEGORY_DEFINITIONS).forEach(id => {
             const div = document.createElement('div');
             div.className = `filter-item ${config.excluded.has(id) ? 'active' : ''}`;
-            div.textContent = cats[id];
+            div.textContent = cats[id] || id;
             div.onclick = () => {
                 const currentlyExcluded = config.excluded.has(id);
                 if (currentlyExcluded) {
@@ -627,8 +627,8 @@ export const UI = {
 
     getPlaceCategory(place, translations) {
         const categoriesTranslations = translations.categories;
-        for (const [id, keywords] of Object.entries(CUISINE_MAPPING)) {
-            if (isPlaceMatch(place, keywords)) return categoriesTranslations[id];
+        for (const id of Object.keys(CATEGORY_DEFINITIONS)) {
+            if (isPlaceMatch(place, id)) return categoriesTranslations[id] || id;
         }
         return null;
     },

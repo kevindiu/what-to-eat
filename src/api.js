@@ -1,5 +1,5 @@
 import { getEl, getCurrentPosition, isPlaceMatch, triggerHaptic } from './utils.js';
-import { CUISINE_MAPPING, GOOGLE_PLACE_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
+import { CATEGORY_DEFINITIONS, GOOGLE_PLACE_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import { Cache } from './cache.js';
 
 
@@ -186,9 +186,12 @@ function getSearchTypeGroups(App) {
     if (App.Config.filterMode === 'whitelist' && App.Config.excluded.size > 0) {
         const selectedTypes = new Set();
         App.Config.excluded.forEach(id => {
-            (CUISINE_MAPPING[id] || []).forEach(m => {
-                if (GOOGLE_PLACE_TYPES.includes(m)) selectedTypes.add(m);
-            });
+            const def = CATEGORY_DEFINITIONS[id];
+            if (def && def.searchTypes) {
+                def.searchTypes.forEach(t => {
+                    if (GOOGLE_PLACE_TYPES.includes(t)) selectedTypes.add(t);
+                });
+            }
         });
 
         const typesArray = Array.from(selectedTypes);
@@ -200,9 +203,12 @@ function getSearchTypeGroups(App) {
     else if (App.Config.filterMode === 'blacklist' && App.Config.excluded.size > 0) {
         const blacklist = new Set();
         App.Config.excluded.forEach(id => {
-            (CUISINE_MAPPING[id] || []).forEach(m => {
-                if (m.includes('_') || /^[a-z]+$/.test(m)) blacklist.add(m);
-            });
+            const def = CATEGORY_DEFINITIONS[id];
+            if (def && def.searchTypes) {
+                def.searchTypes.forEach(t => {
+                    if (GOOGLE_PLACE_TYPES.includes(t)) blacklist.add(t);
+                });
+            }
         });
 
         const activeTypes = allTypes.filter(t => !blacklist.has(t));
@@ -271,7 +277,7 @@ async function filterByDistance(userLoc, candidates, App) {
 function filterByPreferences(candidates, App) {
     return candidates.filter(place => {
         const selectedCategories = Array.from(App.Config.excluded);
-        const isMatch = selectedCategories.some(id => isPlaceMatch(place, CUISINE_MAPPING[id]));
+        const isMatch = selectedCategories.some(id => isPlaceMatch(place, id));
 
         if (App.Config.filterMode === 'whitelist') {
             if (selectedCategories.length > 0 && !isMatch) return false;

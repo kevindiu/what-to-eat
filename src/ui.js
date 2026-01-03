@@ -1,6 +1,7 @@
 import { getEl, isPlaceMatch, triggerHaptic, getGoogleMapsSearchUrl } from './utils.js';
 import { reRoll } from './api.js';
 import { CATEGORY_DEFINITIONS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
+import { ImageCache } from './cache.js';
 import confetti from 'canvas-confetti';
 
 export const UI = {
@@ -254,10 +255,16 @@ export const UI = {
 
     createPhotoItem(photo, altText) {
         const img = document.createElement('img');
-        img.src = photo.getURI({ maxHeight: 400 });
+        const rawUrl = photo.getURI({ maxHeight: 400 });
         img.className = 'photo-item';
-        img.alt = altText;
         img.loading = 'lazy';
+        img.alt = altText;
+
+        // Use cached URL if available
+        ImageCache.getCachedUrl(rawUrl).then(url => {
+            img.src = url;
+        });
+
         img.style.opacity = '0';
         img.style.transition = 'opacity 0.3s ease';
         img.onload = () => { img.style.opacity = '1'; };
@@ -465,14 +472,17 @@ export const UI = {
         const prevIdx = (this.currentPhotoIndex - 1 + photos.length) % photos.length;
         const nextIdx = (this.currentPhotoIndex + 1) % photos.length;
 
-        const updateSlot = (id, idx) => {
-            const el = getEl(id);
-            if (el) el.src = photos[idx].getURI({ maxHeight: MAX_HEIGHT });
+        const updateImg = (el, idx) => {
+            if (!el) return;
+            const rawUrl = photos[idx].getURI({ maxHeight: MAX_HEIGHT });
+            ImageCache.getCachedUrl(rawUrl).then(url => {
+                el.src = url;
+            });
         };
 
-        updateSlot('photo-prev', prevIdx);
-        updateSlot('photo-curr', this.currentPhotoIndex);
-        updateSlot('photo-next', nextIdx);
+        updateImg(getEl('photo-prev'), prevIdx);
+        updateImg(getEl('photo-curr'), this.currentPhotoIndex);
+        updateImg(getEl('photo-next'), nextIdx);
     },
 
     closePhotoModal() {

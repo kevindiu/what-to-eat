@@ -82,10 +82,15 @@ export function isPlaceMatch(place, categoryId) {
 }
 /**
  * Triggers a haptic feedback if supported by the device.
+ * Only attempts on touch-enabled devices to avoid browser interventions on desktop.
  * @param {number|Array} duration - Duration of the vibration in ms.
  */
 export function triggerHaptic(duration) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        // Only trigger if it's a touch device to avoid console warnings on desktop
+        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (!isTouch) return;
+
         try { navigator.vibrate(duration); } catch (e) { }
     }
 }

@@ -1,5 +1,5 @@
-import { getEl, getCurrentPosition, isPlaceMatch, triggerHaptic } from './utils.js';
-import { CATEGORY_DEFINITIONS, GOOGLE_PLACE_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
+import { getEl, getCurrentPosition, isPlaceMatch, triggerHaptic, shuffleArray } from './utils.js';
+import { CATEGORY_DEFINITIONS, GOOGLE_PLACE_TYPES, ALWAYS_KEEP_SEARCH_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import { Cache } from './cache.js';
 
 
@@ -201,17 +201,26 @@ function getSearchTypeGroups(App) {
     }
     // Mode 2: Blacklist Optimization
     else if (App.Config.filterMode === 'blacklist' && App.Config.excluded.size > 0) {
-        const blacklist = new Set();
-        App.Config.excluded.forEach(id => {
+        const blacklistCandidates = new Set();
+        const mustKeep = new Set(ALWAYS_KEEP_SEARCH_TYPES);
+
+        Object.keys(CATEGORY_DEFINITIONS).forEach(id => {
             const def = CATEGORY_DEFINITIONS[id];
-            if (def && def.searchTypes) {
-                def.searchTypes.forEach(t => {
-                    if (GOOGLE_PLACE_TYPES.includes(t)) blacklist.add(t);
-                });
+            if (!def || !def.searchTypes) return;
+
+            if (App.Config.excluded.has(id)) {
+                // If category is excluded, its searchTypes are candidates for blacklisting
+                def.searchTypes.forEach(t => blacklistCandidates.add(t));
+            } else {
+                // If category is ACTIVE, its searchTypes MUST be kept
+                def.searchTypes.forEach(t => mustKeep.add(t));
             }
         });
 
-        const activeTypes = allTypes.filter(t => !blacklist.has(t));
+        // Final blacklist: candidate types MINUS types required by active categories
+        const finalBlacklist = new Set([...blacklistCandidates].filter(t => !mustKeep.has(t)));
+
+        const activeTypes = allTypes.filter(t => !finalBlacklist.has(t));
         for (let i = 0; i < activeTypes.length; i += 20) {
             searchGroups.push(activeTypes.slice(i, i + 20));
         }

@@ -104,3 +104,15 @@ export function getGoogleMapsSearchUrl(name, id) {
     if (!name || !id) return '#';
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=${id}`;
 }
+/**
+ * Fisher-Yates Shuffle algorithm to randomize an array in place.
+ * @param {Array} array - The array to shuffle.
+ * @returns {Array} The shuffled array.
+ */
+export function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}

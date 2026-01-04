@@ -1,40 +1,13 @@
-import { getEl, getCurrentPosition, isPlaceMatch, triggerHaptic, shuffleArray } from './utils.js';
+import { getEl, getCurrentPosition, isPlaceMatch, triggerHaptic, shuffleArray, mapPlaceData, checkPeriodAvailability, getGridPoints } from './utils.js';
 import { CATEGORY_DEFINITIONS, GOOGLE_PLACE_TYPES, ALWAYS_KEEP_SEARCH_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import { Cache } from './cache.js';
 
-
-
 /**
- * Centalized mapping from Google Place object to internal restaurant model.
- */
-function mapPlaceData(place, translations) {
-    return {
-        id: place.id || place.place_id,
-        name: typeof place.displayName === 'string' ? place.displayName : (place.displayName?.text || translations.unknownName),
-        rating: place.rating,
-        userRatingCount: place.userRatingCount || 0,
-        vicinity: place.formattedAddress || place.vicinity || translations.noAddress,
-        types: place.types || [],
-        priceLevel: place.priceLevel,
-        phone: place.nationalPhoneNumber,
-        businessStatus: place.businessStatus,
-        location: place.location,
-        openingHours: place.regularOpeningHours,
-        isOpen: null,
-        durationText: null,
-        durationValue: null,
-        photos: place.photos || [],
-        reviews: place.reviews || [],
-        googleMapsUri: place.googleMapsURI || place.googleMapsUri || place.googleMapsLinks?.placeURI || place.googleMapsLinks?.placeUri,
-        reviewsUri: place.googleMapsLinks?.reviewsUri || place.googleMapsLinks?.reviewsURI,
-        photosUri: place.googleMapsLinks?.photosUri || place.googleMapsLinks?.photosURI
-    };
-}
-
-/**
- * Main function to find a random restaurant based on user location and preferences.
- * Orchestrates fetching, filtering, and selecting a winner.
- * @param {Object} App - The application state object.
+ * The main entry point for the "Find Restaurant" flow.
+ * Coordinates location retrieval, nearby search, candidate processing, 
+ * and winner selection.
+ * 
+ * @param {Object} App - The global application control object.
  */
 export async function findRestaurant(App) {
     triggerHaptic(50);
@@ -73,17 +46,26 @@ export async function findRestaurant(App) {
 
         App.Data.candidates = candidates;
 
-        // Perform initial pick
         const winner = candidates[Math.floor(Math.random() * candidates.length)];
         App.Data.currentPlace = await fetchPlaceDetails(Place, winner, App);
 
         App.UI.startSlotAnimation(App.Data.candidates, () => reRoll(App));
     } catch (error) {
         console.error("Search Error:", error);
-        handleError(error, translations, App);
+        App.UI.handleError(error, App);
     }
 }
 
+/**
+ * Performs a spatial search for nearby places using a grid-based approach.
+ * Optimizes API quota by using early-exit logic and type grouping.
+ * 
+ * @param {Object} Place - The Google Maps Place library instance.
+ * @param {Object} location - The center point {lat, lng}.
+ * @param {number} radius - The search radius in meters.
+ * @param {Object} App - The application control object.
+ * @returns {Promise<Array>} A deduplicated list of raw Place objects.
+ */
 async function fetchNearby(Place, location, radius, App) {
     const points = getGridPoints(location, radius);
     const searchGroups = getSearchTypeGroups(App);
@@ -165,20 +147,13 @@ async function fetchNearby(Place, location, radius, App) {
     return allPlaces;
 }
 
-function getGridPoints(location, radius) {
-    const offset = radius * 0.6;
-    const latOffset = offset / CONSTANTS.METERS_PER_DEGREE_LAT;
-    const lngOffset = offset / (CONSTANTS.METERS_PER_DEGREE_LAT * Math.cos(location.lat * Math.PI / 180));
-
-    return [
-        { lat: location.lat, lng: location.lng }, // 0: Center
-        { lat: location.lat - latOffset, lng: location.lng - lngOffset }, // 1: Bottom-Left
-        { lat: location.lat + latOffset, lng: location.lng - lngOffset }, // 2: Top-Left
-        { lat: location.lat - latOffset, lng: location.lng + lngOffset }, // 3: Bottom-Right
-        { lat: location.lat + latOffset, lng: location.lng + lngOffset }  // 4: Top-Right
-    ];
-}
-
+/**
+ * Generates batches of Google Place types to search for based on app filters.
+ * Each batch is limited to 50 types to respect API constraints while maintaining diversity.
+ * 
+ * @param {Object} App - The application control object.
+ * @returns {Array<Array<string>>} Shuffled groups of search types.
+ */
 function getSearchTypeGroups(App) {
     const searchGroups = [];
     const allTypes = GOOGLE_PLACE_TYPES;
@@ -246,13 +221,10 @@ function getSearchTypeGroups(App) {
 async function processCandidates(places, userLoc, App) {
     const translations = App.translations[App.currentLang];
 
-    // 1. Map and check basic operability
     const operational = await filterOperational(places, App, translations);
 
-    // 2. Filter by range
     const withinRange = await filterByDistance(userLoc, operational, App);
 
-    // 3. Final filter by categories and price
     return filterByPreferences(withinRange, App);
 }
 
@@ -304,43 +276,6 @@ function filterByPreferences(candidates, App) {
     });
 }
 
-/**
- * Checks if a place is open based on its weekly periods.
- * Converts current time and open/close times into absolute minutes from start of week (Sunday 00:00).
- * Handles wrap-around logic for shift-based businesses (e.g., open till 02:00 next day).
- */
-function checkPeriodAvailability(periods) {
-    if (!periods || !Array.isArray(periods) || periods.length === 0) return null;
-    if (periods.length === 1 && !periods[0].close) return true; // Always open
-
-    const now = new Date();
-    const nowAbs = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
-    const WEEK_MINUTES = 10080;
-
-    for (const period of periods) {
-        if (!period.open || !period.close) continue;
-        const openAbs = Number(period.open.day) * 1440 + Number(period.open.hour) * 60 + Number(period.open.minute);
-        let closeAbs = Number(period.close.day) * 1440 + Number(period.close.hour) * 60 + Number(period.close.minute);
-
-        // Handle midnight wrap-around (e.g., Open Sun 10:00, Close Mon 02:00)
-        if (closeAbs <= openAbs) closeAbs += WEEK_MINUTES;
-
-        // Check current week and "prev week overflow" for late-night shifts
-        if ((nowAbs >= openAbs && nowAbs < closeAbs) || (nowAbs + WEEK_MINUTES >= openAbs && nowAbs + WEEK_MINUTES < closeAbs)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * Fetches expensive details (photos, reviews, address) only for the winner.
- * Uses localStorage with 24-hour expiry to save significantly on Google Maps API Quota.
- * @param {Object} Place - The Google Maps Place class.
- * @param {Object} basicPlace - The partial place object to enrich.
- * @param {Object} App - The application state.
- * @returns {Promise<Object>} The detailed place object.
- */
 export async function fetchPlaceDetails(Place, basicPlace, App) {
     if (!basicPlace || !basicPlace.id) return basicPlace;
 
@@ -382,17 +317,14 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
             }));
         }
 
-        // Merge mapped data back into the basic object
         // Preserve duration info which is calculated client-side and not available in Place details
         const { durationText, durationValue } = basicPlace;
         Object.assign(basicPlace, mapped);
         if (durationText) basicPlace.durationText = durationText;
         if (durationValue) basicPlace.durationValue = durationValue;
 
-        // Persist to cache
         Cache.set(basicPlace.id, mapped);
 
-        // Restore methods for the current session object
         if (basicPlace.photos) basicPlace.photos = restorePhotoMethods(basicPlace.photos);
 
     } catch (e) {
@@ -401,12 +333,6 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
     return basicPlace;
 }
 
-function handleError(error, translations, App) {
-    if (error.message === "GEOLOCATION_NOT_SUPPORTED") alert(translations.noGeo);
-    else if (error.code === 1) alert(translations.geoError);
-    else alert("Error: " + error.message);
-    App.UI.showScreen('main-flow');
-}
 
 /**
  * Calculates walking duration from origin to multiple destinations using Distance Matrix Service.
@@ -462,14 +388,12 @@ export async function reRoll(App) {
 
     let candidates = App.Data.candidates;
     if (candidates.length > 1) {
-        // Exclude everything in history if possible
         const historyIds = new Set(App.Data.history || []);
         const others = candidates.filter(place => !historyIds.has(place.id));
 
         if (others.length > 0) {
             candidates = others;
         } else if (App.Data.lastPickedId) {
-            // If everything has been seen, at least avoid the immediate last one
             const avoidLast = candidates.filter(place => place.id !== App.Data.lastPickedId);
             if (avoidLast.length > 0) candidates = avoidLast;
         }
@@ -498,7 +422,6 @@ export async function restoreSession(App) {
         const { Place } = await google.maps.importLibrary("places");
         const place = new Place({ id: resId });
 
-        // Fetch exhaustive fields for shared links (single request)
         await place.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
 
         const lat = parseFloat(App.Data.params.get('lat'));
@@ -516,7 +439,6 @@ export async function restoreSession(App) {
             restored.durationText = withDuration.durationText;
         }
 
-        // Pre-fetch candidates in background if we have location
         if (App.Data.userPos) {
             const places = await fetchNearby(Place, App.Data.userPos, App.Config.radius, App);
             if (places && places.length > 0) App.Data.candidates = await processCandidates(places, App.Data.userPos, App);
@@ -525,7 +447,6 @@ export async function restoreSession(App) {
         App.UI.showResult(restored, App.translations[App.currentLang], App.Config, App.Data, { fromShare: true });
     } catch (e) {
         console.error("Session restoration failed:", e);
-        App.UI.showScreen('main-flow');
+        App.UI.handleError(e, App);
     }
 }
-

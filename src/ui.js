@@ -1,4 +1,4 @@
-import { getEl, isPlaceMatch, triggerHaptic, getGoogleMapsSearchUrl } from './utils.js';
+import { getEl, isPlaceMatch, triggerHaptic, getGoogleMapsSearchUrl, updateHistory, getPriceDisplay, getPlaceCategory, getTodayHours } from './utils.js';
 import { reRoll } from './api.js';
 import { CATEGORY_DEFINITIONS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import { ImageCache } from './cache.js';
@@ -36,9 +36,22 @@ export const UI = {
             if (appFooter) appFooter.classList.remove('hidden');
             if (footerHome) footerHome.classList.add('hidden');
             if (footerResult) footerResult.classList.remove('hidden');
-        } else {
-            if (appFooter) appFooter.classList.add('hidden');
         }
+    },
+
+    /**
+     * Global error handler for the application flow. 
+     * Displays localized alerts and returns to the main screen.
+     * 
+     * @param {Error} error - The caught error object.
+     * @param {Object} App - The application control object.
+     */
+    handleError(error, App) {
+        const translations = App.translations[App.currentLang];
+        if (error.message === "GEOLOCATION_NOT_SUPPORTED") alert(translations.noGeo);
+        else if (error.code === 1) alert(translations.geoError);
+        else alert("Error: " + error.message);
+        this.showScreen('main-flow');
     },
 
     /**
@@ -168,7 +181,7 @@ export const UI = {
         this.showScreen('result-screen');
 
         data.currentPlace = place;
-        this.updateHistory(data, place);
+        updateHistory(data, place);
 
         const elements = this.getElements();
 
@@ -186,14 +199,10 @@ export const UI = {
         }
     },
 
-    updateHistory(data, place) {
-        data.lastPickedId = place.id;
-        if (!data.history) data.history = [];
-        if (!data.history.includes(place.id)) {
-            data.history.push(place.id);
-        }
-    },
-
+    /**
+     * Centralized accessor for result-screen DOM elements.
+     * @returns {Object} Mapping of element keys to DOM nodes.
+     */
     getElements() {
         return {
             name: getEl('res-name'),
@@ -356,18 +365,25 @@ export const UI = {
         return item;
     },
 
+    /**
+     * Renders detailed restaurant information (Price, Category, Hours, Distance, Phone).
+     * 
+     * @param {Object} elements - DOM elements cache.
+     * @param {Object} place - Current restaurant data.
+     * @param {Object} translations - Localized strings.
+     */
     renderDetails(elements, place, translations) {
         // Rating
         const hasRating = typeof place.rating === 'number' && place.rating > 0;
         if (elements.rating) elements.rating.textContent = hasRating ? place.rating : (translations.ratingNew.replace(/⭐\s*/, ''));
 
         // Price
-        const priceText = this.getPriceDisplay(place.priceLevel, translations);
+        const priceText = getPriceDisplay(place.priceLevel, translations);
         if (elements.price) elements.price.textContent = priceText;
         if (elements.priceCont) elements.priceCont.style.display = priceText ? 'flex' : 'none';
 
         // Category
-        const catFull = this.getPlaceCategory(place, translations);
+        const catFull = getPlaceCategory(place, translations);
         if (catFull) {
             const emojiMatch = catFull.match(/^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)\s*(.*)$/u);
             if (elements.catIcon) elements.catIcon.textContent = emojiMatch ? emojiMatch[1] : "🍴";
@@ -376,17 +392,15 @@ export const UI = {
         } else if (elements.catCont) elements.catCont.style.display = 'none';
 
         // Opening Hours
-        const todayHours = this.getTodayHours(place, translations);
+        const todayHours = getTodayHours(place, translations);
         if (elements.hours) elements.hours.textContent = todayHours;
         if (elements.hoursCont) elements.hoursCont.style.display = 'flex';
 
-        // Distance
         if (place.durationText) {
             if (elements.distance) elements.distance.textContent = place.durationText;
             if (elements.distanceCont) elements.distanceCont.style.display = 'flex';
         } else if (elements.distanceCont) elements.distanceCont.style.display = 'none';
 
-        // Phone
         if (place.phone) {
             if (elements.phone) {
                 elements.phone.textContent = `📞 ${place.phone}`;
@@ -448,7 +462,123 @@ export const UI = {
         }
     },
 
-    // --- Photo Modal Management ---
+    /**
+     * Overlays the user's current location bubble onto the map.
+     * Fits the map bounds to show both the user and the restaurant.
+     * 
+     * @param {google.maps.Map} map - Active map instance.
+     * @param {Object} userPos - {lat, lng} of device.
+     * @param {Object} placeLoc - {lat, lng} of restaurant.
+     * @param {typeof google.maps.marker.AdvancedMarkerElement} AdvancedMarkerElement - Marker class.
+     */
+    renderUserLocationOnMap(map, userPos, placeLoc, AdvancedMarkerElement) {
+        const userDot = document.createElement('div');
+        userDot.style.width = '16px';
+        userDot.style.height = '16px';
+        userDot.style.backgroundColor = '#4285F4';
+        userDot.style.border = '2px solid white';
+        userDot.style.borderRadius = '50%';
+        userDot.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)';
+
+        new AdvancedMarkerElement({
+            map,
+            position: userPos,
+            title: "Your Location",
+            content: userDot
+        });
+
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend(placeLoc);
+        bounds.extend(userPos);
+        map.fitBounds(bounds, 50);
+    },
+
+    /**
+     * Creates a custom re-center control button for the Google Map.
+     * Toggles between showing only the restaurant and fitting both user/restaurant.
+     * 
+     * @param {google.maps.Map} map - Active map instance.
+     * @param {Object} placeLoc - Restaurant location.
+     * @param {Object} userPos - User location (optional).
+     * @returns {HTMLElement} The control button element.
+     */
+    createMapCenterControl(map, placeLoc, userPos) {
+        const centerBtn = document.createElement('button');
+        centerBtn.className = 'map-center-btn';
+        centerBtn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#666"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>';
+        centerBtn.title = 'Re-center Map';
+        centerBtn.onclick = () => {
+            if (userPos) {
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(placeLoc);
+                bounds.extend(userPos);
+                map.fitBounds(bounds, 50);
+            } else {
+                map.setCenter(placeLoc);
+                map.setZoom(16);
+            }
+        };
+        return centerBtn;
+    },
+
+    /**
+     * Initiates the high-speed name switching animation (Slot Machine effect).
+     * 
+     * @param {Array} candidates - List of possible winners to cycle through.
+     * @param {Function} onComplete - Callback executed after animation finishes.
+     */
+    startSlotAnimation(candidates, onComplete) {
+        const slotName = getEl('slot-name');
+        if (!slotName) return;
+        let count = 0;
+        const interval = setInterval(() => {
+            const temp = candidates[Math.floor(Math.random() * candidates.length)];
+            slotName.textContent = temp?.name || "...";
+            if (++count > 15) {
+                clearInterval(interval);
+                if (typeof onComplete === 'function') onComplete();
+            }
+        }, 100);
+    },
+
+    triggerConfetti() {
+        const confettiInstance = confetti.create ? confetti.create() : confetti;
+        confettiInstance({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#ff6b81', '#ffd32a', '#2ecc71', '#3498db']
+        });
+    },
+
+    /**
+     * Shares the current restaurant using the Web Share API (mobile) or Clipboard (desktop).
+     * Generates a unique deep-link with place ID and user coordinates.
+     * 
+     * @param {Object} place - Restaurant data.
+     * @param {Object} translations - Localized strings.
+     * @param {Object} userPos - {lat, lng} for context.
+     */
+    async shareCurrentPlace(place, translations, userPos) {
+        if (!place) return;
+        const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.id}${userPos ? `&lat=${userPos.lat}&lng=${userPos.lng}` : ''}`;
+        const shareText = translations.shareText.replace('${name}', place.name);
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: place.name, text: shareText, url: shareUrl });
+            } catch (e) {
+                console.error("Share failed:", e);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+                alert(translations.linkCopied);
+            } catch (e) { alert(shareUrl); }
+        }
+    },
+
+    // --- Photo Modal Management (Moved to end for better scannability) ---
 
     openPhotoModal(index) {
         const app = this.App || window.App;
@@ -522,7 +652,6 @@ export const UI = {
             this._bindGalleryGestures(elements.track);
         }
 
-        // Keyboard support
         window.addEventListener('keydown', (e) => {
             const modal = getEl('photo-modal');
             if (modal && !modal.classList.contains('hidden')) {
@@ -533,7 +662,10 @@ export const UI = {
     },
 
     /**
-     * Internal method to bind complex swipe logic to the gallery track.
+     * Internal method to bind complex swipe and snap logic to the gallery track.
+     * Implements a 3-image sliding window for performance.
+     * 
+     * @param {HTMLElement} track - The horizontal scrolling container.
      * @private
      */
     _bindGalleryGestures(track) {
@@ -566,7 +698,7 @@ export const UI = {
 
             if (Math.abs(diffX) > threshold) {
                 const step = diffX > 0 ? -1 : 1;
-                const finalPos = step === 1 ? TRACK_CENTER_PERCENT * 2 : 0; // 0% or -66.666666%
+                const finalPos = step === 1 ? TRACK_CENTER_PERCENT * 2 : 0;
                 track.style.transform = `translateX(${finalPos}%)`;
 
                 setTimeout(() => {
@@ -578,131 +710,6 @@ export const UI = {
                 track.style.transform = `translateX(${TRACK_CENTER_PERCENT}%)`;
             }
         }, { passive: true });
-    },
-
-    renderUserLocationOnMap(map, userPos, placeLoc, AdvancedMarkerElement) {
-        const userDot = document.createElement('div');
-        userDot.style.width = '16px';
-        userDot.style.height = '16px';
-        userDot.style.backgroundColor = '#4285F4';
-        userDot.style.border = '2px solid white';
-        userDot.style.borderRadius = '50%';
-        userDot.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)';
-
-        new AdvancedMarkerElement({
-            map,
-            position: userPos,
-            title: "Your Location",
-            content: userDot
-        });
-
-        const bounds = new google.maps.LatLngBounds();
-        bounds.extend(placeLoc);
-        bounds.extend(userPos);
-        map.fitBounds(bounds, 50);
-    },
-
-    createMapCenterControl(map, placeLoc, userPos) {
-        const centerBtn = document.createElement('button');
-        centerBtn.className = 'map-center-btn';
-        centerBtn.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#666"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>';
-        centerBtn.title = 'Re-center Map';
-        centerBtn.onclick = () => {
-            if (userPos) {
-                const bounds = new google.maps.LatLngBounds();
-                bounds.extend(placeLoc);
-                bounds.extend(userPos);
-                map.fitBounds(bounds, 50);
-            } else {
-                map.setCenter(placeLoc);
-                map.setZoom(16);
-            }
-        };
-        return centerBtn;
-    },
-
-    startSlotAnimation(candidates, onComplete) {
-        const slotName = getEl('slot-name');
-        if (!slotName) return;
-        let count = 0;
-        const interval = setInterval(() => {
-            const temp = candidates[Math.floor(Math.random() * candidates.length)];
-            slotName.textContent = temp?.name || "...";
-            if (++count > 15) {
-                clearInterval(interval);
-                if (typeof onComplete === 'function') onComplete();
-            }
-        }, 100);
-    },
-
-    getPlaceCategory(place, translations) {
-        const categoriesTranslations = translations.categories;
-        for (const id of Object.keys(CATEGORY_DEFINITIONS)) {
-            if (isPlaceMatch(place, id)) return categoriesTranslations[id] || id;
-        }
-        return null;
-    },
-
-    getPriceDisplay(level, translations) {
-        if (level === undefined || level === null) return "";
-        let key = level;
-        if (PRICE_VAL_TO_KEY[key]) key = PRICE_VAL_TO_KEY[key];
-        const config = PRICE_LEVEL_MAP[key];
-        return config ? config.label(translations) : "";
-    },
-
-    /**
-     * Resolves today's opening hours from Google's weekdayDescriptions array.
-     * Uses fuzzy string matching to find the correct day regardless of the user's locale.
-     */
-    getTodayHours(place, translations) {
-        const descriptions = place.openingHours?.weekdayDescriptions;
-        if (!descriptions || descriptions.length !== 7) return translations.noHoursInfo;
-
-        const today = new Date();
-        // Fallback matching for day names
-        const dayNames = [
-            today.toLocaleDateString('zh-HK', { weekday: 'long' }),
-            today.toLocaleDateString('en-US', { weekday: 'long' }),
-            today.toLocaleDateString('ja-JP', { weekday: 'long' })
-        ];
-
-        const match = descriptions.find(d => dayNames.some(name => d.includes(name))) || descriptions[(today.getDay() + 6) % 7];
-
-        if (match) {
-            const parts = match.split(/: |：/);
-            return parts[1] ? parts[1].trim() : match;
-        }
-        return translations.noHoursInfo;
-    },
-
-    triggerConfetti() {
-        const confettiInstance = confetti.create ? confetti.create() : confetti;
-        confettiInstance({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#ff6b81', '#ffd32a', '#2ecc71', '#3498db']
-        });
-    },
-
-    async shareCurrentPlace(place, translations, userPos) {
-        if (!place) return;
-        const shareUrl = `${window.location.origin}${window.location.pathname}?resId=${place.id}${userPos ? `&lat=${userPos.lat}&lng=${userPos.lng}` : ''}`;
-        const shareText = translations.shareText.replace('${name}', place.name);
-
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: place.name, text: shareText, url: shareUrl });
-            } catch (e) {
-                console.error("Share failed:", e);
-            }
-        } else {
-            try {
-                await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-                alert(translations.linkCopied);
-            } catch (e) { alert(shareUrl); }
-        }
     }
 };
 

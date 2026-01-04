@@ -96,7 +96,7 @@ async function fetchNearby(Place, location, radius, App) {
             locationRestriction: { center: pos, radius: radius },
             includedPrimaryTypes: types,
             fields: BASIC_PLACE_FIELDS,
-            maxResultCount: 20,
+            maxResultCount: CONSTANTS.GOOGLE_MAPS_API_LIMIT,
             rankPreference: 'DISTANCE'
         };
         try {
@@ -125,19 +125,21 @@ async function fetchNearby(Place, location, radius, App) {
      * 
      * Strategy:
      * 1. Search the center point first.
-     * 2. If center is saturated (20 results), search diagonal corners.
-     * 3. If diagonals yield new results, search the remaining two corners.
-     * This maximizes coverage while significantly reducing API costs in sparse areas.
+     * 2. Only for the FIRST randomized group, if saturated, search corners.
+     * 3. For subsequent groups, only search the center to conserve quota.
+     * 4. Overall Limit: Stop fetching once we have enough candidates (e.g., 60).
      */
-    for (const groups of searchGroups) {
+    for (const [index, groups] of searchGroups.entries()) {
         if (!groups || groups.length === 0) continue;
+        if (allPlaces.length >= CONSTANTS.SEARCH_CANDIDATE_LIMIT) break; // Quota Safeguard
 
         const centerResults = await fetchPoint(points[0], groups);
         processResults(centerResults);
 
-        // If the center point returns fewer than 20 results, the area is unlikely to have 
-        // more unique results in the corners for this set of types. Skip to save quota.
-        if (centerResults.length < 20) continue;
+        // If it's not the first group, we skip grid expansion to save costs.
+        // We also skip if radius is very small (redundant overlap).
+        const isSmallRadius = radius < 300;
+        if (index > 0 || isSmallRadius || centerResults.length < CONSTANTS.GOOGLE_MAPS_API_LIMIT) continue;
 
         const diagonalResults = await Promise.all([
             fetchPoint(points[1], groups),
@@ -149,9 +151,8 @@ async function fetchNearby(Place, location, radius, App) {
             newInPhase2 += processResults(res);
         });
 
-        // If diagonal searches didn't return any new unique IDs, it indicates 
-        // high overlap. Skip the last two corners to prevent redundant API calls.
-        if (newInPhase2 === 0) continue;
+        // Early exit: if diagonals are empty, skip remaining corners
+        if (newInPhase2 === 0 || allPlaces.length >= CONSTANTS.SEARCH_CANDIDATE_LIMIT) continue;
 
         const remainingResults = await Promise.all([
             fetchPoint(points[2], groups),
@@ -195,8 +196,8 @@ function getSearchTypeGroups(App) {
         });
 
         const typesArray = Array.from(selectedTypes);
-        for (let i = 0; i < typesArray.length; i += 20) {
-            searchGroups.push(typesArray.slice(i, i + 20));
+        for (let i = 0; i < typesArray.length; i += 50) {
+            searchGroups.push(typesArray.slice(i, i + 50));
         }
     }
     // Mode 2: Blacklist Optimization
@@ -221,15 +222,15 @@ function getSearchTypeGroups(App) {
         const finalBlacklist = new Set([...blacklistCandidates].filter(t => !mustKeep.has(t)));
 
         const activeTypes = allTypes.filter(t => !finalBlacklist.has(t));
-        for (let i = 0; i < activeTypes.length; i += 20) {
-            searchGroups.push(activeTypes.slice(i, i + 20));
+        for (let i = 0; i < activeTypes.length; i += 50) {
+            searchGroups.push(activeTypes.slice(i, i + 50));
         }
     }
 
     // Default Fallback
     if (searchGroups.length === 0) {
-        for (let i = 0; i < allTypes.length; i += 20) {
-            searchGroups.push(allTypes.slice(i, i + 20));
+        for (let i = 0; i < allTypes.length; i += 50) {
+            searchGroups.push(allTypes.slice(i, i + 50));
         }
     }
     return searchGroups;

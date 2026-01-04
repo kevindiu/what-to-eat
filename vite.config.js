@@ -16,10 +16,33 @@ export default defineConfig({
     plugins: [
         VitePWA({
             registerType: 'autoUpdate',
-            manifest: false, // We use the existing manifest.json in public/
+            injectRegister: 'auto',
+            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icons/*.png'],
+            manifest: {
+                name: '食乜好',
+                short_name: '食乜好',
+                description: '唔知食咩好果陣幫你揀餐廳',
+                theme_color: '#fff5f5',
+                background_color: '#fff5f5',
+                display: 'standalone',
+                start_url: '/',
+                icons: [
+                    {
+                        src: 'icons/icon-192.png',
+                        sizes: '192x192',
+                        type: 'image/png'
+                    },
+                    {
+                        src: 'icons/icon-512.png',
+                        sizes: '512x512',
+                        type: 'image/png'
+                    }
+                ]
+            },
             workbox: {
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
                 cleanupOutdatedCaches: true,
+                navigateFallback: 'index.html'
             },
             devOptions: {
                 enabled: true,

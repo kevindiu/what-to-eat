@@ -3,7 +3,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
-    base: '/what-to-eat/',
+    base: '/',
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),

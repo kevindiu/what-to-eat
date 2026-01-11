@@ -121,7 +121,10 @@ async function fetchNearby(Place, location, radius, App) {
         // If it's not the first group, we skip grid expansion to save costs.
         // We also skip if radius is very small (redundant overlap).
         const isSmallRadius = radius < 300;
-        if (index > 0 || isSmallRadius || centerResults.length < CONSTANTS.GOOGLE_MAPS_API_LIMIT) continue;
+        const isSparseWhitelist = App.Config.filterMode === 'whitelist' && allPlaces.length < 10;
+        const isSaturated = centerResults.length >= CONSTANTS.GOOGLE_MAPS_API_LIMIT;
+
+        if (index > 0 || isSmallRadius || (!isSaturated && !isSparseWhitelist)) continue;
 
         const diagonalResults = await Promise.all([
             fetchPoint(points[1], groups),
@@ -160,19 +163,34 @@ function getSearchTypeGroups(App) {
 
     // Mode 1: Whitelist Optimization
     if (App.Config.filterMode === 'whitelist' && App.Config.excluded.size > 0) {
-        const selectedTypes = new Set();
+        const preciseTypes = new Set();
+        const broadTypes = new Set();
+
         App.Config.excluded.forEach(id => {
             const def = CATEGORY_DEFINITIONS[id];
             if (def && def.searchTypes) {
                 def.searchTypes.forEach(t => {
-                    if (GOOGLE_PLACE_TYPES.includes(t)) selectedTypes.add(t);
+                    if (GOOGLE_PLACE_TYPES.includes(t)) {
+                        if (BROAD_PLACE_TYPES.includes(t)) {
+                            broadTypes.add(t);
+                        } else {
+                            preciseTypes.add(t);
+                        }
+                    }
                 });
             }
         });
 
-        const typesArray = Array.from(selectedTypes);
-        for (let i = 0; i < typesArray.length; i += 50) {
-            searchGroups.push(typesArray.slice(i, i + 50));
+        // Group 1: Precise types (High Signal)
+        const preciseArray = Array.from(preciseTypes);
+        for (let i = 0; i < preciseArray.length; i += 50) {
+            searchGroups.push(preciseArray.slice(i, i + 50));
+        }
+
+        // Group 2: Broad fallback types (Catch-all)
+        const broadArray = Array.from(broadTypes);
+        for (let i = 0; i < broadArray.length; i += 50) {
+            searchGroups.push(broadArray.slice(i, i + 50));
         }
     }
     // Mode 2: Blacklist Optimization

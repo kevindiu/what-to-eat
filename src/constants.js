@@ -156,7 +156,11 @@ export const CATEGORY_DEFINITIONS = {
 };
 
 export const BROAD_PLACE_TYPES = [
-    'restaurant', 'point_of_interest', 'seafood_restaurant', 'buffet_restaurant', 'fine_dining_restaurant', 'food_court', 'diner', 'asian_restaurant'
+    'restaurant', 'point_of_interest', 'seafood_restaurant', 'buffet_restaurant',
+    'fine_dining_restaurant', 'food_court', 'diner', 'asian_restaurant',
+    'chinese_restaurant', 'japanese_restaurant', 'italian_restaurant',
+    'french_restaurant', 'thai_restaurant', 'vietnamese_restaurant',
+    'american_restaurant', 'korean_restaurant', 'mexican_restaurant'
 ];
 
 export const ALWAYS_KEEP_SEARCH_TYPES = [

@@ -85,7 +85,7 @@ async function fetchNearby(Place, location, radius, App) {
             const { places } = await Place.searchNearby(request);
             return places || [];
         } catch (e) {
-            console.warn("Fetch error:", e);
+            console.warn("Fetch error for types", types.slice(0, 3), "...:", e?.message || e);
             return [];
         }
     };

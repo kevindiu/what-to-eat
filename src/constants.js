@@ -84,11 +84,13 @@ export const GOOGLE_PLACE_TYPES = [
 export const BASIC_PLACE_FIELDS = [
     "id", "displayName", "location", "rating", "userRatingCount",
     "regularOpeningHours", "priceLevel", "businessStatus", "types",
-    "formattedAddress", "googleMapsURI", "photos"
+    "formattedAddress", "photos"
 ];
 
 export const DETAIL_PLACE_FIELDS = [
-    "reviews", "editorialSummary", "regularOpeningHours"
+    "reviews", "editorialSummary", "regularOpeningHours",
+    "googleMapsLinks", "googleMapsURI",
+    "nationalPhoneNumber"
 ];
 
 export const PRICE_LEVEL_MAP = {

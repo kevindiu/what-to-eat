@@ -67,6 +67,18 @@ export const Cache = {
  */
 export const ImageCache = {
     CACHE_NAME: 'restaurant-photos-v1',
+    _blobUrls: new Set(),
+
+    /**
+     * Revokes all tracked blob URLs to free browser memory.
+     * Call this when navigating away from photo-heavy views.
+     */
+    revokeAll() {
+        this._blobUrls.forEach(url => {
+            try { URL.revokeObjectURL(url); } catch (e) { }
+        });
+        this._blobUrls.clear();
+    },
 
     /**
      * Attempts to get a locally usable URL for an image.
@@ -86,7 +98,9 @@ export const ImageCache = {
 
             if (cachedResponse) {
                 const blob = await cachedResponse.blob();
-                return URL.createObjectURL(blob);
+                const blobUrl = URL.createObjectURL(blob);
+                this._blobUrls.add(blobUrl);
+                return blobUrl;
             }
 
             // Not in cache, fetch it
@@ -102,7 +116,9 @@ export const ImageCache = {
             await cache.put(url, responseToCache);
 
             const blob = await response.blob();
-            return URL.createObjectURL(blob);
+            const blobUrl = URL.createObjectURL(blob);
+            this._blobUrls.add(blobUrl);
+            return blobUrl;
         } catch (error) {
             console.warn('ImageCache failed, falling back to remote URL:', error);
             return url;

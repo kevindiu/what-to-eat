@@ -36,6 +36,8 @@ export const UI = {
             if (appFooter) appFooter.classList.remove('hidden');
             if (footerHome) footerHome.classList.add('hidden');
             if (footerResult) footerResult.classList.remove('hidden');
+        } else if (screenId === 'loading-screen') {
+            if (appFooter) appFooter.classList.add('hidden');
         }
     },
 
@@ -179,6 +181,9 @@ export const UI = {
     async showResult(place, translations, config, data, options = {}) {
         const { fromShare = false } = options;
         this.showScreen('result-screen');
+
+        // Free blob URLs from previous result to prevent memory leaks
+        ImageCache.revokeAll();
 
         data.currentPlace = place;
         updateHistory(data, place);

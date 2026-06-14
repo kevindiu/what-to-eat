@@ -25,7 +25,6 @@
     --pill-price-text: #1976d2;
     --pill-category-bg: #f3e5f5;
     --pill-category-text: #8e24aa;
-    --pill-category-text: #8e24aa;
     --pill-distance-bg: #e8f5e9;
     --pill-distance-text: #2e7d32;
     --pill-hours-bg: #e0f7fa;
@@ -64,7 +63,6 @@
         --pill-price-bg: #1a2a3a;
         --pill-price-text: #54a0ff;
         --pill-category-bg: #2a1a3a;
-        --pill-category-text: #a29bfe;
         --pill-category-text: #a29bfe;
         --pill-distance-bg: #1b3a2a;
         --pill-distance-text: #55efc4;
@@ -743,10 +741,7 @@ header p {
     animation: skeleton-loading 1.5s infinite;
 }
 
-[data-theme="dark"] .skeleton {
-    background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
-    background-size: 200% 100%;
-}
+
 
 /* Map Re-center Button */
 .map-center-btn {
@@ -856,10 +851,7 @@ header p {
     pointer-events: auto;
 }
 
-[data-theme="dark"] .app-footer {
-    background: transparent;
-    border-top: none;
-}
+
 
 .footer-content {
     width: 100%;

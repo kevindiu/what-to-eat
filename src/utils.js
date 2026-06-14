@@ -1,3 +1,5 @@
+import { CATEGORY_DEFINITIONS, GOOGLE_PLACE_TYPES, CONSTANTS, PRICE_VAL_TO_KEY, PRICE_LEVEL_MAP } from './constants.js';
+
 /**
  * Helper to get element by ID
  * @param {string} id - The DOM element ID
@@ -32,13 +34,10 @@ export function getCurrentPosition(options = {}) {
  */
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-import { CATEGORY_DEFINITIONS, GOOGLE_PLACE_TYPES, BROAD_PLACE_TYPES, CONSTANTS, PRICE_VAL_TO_KEY, PRICE_LEVEL_MAP } from './constants.js';
+
 
 /**
- * Checks if a place matches a specific category using a tiered approach.
- * Tier 1: Match official Google Place types (High Confidence).
- * Tier 2: Match local keywords if the place type is generic/broad (Contextual Confidence).
- * Supports negative keywords for exclusion.
+ * Checks if a place matches a specific category using official Google types only.
  * 
  * @param {Object} place - Internal place object.
  * @param {string} categoryId - The key from CATEGORY_DEFINITIONS.
@@ -48,31 +47,10 @@ export function isPlaceMatch(place, categoryId) {
     const def = CATEGORY_DEFINITIONS[categoryId];
     if (!def) return false;
 
-    const name = (place.name || "").toLowerCase();
     const types = place.types || [];
 
-    if (def.googleTypes && def.googleTypes.length > 0) {
-        if (types.some(t => def.googleTypes.includes(t))) return true;
-    }
-
-    const isBroad = types.length === 0 || types.some(t => BROAD_PLACE_TYPES.includes(t));
-
-    // Some categories (like dim_sum) don't have specific Google types, 
-    // so we always allow keyword matching for them if the place is a restaurant.
-    const allowKeywords = isBroad || def.googleTypes.length === 0;
-
-    if (allowKeywords) {
-        if (def.negativeKeywords && def.negativeKeywords.some(nk => name.includes(nk.toLowerCase()))) {
-            return false;
-        }
-
-        // Check all language keyword fields
-        const langFields = ['zh_keywords', 'en_keywords', 'jp_keywords'];
-        for (const field of langFields) {
-            if (def[field] && def[field].some(k => name.includes(k.toLowerCase()))) {
-                return true;
-            }
-        }
+    if (def.types && def.types.length > 0) {
+        return types.some(t => def.types.includes(t));
     }
 
     return false;
@@ -124,23 +102,23 @@ export function shuffleArray(array) {
  */
 export function mapPlaceData(place, translations) {
     return {
-        id: place.id || place.place_id,
+        id: place.id,
         name: typeof place.displayName === 'string' ? place.displayName : (place.displayName?.text || translations.unknownName),
         rating: place.rating,
         userRatingCount: place.userRatingCount || 0,
-        vicinity: place.formattedAddress || place.vicinity || translations.noAddress,
+        vicinity: place.formattedAddress || translations.noAddress,
         types: place.types || [],
         priceLevel: place.priceLevel,
         phone: place.nationalPhoneNumber,
         businessStatus: place.businessStatus,
         location: place.location,
         openingHours: place.regularOpeningHours,
-        isOpen: null,
+        isOpen: null, // Handled asynchronously in filterOperational
         durationText: null,
         durationValue: null,
         photos: place.photos || [],
         reviews: place.reviews || [],
-        googleMapsUri: place.googleMapsURI || place.googleMapsUri || place.googleMapsLinks?.placeURI || place.googleMapsLinks?.placeUri,
+        googleMapsUri: place.googleMapsURI || place.googleMapsUri || place.googleMapsLinks?.placeURI,
         reviewsUri: place.googleMapsLinks?.reviewsUri || place.googleMapsLinks?.reviewsURI,
         photosUri: place.googleMapsLinks?.photosUri || place.googleMapsLinks?.photosURI
     };
@@ -156,6 +134,10 @@ export function updateHistory(data, place) {
     if (!data.history) data.history = [];
     if (!data.history.includes(place.id)) {
         data.history.push(place.id);
+    }
+    // Cap history to prevent unbounded growth during long sessions
+    while (data.history.length > CONSTANTS.HISTORY_LIMIT) {
+        data.history.shift();
     }
 }
 
@@ -182,25 +164,18 @@ export function getGridPoints(location, radius) {
     ];
 }
 
-/**
- * Resolves today's opening hours from Google's weekdayDescriptions array.
- * 
- * @param {Object} place - Current restaurant data.
- * @param {Object} translations - Localized strings.
- * @returns {string} Formatted hours string.
- */
 export function getTodayHours(place, translations) {
     const descriptions = place.openingHours?.weekdayDescriptions;
     if (!descriptions || descriptions.length !== 7) return translations.noHoursInfo;
 
     const today = new Date();
-    const dayNames = [
-        today.toLocaleDateString('zh-HK', { weekday: 'long' }),
-        today.toLocaleDateString('en-US', { weekday: 'long' }),
-        today.toLocaleDateString('ja-JP', { weekday: 'long' })
-    ];
-
-    const match = descriptions.find(d => dayNames.some(name => d.includes(name))) || descriptions[(today.getDay() + 6) % 7];
+    // Use Intl for robust locale-aware day matching
+    const match = descriptions.find(d => {
+        const day = today.toLocaleDateString('zh-HK', { weekday: 'long' });
+        const dayEn = today.toLocaleDateString('en-US', { weekday: 'long' });
+        const dayJa = today.toLocaleDateString('ja-JP', { weekday: 'long' });
+        return d.includes(day) || d.includes(dayEn) || d.includes(dayJa);
+    }) || descriptions[(today.getDay() + 6) % 7];
 
     if (match) {
         const parts = match.split(/: |：/);
@@ -220,7 +195,7 @@ export function getPriceDisplay(level, translations) {
     let key = level;
     if (PRICE_VAL_TO_KEY[key]) key = PRICE_VAL_TO_KEY[key];
     const config = PRICE_LEVEL_MAP[key];
-    return config ? config.label(translations) : "";
+    return config ? config.label : "";
 }
 
 /**

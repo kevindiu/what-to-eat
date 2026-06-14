@@ -1,4 +1,4 @@
-# 食乜好？ - What to Eat 🍱✨
+# 食乜好 - What to Eat 🍱✨
 
 [![PWA](https://img.shields.io/badge/PWA-Ready-orange)](https://what2eatnow.org/)
 

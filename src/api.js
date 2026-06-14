@@ -1,5 +1,5 @@
 import { getEl, getCurrentPosition, isPlaceMatch, triggerHaptic, shuffleArray, mapPlaceData, checkPeriodAvailability, getGridPoints } from './utils.js';
-import { CATEGORY_DEFINITIONS, GOOGLE_PLACE_TYPES, ALWAYS_KEEP_SEARCH_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
+import { CATEGORY_DEFINITIONS, GOOGLE_PLACE_TYPES, BASIC_PLACE_FIELDS, DETAIL_PLACE_FIELDS, PRICE_LEVEL_MAP, PRICE_VAL_TO_KEY, CONSTANTS } from './constants.js';
 import { Cache } from './cache.js';
 
 /**
@@ -160,72 +160,41 @@ async function fetchNearby(Place, location, radius, App) {
 function getSearchTypeGroups(App) {
     const searchGroups = [];
     const allTypes = GOOGLE_PLACE_TYPES;
+    let activeTypesList = [];
 
-    // Mode 1: Whitelist Optimization
-    if (App.Config.filterMode === 'whitelist' && App.Config.excluded.size > 0) {
-        const preciseTypes = new Set();
-        const broadTypes = new Set();
-
+    if (App.Config.filterMode === 'whitelist') {
+        // Collect types from selected categories
+        const activeSet = new Set();
         App.Config.excluded.forEach(id => {
             const def = CATEGORY_DEFINITIONS[id];
-            if (def && def.searchTypes) {
-                def.searchTypes.forEach(t => {
-                    if (GOOGLE_PLACE_TYPES.includes(t)) {
-                        if (BROAD_PLACE_TYPES.includes(t)) {
-                            broadTypes.add(t);
-                        } else {
-                            preciseTypes.add(t);
-                        }
-                    }
-                });
+            if (def && def.types) {
+                def.types.forEach(t => activeSet.add(t));
             }
         });
-
-        // Group 1: Precise types (High Signal)
-        const preciseArray = Array.from(preciseTypes);
-        for (let i = 0; i < preciseArray.length; i += 50) {
-            searchGroups.push(preciseArray.slice(i, i + 50));
-        }
-
-        // Group 2: Broad fallback types (Catch-all)
-        const broadArray = Array.from(broadTypes);
-        for (let i = 0; i < broadArray.length; i += 50) {
-            searchGroups.push(broadArray.slice(i, i + 50));
-        }
-    }
-    // Mode 2: Blacklist Optimization
-    else if (App.Config.filterMode === 'blacklist' && App.Config.excluded.size > 0) {
-        const blacklistCandidates = new Set();
-        const mustKeep = new Set(ALWAYS_KEEP_SEARCH_TYPES);
-
-        Object.keys(CATEGORY_DEFINITIONS).forEach(id => {
+        activeTypesList = Array.from(activeSet);
+    } else {
+        // Blacklist mode: collect types from excluded categories
+        const excludedTypes = new Set();
+        App.Config.excluded.forEach(id => {
             const def = CATEGORY_DEFINITIONS[id];
-            if (!def || !def.searchTypes) return;
-
-            if (App.Config.excluded.has(id)) {
-                // If category is excluded, its searchTypes are candidates for blacklisting
-                def.searchTypes.forEach(t => blacklistCandidates.add(t));
-            } else {
-                // If category is ACTIVE, its searchTypes MUST be kept
-                def.searchTypes.forEach(t => mustKeep.add(t));
+            if (def && def.types) {
+                def.types.forEach(t => excludedTypes.add(t));
             }
         });
-
-        // Final blacklist: candidate types MINUS types required by active categories
-        const finalBlacklist = new Set([...blacklistCandidates].filter(t => !mustKeep.has(t)));
-
-        const activeTypes = allTypes.filter(t => !finalBlacklist.has(t));
-        for (let i = 0; i < activeTypes.length; i += 50) {
-            searchGroups.push(activeTypes.slice(i, i + 50));
-        }
+        activeTypesList = allTypes.filter(t => !excludedTypes.has(t));
     }
 
-    // Default Fallback
-    if (searchGroups.length === 0) {
-        for (let i = 0; i < allTypes.length; i += 50) {
-            searchGroups.push(allTypes.slice(i, i + 50));
-        }
+    // Default Fallback if nothing selected or everything blacklisted
+    if (activeTypesList.length === 0) {
+        activeTypesList = [...allTypes];
     }
+
+    // Shuffle for variety and batch in 50s
+    const shuffled = shuffleArray(activeTypesList);
+    for (let i = 0; i < shuffled.length; i += 50) {
+        searchGroups.push(shuffled.slice(i, i + 50));
+    }
+
     return searchGroups;
 }
 
@@ -248,11 +217,14 @@ async function processCandidates(places, userLoc, App) {
 
 async function filterOperational(places, App, translations) {
     const candidates = await Promise.all(places.map(async place => {
+        let isOpen = null;
+        try { isOpen = await place.isOpen(); } catch (e) { }
+
         const item = mapPlaceData(place, translations);
-        try { item.isOpen = await place.isOpen(); } catch (e) { item.isOpen = null; }
+        if (isOpen !== null) item.isOpen = isOpen;
 
         if (item.isOpen === null) {
-            item.isOpen = item.openingHours?.periods ? checkPeriodAvailability(item.openingHours.periods) : item.openingHours?.openNow;
+            item.isOpen = item.openingHours?.periods ? checkPeriodAvailability(item.openingHours.periods) : item.isOpen;
         }
         return item;
     }));
@@ -275,26 +247,27 @@ async function filterByDistance(userLoc, candidates, App) {
 }
 
 function filterByPreferences(candidates, App) {
-    return candidates.filter(place => {
-        const selectedCategories = Array.from(App.Config.excluded);
-        const isMatch = selectedCategories.some(id => isPlaceMatch(place, id));
+    const { excluded, filterMode, prices } = App.Config;
 
-        if (App.Config.filterMode === 'whitelist') {
-            if (selectedCategories.length > 0 && !isMatch) return false;
+    return candidates.filter(place => {
+        const isMatch = Array.from(excluded).some(id => isPlaceMatch(place, id));
+
+        if (filterMode === 'whitelist') {
+            if (excluded.size > 0 && !isMatch) return false;
         } else {
             if (isMatch) return false;
         }
 
         if (place.priceLevel !== undefined && place.priceLevel !== null) {
-            const key = PRICE_VAL_TO_KEY[place.priceLevel] || place.priceLevel;
-            const config = PRICE_LEVEL_MAP[key];
-            if (config && App.Config.prices.size > 0 && !App.Config.prices.has(config.val)) return false;
+            const levelKey = PRICE_VAL_TO_KEY[place.priceLevel] || place.priceLevel;
+            const priceDef = PRICE_LEVEL_MAP[levelKey];
+            if (priceDef && prices.size > 0 && !prices.has(priceDef.val)) return false;
         }
         return true;
     });
 }
 
-export async function fetchPlaceDetails(Place, basicPlace, App) {
+export async function fetchPlaceDetails(_Place, basicPlace, App) {
     if (!basicPlace || !basicPlace.id) return basicPlace;
 
     const restorePhotoMethods = (photos) => {
@@ -318,24 +291,27 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
     }
 
     try {
+        const translations = App.translations[App.currentLang];
+        const { Place } = await google.maps.importLibrary("places");
         const place = new Place({ id: basicPlace.id });
-        // Must fetch BASIC + DETAIL fields to ensure mapPlaceData has everything it needs
+
+        // Fetch everything via New API (No Legacy Warnings!)
         await place.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
 
-        const translations = App.translations[App.currentLang];
         const mapped = mapPlaceData(place, translations);
 
-        // Pre-fetch photo URIs because the getURI method is lost after JSON.stringify
+        // New API Photos support CORS fetch! (Verified by subagent)
         if (place.photos && place.photos.length > 0) {
             mapped.photos = place.photos.map(photo => ({
+                ...photo,
                 cachedURI: photo.getURI({ maxHeight: 1000 }),
-                widthPx: photo.widthPx,
-                heightPx: photo.heightPx,
+                getURI: function (opts) { return this.cachedURI || photo.getURI(opts); },
                 authorAttributions: photo.authorAttributions
             }));
         }
 
-        // Preserve duration info which is calculated client-side and not available in Place details
+        // Preserve duration info which is calculated client-side.
+        // NOTE: We mutate basicPlace in-place so callers see the enriched data.
         const { durationText, durationValue } = basicPlace;
         Object.assign(basicPlace, mapped);
         if (durationText) basicPlace.durationText = durationText;
@@ -343,10 +319,11 @@ export async function fetchPlaceDetails(Place, basicPlace, App) {
 
         Cache.set(basicPlace.id, mapped);
 
+        // Restore methods for UI consistency
         if (basicPlace.photos) basicPlace.photos = restorePhotoMethods(basicPlace.photos);
 
     } catch (e) {
-        console.error("Error fetching place details:", e);
+        console.error("Error fetching place details (New API):", e);
     }
     return basicPlace;
 }
@@ -432,6 +409,10 @@ export async function restoreSession(App) {
     const resId = App.Data.params.get('resId');
     if (!resId) return;
 
+    // Extract all needed params before clearing the URL
+    const lat = parseFloat(App.Data.params.get('lat'));
+    const lng = parseFloat(App.Data.params.get('lng'));
+
     // Clear URL parameters immediately for a cleaner UX
     window.history.replaceState({}, document.title, window.location.pathname);
     App.UI.showScreen('loading-screen');
@@ -442,8 +423,6 @@ export async function restoreSession(App) {
 
         await place.fetchFields({ fields: [...BASIC_PLACE_FIELDS, ...DETAIL_PLACE_FIELDS] });
 
-        const lat = parseFloat(App.Data.params.get('lat'));
-        const lng = parseFloat(App.Data.params.get('lng'));
         if (!isNaN(lat) && !isNaN(lng)) {
             App.Data.userPos = { lat, lng };
         }

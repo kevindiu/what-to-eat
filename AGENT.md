@@ -28,7 +28,7 @@ This document serves as a technical context and set of instructions for any AI A
    - `App.Data.history` tracks `place_id` of picked restaurants during a session.
    - `reRoll` (Retry) will prioritize restaurants not in history.
    - History resets whenever a fresh "Find Restaurant" search is triggered.
-3. **Session Restoration**: Uses URL parameters (`placeId`, `lang`, `lat`, `lng`) to allow sharing and persistence.
+3. **Session Restoration**: Uses URL parameters (`resId`, `lang`, `lat`, `lng`) to allow sharing and persistence.
 
 ## ⚠️ Workflow (Vite)
 1.  **Development**: Run `npm run dev` for local server with Hot Module Replacement (HMR).
